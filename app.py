@@ -1,29 +1,62 @@
 import streamlit as st
 
-# Configuração da página
-st.set_page_config(page_title="App Igreja", layout="wide")
+# 1. CONFIGURAÇÃO DA PÁGINA
+st.set_page_config(page_title="App ISOSED Cosmópolis", layout="wide")
 
-# --- SIDEBAR NAVEGAÇÃO ---
-st.sidebar.title("Navegação")
-menu = st.sidebar.radio("Ir para:", ["Home", "Agenda", "Redes Sociais", "Departamentos", "Devocional"])
+# 2. ESTILIZAÇÃO CSS (Fundo Degradê e Ajustes)
+# Aqui definimos o degradê de verde para azul
+st.markdown("""
+    <style>
+    /* Fundo da página principal */
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(135deg, #00b09b 0%, #302b63 100%);
+        color: white;
+    }
 
-# --- ÁREA HOME ---
-if menu == "Home":
-    st.header("Bem-vindo ao App da nossa Igreja")
-    st.info("Próximo Culto: Domingo às 19:00h")
-    # Espaço para Versículo do Dia
+    /* Fundo da barra lateral */
+    [data-testid="stSidebar"] {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
 
-# --- ÁREA DEPARTAMENTOS ---
+    /* Ajuste de cor dos textos para legibilidade */
+    h1, h2, h3, p, span {
+        color: #ffffff !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 3. LOGO NA BARRA LATERAL
+# Certifique-se de ter um arquivo chamado 'logo.png' na mesma pasta do código
+# Se não tiver o arquivo ainda, você pode usar uma URL de imagem
+try:
+    st.sidebar.image("logo.png", width=150)
+except:
+    st.sidebar.title("⛪ ISOSED")
+
+st.sidebar.markdown("---")
+
+# 4. NAVEGAÇÃO
+menu = st.sidebar.radio("Navegação Principal", 
+    ["Início", "Agenda 2026", "Redes Sociais", "Departamentos", "Devocional Diário"])
+
+# --- LÓGICA DAS PÁGINAS ---
+
+if menu == "Início":
+    st.title("Bem-vindo ao Portal ISOSED")
+    st.write("Central de informações da Igreja Só o Senhor é Deus em Cosmópolis.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info("📅 Próximo Culto: Domingo às 19:00h")
+    with col2:
+        st.success("🙏 Pedido de Oração: Use a aba Devocional")
+
 elif menu == "Departamentos":
-    st.header("Departamentos")
+    st.header("Nossos Departamentos")
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["Jovens", "Crianças", "Mulheres", "Varões", "Missões"])
     
     with tab1:
         st.subheader("Departamento de Jovens")
-        st.write("Informações sobre o próximo congresso...")
-    # Repetir para as outras abas...
+        st.write("Acompanhe aqui a escala e os eventos da mocidade.")
 
-# --- ÁREA REDES SOCIAIS ---
-elif menu == "Redes Sociais":
-    st.header("Gestão de Mídia")
-    # Aqui você pode integrar o código do seu app de legendas
+# Os outros menus seguem a mesma lógica...
