@@ -29,7 +29,7 @@ st.markdown("""
 # Certifique-se de ter um arquivo chamado 'logo.png' na mesma pasta do código
 # Se não tiver o arquivo ainda, você pode usar uma URL de imagem
 try:
-    st.sidebar.image("logo.png", width=150)
+    st.sidebar.image("logo igreja.png", width=150)
 except:
     st.sidebar.title("⛪ ISOSED")
 
