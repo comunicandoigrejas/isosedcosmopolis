@@ -5,45 +5,48 @@ import os
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
-# --- 2. INICIALIZAÇÃO DO ESTADO DE NAVEGAÇÃO ---
+# --- 2. CONTROLE DE NAVEGAÇÃO (Estado da Sessão) ---
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "Início"
 
-# Função para mudar de página
-def mudar_pagina(nome):
-    st.session_state.pagina = nome
+def navegar(nome_pagina):
+    st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Fundo, Botões Flutuantes e Cards) ---
+# --- 3. ESTILIZAÇÃO CSS (Fundo e Botões Padronizados) ---
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(135deg, #00b09b 0%, #302b63 100%);
         color: white;
     }
-    /* Esconder barra lateral para foco no menu central */
     [data-testid="stSidebar"] { display: none; }
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Estilo dos Botões do Menu Principal */
+    /* Padronização dos Botões para Tamanho Único */
     div.stButton > button {
         width: 100%;
-        height: 100px;
-        border-radius: 15px;
+        height: 120px; /* Altura fixa para todos */
+        border-radius: 20px;
         background-color: rgba(255, 255, 255, 0.1);
         color: white;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        font-size: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        font-size: 22px;
         font-weight: bold;
-        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
     }
+    
     div.stButton > button:hover {
         background-color: #00ffcc;
         color: #302b63;
         border: 2px solid #ffffff;
+        transform: scale(1.02);
     }
 
-    /* Cards de Congressos (Mantidos conforme solicitado) */
+    /* Estilos das abas e cards (Mantidos conforme solicitado) */
     .card-congresso {
         background: rgba(255, 215, 0, 0.2);
         padding: 15px;
@@ -61,7 +64,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS (Mantidos Rigorosamente) ---
+# --- 4. DADOS MANTIDOS (RIGOROSAMENTE) ---
 agenda_completa = {
     "Janeiro":   {"Jovens": "16/01", "Varões": "23/01", "Louvor": "30/01"},
     "Fevereiro": {"Irmãs": "06/02", "Jovens": "13/02", "Varões": "20/02", "Louvor": "27/02"},
@@ -71,45 +74,42 @@ agenda_completa = {
     "Junho":     {"Irmãs": "05/06", "Jovens": "12/06", "Varões": "19/06", "Louvor": "26/06"}
 }
 
-# --- 5. NAVEGAÇÃO POR PÁGINAS ---
+# --- 5. LÓGICA DE PÁGINAS ---
 
-# --- PÁGINA INICIAL (O HUB DE BOTÕES) ---
 if st.session_state.pagina == "Início":
     st.markdown("<br><br>", unsafe_allow_html=True)
-    col_logo, col_texto = st.columns([1, 3])
-    with col_logo:
+    c_logo, c_tit = st.columns([1, 4])
+    with c_logo:
         if os.path.exists("logo igreja.png"):
-            st.image("logo igreja.png", width=150)
-    with col_texto:
+            st.image("logo igreja.png", width=120)
+    with c_tit:
         st.title("ISOSED Cosmópolis")
-        st.write("Seja bem-vindo ao nosso aplicativo oficial.")
+        st.write("Toque em uma das opções abaixo para navegar:")
 
     st.markdown("---")
 
-    # Grade de Botões "Flutuantes"
+    # Grade de botões com tamanho uniforme
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🗓️ AGENDA 2026"): mudar_pagina("Agenda")
-        if st.button("📢 REDES SOCIAIS"): mudar_pagina("Redes")
+        st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
+        st.button("📢 REDES SOCIAIS", on_click=navegar, args=("Redes",))
     with col2:
-        if st.button("👥 DEPARTAMENTOS"): mudar_pagina("Departamentos")
-        if st.button("📖 DEVOCIONAL"): mudar_pagina("Devocional")
+        st.button("👥 DEPARTAMENTOS", on_click=navegar, args=("Departamentos",))
+        st.button("📖 DEVOCIONAL", on_click=navegar, args=("Devocional",))
     
     st.markdown("<br>", unsafe_allow_html=True)
     st.info("🕒 Domingos 18h | Quartas 19h30 | Sextas 19h30")
 
-# --- PÁGINA AGENDA (ESTRUTURA MANTIDA) ---
 elif st.session_state.pagina == "Agenda":
-    if st.button("⬅️ Voltar ao Início"): mudar_pagina("Início")
+    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
     st.title("🗓️ Cronograma Anual 2026")
     for mes, cultos in agenda_completa.items():
         with st.expander(f"📅 {mes}"):
             for depto, data in cultos.items():
                 st.write(f"**{depto}:** {data}")
 
-# --- PÁGINA DEPARTAMENTOS (ESTRUTURA MANTIDA) ---
 elif st.session_state.pagina == "Departamentos":
-    if st.button("⬅️ Voltar ao Início"): mudar_pagina("Início")
+    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
     st.title("👥 Departamentos")
     t_mulheres, t_jovens, t_varoes, t_kids, t_missoes = st.tabs(["🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões"])
 
@@ -137,12 +137,11 @@ elif st.session_state.pagina == "Departamentos":
     with t_missoes:
         st.markdown('<div class="card-congresso">🌟 <b>DESTAQUE:</b><br>14 e 15/08: Congresso de Missões<br>Todo 3º Domingo: Culto de Missões</div>', unsafe_allow_html=True)
 
-# --- OUTRAS PÁGINAS ---
 elif st.session_state.pagina == "Redes":
-    if st.button("⬅️ Voltar ao Início"): mudar_pagina("Início")
+    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
     st.title("📢 Mídia ISOSED")
-    st.button("Gerador de Legendas")
+    st.write("Gerencie o conteúdo do Instagram @isosedcosmopolissp.")
 
 elif st.session_state.pagina == "Devocional":
-    if st.button("⬅️ Voltar ao Início"): mudar_pagina("Início")
-    st.title("📖 Devocional")
+    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
+    st.title("📖 Espaço Devocional")
