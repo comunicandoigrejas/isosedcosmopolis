@@ -1,163 +1,211 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
+from openai import OpenAI
+import urllib.parse
 import pandas as pd
-import os
+import time
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
+# 1. CONFIGURAÇÃO DE PÁGINA
+st.set_page_config(
+    page_title="Comunicando Igrejas Pro", 
+    page_icon="⚡", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# --- 2. CONTROLE DE NAVEGAÇÃO ---
-if 'pagina' not in st.session_state:
-    st.session_state.pagina = "Início"
+# 2. INICIALIZAÇÃO DE ESTADO
+if "logado" not in st.session_state: st.session_state.logado = False
+if "cor_previa" not in st.session_state: st.session_state.cor_previa = None
+if "email_salvo" not in st.session_state: st.session_state.email_salvo = ""
 
-def navegar(nome_pagina):
-    st.session_state.pagina = nome_pagina
+for chave in ["perfil", "igreja_id", "email"]:
+    if chave not in st.session_state: st.session_state[chave] = ""
 
-# --- 3. ESTILIZAÇÃO CSS (Layout, Cores e Botões) ---
+# --- 🛠️ CSS: RESPONSIVIDADE PARA CELULAR EM PÉ (PORTRAIT) ---
 st.markdown("""
     <style>
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #00b09b 0%, #302b63 100%);
-        color: white;
-    }
-    [data-testid="stSidebar"] { display: none; }
-    h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
+    header[data-testid="stHeader"] { display: none !important; }
+    [data-testid="stSidebar"], [data-testid="collapsedControl"] { display: none !important; }
+    footer { visibility: hidden !important; }
 
-    /* Botões do Hub Central Padronizados */
-    div.stButton > button {
-        width: 100%;
-        height: 120px;
-        border-radius: 20px;
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        font-size: 22px;
-        font-weight: bold;
-        transition: 0.3s;
+    /* Ajuste Geral do Container */
+    .block-container {
+        padding-top: 1rem !important;
+        max-width: 85% !important;
+        margin: auto;
     }
-    div.stButton > button:hover {
-        background-color: #00ffcc;
-        color: #302b63;
-        transform: scale(1.02);
+
+    /* Título Adaptativo */
+    .church-title {
+        text-align: center;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        font-family: 'Inter', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: -1px;
     }
-    .card-congresso {
-        background: rgba(255, 215, 0, 0.2);
-        padding: 15px;
-        border-radius: 10px;
-        border: 2px solid #ffd700;
-        margin-bottom: 20px;
-    }
-    .data-item {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 8px 15px;
-        border-radius: 5px;
-        margin-bottom: 5px;
-        border-left: 3px solid #00ffcc;
+
+    /* 📱 AJUSTES EXCLUSIVOS PARA CELULAR (Telas menores que 768px) */
+    @media (max-width: 768px) {
+        .block-container {
+            max-width: 100% !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        .church-title {
+            font-size: 1.4rem !important; /* Diminui o título no celular */
+            margin-bottom: 1rem !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 5px !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+            font-size: 0.8rem !important; /* Abas menores para caberem em linha */
+        }
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS (Agenda e Escalas Extraídas) ---
-agenda_completa = {
-    "Janeiro":   {"Jovens": "16/01", "Varões": "23/01", "Louvor": "30/01"},
-    "Fevereiro": {"Irmãs": "06/02", "Jovens": "13/02", "Varões": "20/02", "Louvor": "27/02"},
-    "Março":     {"Irmãs": "06/03", "Jovens": "13/03", "Varões": "20/03", "Louvor": "27/03"},
-    "Abril":     {"Irmãs": "03/04", "Jovens": "10/04", "Varões": "17/04", "Louvor": "24/04"},
-    "Maio":      {"Irmãs": "01/05 e 29/05", "Jovens": "08/05", "Varões": "15/05", "Louvor": "22/05"}
-}
+# 3. CONEXÕES
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    ASSISTANT_ID = st.secrets["OPENAI_ASSISTANT_ID"]
+    URL_PLANILHA = st.secrets["connections"]["gsheets"]["spreadsheet"]
+except Exception as e:
+    st.error("Erro nos Secrets.")
+    st.stop()
 
-# Escalas de Fevereiro/2026 (Baseado nas imagens enviadas)
-escala_midia = [
-    {"Data": "01/02", "Dia": "Dom", "Culto": "Família", "Operador": "Júnior", "Fotógrafo": "Tiago (17:30)"},
-    {"Data": "04/02", "Dia": "Qua", "Culto": "Culto", "Operador": "Lucas", "Fotógrafo": "Grazi (19:00)"},
-    {"Data": "06/02", "Dia": "Sex", "Culto": "Culto", "Operador": "Samuel", "Fotógrafo": "Tiago (19:00)"},
-    {"Data": "08/02", "Dia": "Dom", "Culto": "Santa Ceia", "Operador": "Lucas", "Fotógrafo": "Grazi (17:30)"},
-    {"Data": "11/02", "Dia": "Qua", "Culto": "Culto", "Operador": "Samuel", "Fotógrafo": "Tiago (19:00)"},
-    {"Data": "13/02", "Dia": "Sex", "Culto": "Culto", "Operador": "Nicholas", "Fotógrafo": "Grazi (19:00)"},
-    {"Data": "15/02", "Dia": "Dom", "Culto": "Missões", "Operador": "Samuel", "Fotógrafo": "Tiago (17:30)"},
-    {"Data": "18/02", "Dia": "Qua", "Culto": "Culto", "Operador": "Nicholas", "Fotógrafo": "Grazi (19:00)"},
-    {"Data": "20/02", "Dia": "Sex", "Culto": "Culto", "Operador": "Lucas", "Fotógrafo": "Tiago (19:00)"},
-    {"Data": "22/02", "Dia": "Dom", "Culto": "Família", "Operador": "Nicholas", "Fotógrafo": "Grazi (17:30)"},
-    {"Data": "25/02", "Dia": "Qua", "Culto": "Culto", "Operador": "Lucas", "Fotógrafo": "Tiago (19:00)"},
-    {"Data": "27/02", "Dia": "Sex", "Culto": "Culto", "Operador": "Samuel", "Fotógrafo": "Grazi (19:00)"},
-    {"Data": "28/02", "Dia": "Sáb", "Culto": "Tarde com Deus", "Operador": "Nicholas", "Fotógrafo": "Tiago (14:30)"}
-]
+# --- FUNÇÕES SUPORTE ---
+def carregar_usuarios(): return conn.read(spreadsheet=URL_PLANILHA, worksheet="usuarios", ttl=0)
+def carregar_configuracoes(): return conn.read(spreadsheet=URL_PLANILHA, worksheet="configuracoes", ttl=0)
 
-# --- 5. LÓGICA DE NAVEGAÇÃO ---
+def chamar_super_agente(comando):
+    thread = client.beta.threads.create()
+    client.beta.threads.messages.create(thread_id=thread.id, role="user", content=comando)
+    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
+    while run.status != "completed":
+        time.sleep(1)
+        run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+    mensagens = client.beta.threads.messages.list(thread_id=thread.id)
+    return mensagens.data[0].content[0].text.value
 
-# PÁGINA INICIAL
-if st.session_state.pagina == "Início":
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    c_logo, c_tit = st.columns([1, 4])
-    with c_logo:
-        if os.path.exists("logo igreja.png"):
-            st.image("logo igreja.png", width=120)
-    with c_tit:
-        st.title("ISOSED Cosmópolis")
-        st.write("Portal Central de Departamentos")
+# ==========================================
+# INTERFACE DE LOGIN
+# ==========================================
+if not st.session_state.logado:
+    st.markdown("<h1 style='text-align: center;'>🚀 Comunicando Igrejas</h1>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 2, 1]) # Aumentado o peso da coluna central
+    with c2:
+        with st.form("login"):
+            em = st.text_input("E-mail", value=st.session_state.email_salvo)
+            se = st.text_input("Senha", type="password")
+            lembrar = st.checkbox("Lembrar e-mail", value=True if st.session_state.email_salvo else False)
+            if st.form_submit_button("Entrar no Painel", use_container_width=True):
+                df_u = carregar_usuarios()
+                u = df_u[(df_u['email'].str.lower() == em.lower()) & (df_u['senha'].astype(str) == str(se))]
+                if not u.empty and str(u.iloc[0]['status']).strip().lower() == 'ativo':
+                    st.session_state.logado, st.session_state.perfil, st.session_state.igreja_id, st.session_state.email = True, str(u.iloc[0]['perfil']).strip().lower(), u.iloc[0]['igreja_id'], em
+                    st.session_state.email_salvo = em if lembrar else ""
+                    st.rerun()
+                else: st.error("Acesso negado.")
 
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
-        st.button("📢 REDES SOCIAIS", on_click=navegar, args=("Redes",))
-    with col2:
-        st.button("👥 DEPARTAMENTOS", on_click=navegar, args=("Departamentos",))
-        st.button("📖 DEVOCIONAL", on_click=navegar, args=("Devocional",))
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.info("🕒 Domingos 18h | Quartas 19h30 | Sextas 19h30")
+# ==========================================
+# AMBIENTE LOGADO
+# ==========================================
+else:
+    df_conf = carregar_configuracoes()
+    if st.session_state.perfil == "admin":
+        escolha = st.selectbox("💎 Gestor Master", df_conf['nome_exibicao'].tolist())
+        conf = df_conf[df_conf['nome_exibicao'] == escolha].iloc[0]
+    else:
+        conf = df_conf[df_conf['igreja_id'] == st.session_state.igreja_id].iloc[0]
 
-# PÁGINA AGENDA
-elif st.session_state.pagina == "Agenda":
-    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
-    st.title("🗓️ Cronograma Anual 2026")
-    for mes, cultos in agenda_completa.items():
-        with st.expander(f"📅 {mes}"):
-            for depto, data in cultos.items():
-                st.write(f"**{depto}:** {data}")
+    cor_atual = st.session_state.cor_previa if st.session_state.cor_previa else str(conf['cor_tema'])
+    if not cor_atual.startswith("#"): cor_atual = f"#{cor_atual}"
+    dna_salvo = str(conf['dna_ministerial']) if 'dna_ministerial' in conf and pd.notnull(conf['dna_ministerial']) else "Linguagem cristã padrão."
 
-# PÁGINA DEPARTAMENTOS
-elif st.session_state.pagina == "Departamentos":
-    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
-    st.title("👥 Departamentos")
-    
-    t_mulheres, t_jovens, t_varoes, t_kids, t_missoes, t_midia = st.tabs([
-        "🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões", "📷 Mídia"
+    st.markdown(f"""
+        <style>
+        .stButton>button {{ background-color: {cor_atual} !important; color: white !important; font-size: 0.9rem; }}
+        .stTabs [aria-selected="true"] {{ background-color: {cor_atual} !important; color: white !important; border-radius: 5px; }}
+        .church-title {{ color: {cor_atual}; }}
+        </style>
+        <div class="church-title"> {conf['nome_exibicao']}</div>
+    """, unsafe_allow_html=True)
+
+    t_gen, t_story, t_brief, t_insta, t_perf, t_sair = st.tabs([
+        "✨ Leg.", "🎬 Sto.", "🎨 Brief.", "📸 Insta", "⚙️ Perf.", "🚪 Sair"
     ])
 
-    with t_mulheres:
-        st.markdown('<div class="card-congresso">🌟 <b>DESTAQUES:</b><br>08/03: Evento Especial (Manhã)<br>17/10: Outubro Rosa (Noite)<br>21/11: Conferência com a Bispa</div>', unsafe_allow_html=True)
-        for mes, cultos in agenda_completa.items():
-            if "Irmãs" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Irmãs"]}</div>', unsafe_allow_html=True)
+    # --- ABA LEGENDAS ---
+    with t_gen:
+        st.header("✨ Legendas ARA")
+        rede = st.selectbox("Rede", ["Instagram", "Facebook"])
+        tom = st.selectbox("Tom", ["Inspirador", "Pentecostal", "Jovem", "Teológico"])
+        ver = st.text_input("📖 Versículo ARA")
+        ht = st.text_input("🏷️ Hashtags")
+        tema = st.text_area("📝 Tema do post")
+        if st.button("🚀 Gerar Legenda", use_container_width=True):
+            if tema:
+                prompt = f"DNA: {dna_salvo}. Legenda {rede}, tom {tom}, tema {tema}, versículo {ver}. ARA. Hashtags: {conf['hashtags_fixas']} {ht}"
+                res = chamar_super_agente(prompt)
+                st.info(res)
+                st.link_button("📲 Enviar WhatsApp", f"https://api.whatsapp.com/send?text={urllib.parse.quote(res)}", use_container_width=True)
 
-    with t_jovens:
-        st.markdown('<div class="card-congresso">🌟 <b>DESTAQUES:</b><br>14 a 17/02: Retiro de Jovens<br>05 e 06/06: Congresso de Jovens</div>', unsafe_allow_html=True)
-        for mes, cultos in agenda_completa.items():
-            if "Jovens" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Jovens"]}</div>', unsafe_allow_html=True)
+    # --- ABA STORIES ---
+    with t_story:
+        st.header("🎬 Roteiro Stories")
+        ts = st.text_input("Tema da sequência:")
+        if st.button("🎬 Criar Roteiro", use_container_width=True):
+            if ts:
+                st.success(chamar_super_agente(f"DNA: {dna_salvo}. 3 stories sobre {ts} para {conf['nome_exibicao']}."))
 
-    with t_varoes:
-        st.markdown('<div class="card-congresso">🌟 <b>DESTAQUE:</b><br>24 e 25/04: Congresso de Varões</div>', unsafe_allow_html=True)
-        for mes, cultos in agenda_completa.items():
-            if "Varões" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Varões"]}</div>', unsafe_allow_html=True)
+    # --- ABA BRIEFING VISUAL ---
+    with t_brief:
+        st.header("🎨 Briefing Visual")
+        tema_briefing = st.text_input("🎯 Tema", placeholder="Ex: Santa Ceia...")
+        formato_briefing = st.selectbox("🖼️ Formato", ["Único", "Carrossel", "Reels", "Cartaz"])
+        if st.button("🎨 Gerar Briefing", use_container_width=True):
+            if tema_briefing:
+                prompt_briefing = f"Diretor de Arte. DNA: {dna_salvo}. Briefing tema: '{tema_briefing}' formato {formato_briefing}."
+                res_brief = chamar_super_agente(prompt_briefing)
+                st.warning(res_brief)
+                texto_wa = f"*🎨 BRIEFING - {conf['nome_exibicao']}*\n*🎯 TEMA:* {tema_briefing}\n*📋:* {res_brief}"
+                st.link_button("📲 Enviar ao Designer", f"https://api.whatsapp.com/send?text={urllib.parse.quote(texto_wa)}", use_container_width=True)
 
-    with t_kids:
-        st.markdown('<div class="card-congresso">🌟 <b>DESTAQUE:</b><br>30 e 31/10: Congresso de Crianças</div>', unsafe_allow_html=True)
-        st.write("Atividades todos os domingos às 18h.")
+    # --- ABA INSTAGRAM ---
+    with t_insta:
+        st.header("📸 Instagram")
+        st.link_button("Ir para o Perfil", str(conf['instagram_url']), use_container_width=True)
+        st.link_button("✨ Criar Nova Postagem", "https://www.instagram.com/create/select/", use_container_width=True)
 
-    with t_missoes:
-        st.markdown('<div class="card-congresso">🌟 <b>DESTAQUE:</b><br>14 e 15/08: Congresso de Missões<br>Todo 3º Domingo: Culto de Missões</div>', unsafe_allow_html=True)
+    # --- ABA PERFIL ---
+    with t_perf:
+        st.header("⚙️ Perfil")
+        dna_input = st.text_area("Atualizar DNA:", value="", placeholder="Digite para atualizar...")
+        res_dna = (dna_salvo[:80] + '...') if len(dna_salvo) > 80 else dna_salvo
+        st.caption(f"**DNA atual:** {res_dna}")
+        nova_cor = st.color_picker("Cor do sistema:", cor_atual)
+        if st.button("💾 Salvar Configurações", use_container_width=True):
+            df_f = carregar_configuracoes()
+            idx = df_f.index[df_f['igreja_id'] == conf['igreja_id']].tolist()
+            if idx:
+                df_f.at[idx[0], 'cor_tema'] = nova_cor
+                if dna_input.strip(): df_f.at[idx[0], 'dna_ministerial'] = dna_input
+                conn.update(spreadsheet=URL_PLANILHA, worksheet="configuracoes", data=df_f)
+                st.session_state.cor_previa = nova_cor
+                st.success("✅ Atualizado!")
+                time.sleep(1)
+                st.rerun()
 
-    with t_midia:
-        st.subheader("📷 Escala de Mídia e Som - Fevereiro/2026")
-        st.table(pd.DataFrame(escala_midia))
-
-# PÁGINAS ADICIONAIS
-elif st.session_state.pagina == "Redes":
-    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
-    st.title("📢 Mídia ISOSED")
-    st.write("Gerenciamento de mídias sociais.")
-
-elif st.session_state.pagina == "Devocional":
-    if st.button("⬅️ VOLTAR AO INÍCIO"): navegar("Início")
-    st.title("📖 Espaço Devocional")
-    st.write("Meditação diária.")
+    # --- ABA SAIR ---
+    with t_sair:
+        if st.button("🔴 Confirmar Logout", use_container_width=True):
+            em_temp = st.session_state.email_salvo
+            st.session_state.clear()
+            st.session_state.email_salvo = em_temp
+            st.rerun()
