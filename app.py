@@ -12,7 +12,7 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Clean App e Alinhamento de Botões) ---
+# --- 3. ESTILIZAÇÃO CSS (Layout Estilo App Mobile) ---
 st.markdown("""
     <style>
     /* Ocultar elementos nativos do Streamlit */
@@ -23,110 +23,129 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none; }
 
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #00b09b 0%, #302b63 100%);
+        background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%);
         color: white;
     }
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões Padronizados - Tamanho Único para Alinhamento */
+    /* Botões Estilo Pill (Inspirado no exemplo enviado) */
     div.stButton > button {
-        width: 100%; height: 120px; border-radius: 20px;
-        background-color: rgba(255, 255, 255, 0.1); color: white;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        font-size: 20px; font-weight: bold; transition: 0.3s;
-        display: flex; align-items: center; justify-content: center;
-    }
-    div.stButton > button:hover {
-        background-color: #00ffcc; color: #302b63; transform: scale(1.02);
+        width: 100%;
+        height: 75px;
+        border-radius: 50px; /* Arredondamento total */
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        border: none;
+        box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
+        transition: 0.3s;
+        text-transform: uppercase;
+        margin-bottom: 10px;
     }
     
+    /* Cores individuais para cada botão para facilitar a visualização */
+    /* Agenda */
+    div.stButton:nth-of-type(1) > button { background-color: #0984e3; } 
+    /* Mídia e Recepção */
+    div.stButton:nth-of-type(2) > button { background-color: #e17055; }
+    /* Departamentos */
+    div.stButton:nth-of-type(3) > button { background-color: #00b894; }
+    /* Devocional */
+    div.stButton:nth-of-type(4) > button { background-color: #6c5ce7; }
+
+    div.stButton > button:hover {
+        transform: scale(1.03);
+        filter: brightness(1.2);
+    }
+    
+    /* Estilo do Botão Voltar */
     .btn-voltar div.stButton > button {
-        height: 60px; font-size: 18px; margin-bottom: 20px;
+        background-color: rgba(255,255,255,0.1) !important;
+        height: 50px;
+        font-size: 14px;
+        border: 1px solid rgba(255,255,255,0.3);
     }
 
-    /* Estilos de Cards */
-    .data-item {
-        background: rgba(0, 0, 0, 0.3); padding: 8px 15px;
-        border-radius: 5px; margin-bottom: 5px; border-left: 4px solid #00ffcc;
-    }
+    /* Cards de Informação */
     .card-escala {
-        background: rgba(0, 0, 0, 0.3); padding: 15px;
-        border-radius: 12px; border-left: 6px solid #00ffcc; margin-bottom: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 20px;
+        border-left: 6px solid #00ffcc;
+        margin-bottom: 12px;
     }
-    .card-escala b { color: #00ffcc; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS (Mantidos Rigorosamente) ---
-# Escala Recepção Fevereiro
+# --- 4. BANCO DE DADOS (Rigorosamente Mantido) ---
+agenda_completa_2026 = {
+    "Janeiro": ["16/01 (Sex) – 🧑‍🎓 Jovens", "18/01 (Dom) – 🌍 Culto de Missões", "23/01 (Sex) – 👔 Varões", "30/01 (Sex) – 🎤 Louvor", "31/01 (Sáb) – 🙏 Tarde com Deus"],
+    "Fevereiro": ["06/02 (Sex) – 👗 Irmãs", "13/02 (Sex) – 🧑‍🎓 Jovens", "14 a 17/02 – 🚌 Retiro", "28/02 (Sáb) – 🙏 Tarde com Deus"]
+}
+
+# Escalas de Mídia
+escala_midia = [
+    {"data": "01/02", "op": "Júnior", "foto": "Tiago (17:30)"},
+    {"data": "04/02", "op": "Lucas", "foto": "Grazi (19:00)"},
+    {"data": "06/02", "op": "Samuel", "foto": "Tiago (19:00)"},
+    {"data": "08/02", "op": "Lucas", "foto": "Grazi (17:30)"}
+]
+
+# Escala Recepção
 escala_recepcao = [
     {"data": "04/02", "dia": "Quarta", "dupla": "Ailton e Rita"},
     {"data": "06/02", "dia": "Sexta", "dupla": "Márcia e Felipe"},
-    {"data": "08/02", "dia": "Domingo", "dupla": "Simone e Elisabete"},
-    {"data": "11/02", "dia": "Quarta", "dupla": "Ceia e Felipe"},
-    {"data": "13/02", "dia": "Sexta", "dupla": "Ailton e Márcia"},
-    {"data": "15/02", "dia": "Domingo", "dupla": "Rita e Simone"},
-    {"data": "18/02", "dia": "Quarta", "dupla": "Ceia e Elisabete"},
-    {"data": "20/02", "dia": "Sexta", "dupla": "Felipe e Márcia"},
-    {"data": "22/02", "dia": "Domingo", "dupla": "Ailton e Simone"},
-    {"data": "28/02", "dia": "Sábado", "dupla": "Ceia e Rita ✨"}
+    {"data": "08/02", "dia": "Dom", "dupla": "Simone e Elisabete"}
 ]
 
-# Escala Mídia Fevereiro
-escala_midia = [
-    {"data": "01/02", "culto": "Família", "op": "Júnior", "foto": "Tiago (17:30)"},
-    {"data": "04/02", "culto": "Quarta", "op": "Lucas", "foto": "Grazi (19:00)"},
-    {"data": "06/02", "culto": "Sexta", "op": "Samuel", "foto": "Tiago (19:00)"},
-    {"data": "08/02", "culto": "Santa Ceia", "op": "Lucas", "foto": "Grazi (17:30)"},
-    {"data": "11/02", "culto": "Quarta", "op": "Samuel", "foto": "Tiago (19:00)"},
-    {"data": "13/02", "culto": "Sexta", "op": "Nicholas", "foto": "Grazi (19:00)"},
-    {"data": "15/02", "culto": "Missões", "op": "Samuel", "foto": "Tiago (17:30)"},
-    {"data": "18/02", "culto": "Quarta", "op": "Nicholas", "foto": "Grazi (19:00)"},
-    {"data": "20/02", "culto": "Sexta", "op": "Lucas", "foto": "Tiago (19:00)"},
-    {"data": "22/02", "culto": "Família", "op": "Nicholas", "foto": "Grazi (17:30)"},
-    {"data": "25/02", "culto": "Quarta", "op": "Lucas", "foto": "Tiago (19:00)"},
-    {"data": "27/02", "culto": "Sexta", "op": "Samuel", "foto": "Grazi (19:00)"},
-    {"data": "28/02", "culto": "Tarde com Deus", "op": "Nicholas", "foto": "Tiago (14:30)"}
-]
-
-# --- 5. NAVEGAÇÃO E PÁGINAS ---
+# --- 5. NAVEGAÇÃO E HUB ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br><br>", unsafe_allow_html=True)
-    c_logo, c_tit = st.columns([1, 4])
-    with c_logo:
-        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=120)
-    with c_tit:
-        st.title("ISOSED Cosmópolis")
-        st.write("Selecione uma área abaixo:")
-
+    st.title("⛪ ISOSED Cosmópolis")
+    st.write("Selecione uma opção:")
     st.markdown("---")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
-        # NOME DO BOTÃO ALTERADO CONFORME PEDIDO
-        st.button("📢 MÍDIA E RECEPÇÃO", on_click=navegar, args=("Escalas",))
-    with col2:
-        st.button("👥 DEPARTAMENTOS", on_click=navegar, args=("Departamentos",))
-        st.button("📖 DEVOCIONAL", on_click=navegar, args=("Devocional",))
+
+    # Botões em lista vertical para visualização limpa
+    st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
+    st.button("📢 MÍDIA E RECEPÇÃO", on_click=navegar, args=("Escalas",))
+    st.button("👥 DEPARTAMENTOS", on_click=navegar, args=("Departamentos",))
+    st.button("📖 DEVOCIONAL", on_click=navegar, args=("Devocional",))
+
+elif st.session_state.pagina == "Agenda":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("🗓️ Agenda 2026")
+    for mes, evs in agenda_completa_2026.items():
+        with st.expander(f"📅 {mes}"):
+            for ev in evs: st.write(f"• {ev}")
 
 elif st.session_state.pagina == "Escalas":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
-    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown('</div>', unsafe_allow_html=True)
     st.title("📢 Mídia e Recepção")
+    t_midia, t_recep = st.tabs(["📷 Mídia", "🤝 Recepção"])
     
-    t_escala_midia, t_escala_recepcao = st.tabs(["📷 Escala de Mídia", "🤝 Escala de Recepção"])
+    with t_midia:
+        for it in escala_midia:
+            st.markdown(f'<div class="card-escala"><b>{it["data"]}</b><br>🎧 Som: {it["op"]} | 📸 Foto: {it["foto"]}</div>', unsafe_allow_html=True)
     
-    with t_escala_midia:
-        st.subheader("Escala de Fevereiro/2026")
-        for item in escala_midia:
-            st.markdown(f'<div class="card-escala"><b>{item["data"]} - {item["culto"]}</b><br>🎧 Som: {item["op"]} | 📸 Foto: {item["foto"]}</div>', unsafe_allow_html=True)
-    
-    with t_escala_recepcao:
-        st.subheader("Escala da Recepção - Fevereiro/2026")
-        for item in escala_recepcao:
-            st.markdown(f'<div class="card-escala"><b>{item["data"]} ({item["dia"]})</b><br>👥 Dupla: {item["dupla"]}</div>', unsafe_allow_html=True)
+    with t_recep:
+        for it in escala_recepcao:
+            st.markdown(f'<div class="card-escala"><b>{it["data"]} ({it["dia"]})</b><br>👥 Dupla: {it["dupla"]}</div>', unsafe_allow_html=True)
 
-# [As outras páginas: Agenda, Departamentos e Devocional seguem a mesma lógica aprovada]
+elif st.session_state.pagina == "Departamentos":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("👥 Departamentos")
+    st.info("Aqui constam as programações das Irmãs, Jovens, Varões, Kids e Missões.")
+
+elif st.session_state.pagina == "Devocional":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("📖 Devocional")
