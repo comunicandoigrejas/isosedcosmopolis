@@ -12,9 +12,10 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Clean App, Hub Pill e Simetria) ---
+# --- 3. ESTILIZAÇÃO CSS (Simetria Milimétrica e App Clean) ---
 st.markdown("""
     <style>
+    /* Ocultar elementos nativos */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -28,34 +29,42 @@ st.markdown("""
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões Pill Alinhados (Simétricos) */
+    /* Botões Pill com Simetria Obrigatória */
     div.stButton > button {
-        width: 100%;
-        height: 85px;
-        border-radius: 50px;
-        color: white;
-        font-size: 18px;
-        font-weight: bold;
-        border: none;
-        box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
-        transition: 0.4s;
-        text-transform: uppercase;
+        width: 100% !important;
+        height: 90px !important; /* Altura fixa para simetria vertical */
+        border-radius: 50px !important;
+        color: white !important;
+        font-size: 16px !important;
+        font-weight: bold !important;
+        border: none !important;
+        box-shadow: 4px 4px 10px rgba(0,0,0,0.3) !important;
+        transition: 0.4s !important;
+        text-transform: uppercase !important;
+        margin: 0px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
-    /* Cores dos Botões */
-    div.stButton:nth-of-type(1) > button { background-color: #0984e3; } 
-    div.stButton:nth-of-type(2) > button { background-color: #e17055; }
-    div.stButton:nth-of-type(3) > button { background-color: #00b894; }
-    div.stButton:nth-of-type(4) > button { background-color: #6c5ce7; }
+    /* Cores dos Botões para facilitar a navegação */
+    div.stButton:nth-of-type(1) > button { background-color: #0984e3 !important; } 
+    div.stButton:nth-of-type(2) > button { background-color: #e17055 !important; }
+    div.stButton:nth-of-type(3) > button { background-color: #00b894 !important; }
+    div.stButton:nth-of-type(4) > button { background-color: #6c5ce7 !important; }
 
     div.stButton > button:hover {
-        transform: scale(1.02);
-        filter: brightness(1.2);
+        transform: scale(1.02) !important;
+        filter: brightness(1.2) !important;
     }
     
+    /* Botão Voltar Simétrico e Discreto */
     .btn-voltar div.stButton > button {
         background-color: rgba(255,255,255,0.1) !important;
-        height: 55px; border-radius: 30px; font-size: 14px;
+        height: 55px !important; 
+        border-radius: 30px !important; 
+        font-size: 14px !important;
+        margin-bottom: 20px !important;
     }
 
     .card-escala {
@@ -67,23 +76,23 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. BANCO DE DADOS INTEGRAL 2026 ---
+# --- 4. BANCO DE DADOS INTEGRAL 2026 (RESTAURADO) ---
 agenda_2026 = {
     "Janeiro": ["16/01: 🧑‍🎓 Jovens", "18/01: 🌍 Missões", "23/01: 👔 Varões", "30/01: 🎤 Louvor", "31/01: 🙏 Tarde com Deus"],
-    "Fevereiro": ["06/02: 👗 Irmãs", "13/02: 🧑‍🎓 Jovens", "14 a 17/02: 🚌 Retiro de Jovens", "15/02: 🌍 Missões", "20/02: 👔 Varões", "27/02: 🎤 Louvor", "28/02: 🙏 Tarde com Deus"],
-    "Março": ["06/03: 👗 Irmãs", "08/03: 🌸 Evento Mulheres (Manhã)", "13/03: 🧑‍🎓 Jovens", "15/03: 🌍 Missões", "20/03: 👔 Varões", "27/03: 🎤 Louvor", "28/03: 🙏 Tarde com Deus"],
-    "Abril": ["03/04: 👗 Irmãs", "10/04: 🧑‍🎓 Jovens", "17/04: 👔 Varões", "19/04: 🌍 Missões", "24/04: 🎤 Louvor", "24 e 25/04: 🛡️ Congresso Varões", "25/04: 🙏 Tarde com Deus"],
+    "Fevereiro": ["06/02: 👗 Irmãs", "13/02: 🧑‍🎓 Jovens", "14 a 17/02: 🚌 Retiro", "15/02: 🌍 Missões", "20/02: 👔 Varões", "27/02: 🎤 Louvor", "28/02: 🙏 Tarde com Deus"],
+    "Março": ["06/03: 👗 Irmãs", "08/03: 🌸 Evento Mulheres", "13/03: 🧑‍🎓 Jovens", "15/03: 🌍 Missões", "20/03: 👔 Varões", "27/03: 🎤 Louvor", "28/03: 🙏 Tarde com Deus"],
+    "Abril": ["03/04: 👗 Irmãs", "10/04: 🧑‍🎓 Jovens", "17/04: 👔 Varões", "19/04: 🌍 Missões", "24/04: 🎤 Louvor", "24 e 25/04: 🛡️ Cong. Varões", "25/04: 🙏 Tarde com Deus"],
     "Maio": ["01/05: 👗 Irmãs", "08/05: 🧑‍🎓 Jovens", "15/05: 👔 Varões", "17/05: 🌍 Missões", "22/05: 🎤 Louvor", "29/05: 👗 Irmãs (5ª Sex)", "30/05: 🙏 Tarde com Deus"],
-    "Junho": ["05/06: 🧑‍🎓 Jovens", "05 e 06/06: 🔥 Congresso Jovens", "12/06: 👔 Varões", "19/06: 🎤 Louvor", "21/06: 🌍 Missões", "26/06: 👗 Irmãs", "27/06: 🙏 Tarde com Deus"],
+    "Junho": ["05/06: 🧑‍🎓 Jovens", "05 e 06/06: 🔥 Cong. Jovens", "12/06: 👔 Varões", "19/06: 🎤 Louvor", "21/06: 🌍 Missões", "26/06: 👗 Irmãs", "27/06: 🙏 Tarde com Deus"],
     "Julho": ["03/07: 🧑‍🎓 Jovens", "10/07: 👔 Varões", "17/07: 🎤 Louvor", "19/07: 🌍 Missões", "24/07: 👗 Irmãs", "25/07: 🙏 Tarde com Deus", "31/07: 🧑‍🎓 Jovens (5ª Sex)"],
-    "Agosto": ["07/08: 👔 Varões", "14/08: 🎤 Louvor", "14 e 15/08: 🌍 Congresso Missões", "16/08: 🌍 Missões", "21/08: 👗 Irmãs", "28/08: 🧑‍🎓 Jovens", "29/08: 🙏 Tarde com Deus"],
+    "Agosto": ["07/08: 👔 Varões", "14/08: 🎤 Louvor", "14 e 15/08: 🌍 Cong. Missões", "16/08: 🌍 Missões", "21/08: 👗 Irmãs", "28/08: 🧑‍🎓 Jovens", "29/08: 🙏 Tarde com Deus"],
     "Setembro": ["04/09: 👔 Varões", "11/09: 🎤 Louvor", "18/09: 👗 Irmãs", "20/09: 🌍 Missões", "25/09: 🧑‍🎓 Jovens", "26/09: 🙏 Tarde com Deus"],
-    "Outubro": ["02/10: 👔 Varões", "09/10: 🎤 Louvor", "16/10: 👗 Irmãs", "17/10: 💗 Outubro Rosa", "18/10: 🌍 Missões", "23/10: 🧑‍🎓 Jovens", "30/10: 👔 Varões (5ª Sex)", "30 e 31/10: 🎈 Congresso Kids", "31/10: 🙏 Tarde com Deus"],
-    "Novembro": ["06/11: 🎤 Louvor", "13/11: 👗 Irmãs", "15/11: 🌍 Missões", "20/11: 🧑‍🎓 Jovens", "21/11: 👑 Conf. Mulheres (Bispa)", "27/11: 👔 Varões", "28/11: 🙏 Tarde com Deus"],
+    "Outubro": ["02/10: 👔 Varões", "09/10: 🎤 Louvor", "16/10: 👗 Irmãs", "17/10: 💗 Outubro Rosa", "18/10: 🌍 Missões", "23/10: 🧑‍🎓 Jovens", "30/10: 👔 Varões (5ª Sex)", "30 e 31/10: 🎈 Cong. Kids", "31/10: 🙏 Tarde com Deus"],
+    "Novembro": ["06/11: 🎤 Louvor", "13/11: 👗 Irmãs", "15/11: 🌍 Missões", "20/11: 🧑‍🎓 Jovens", "21/11: 👑 Conf. Mulheres", "27/11: 👔 Varões", "28/11: 🙏 Tarde com Deus"],
     "Dezembro": ["04/12: 🎤 Louvor", "11/12: 👗 Irmãs", "18/12: 🧑‍🎓 Jovens", "20/12: 🌍 Missões", "25/12: ❌ Natal", "27/12: 🙏 Tarde com Deus"]
 }
 
-# --- 5. LÓGICA DE PÁGINAS ---
+# --- 5. LÓGICA DE NAVEGAÇÃO ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
@@ -92,10 +101,11 @@ if st.session_state.pagina == "Início":
         if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=120)
     with c_tit:
         st.title("ISOSED Cosmópolis")
-        st.write("Seja bem-vindo!")
+        st.write("Portal Central de Informações")
 
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
+    # Alinhamento perfeito através da largura 100% e altura fixa
     with col1:
         st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
         st.button("📢 MÍDIA E RECEPÇÃO", on_click=navegar, args=("Escalas",))
@@ -124,18 +134,12 @@ elif st.session_state.pagina == "Escalas":
     with t_mid:
         st.subheader("Fevereiro/2026")
         midia_fev = [
-            {"d": "01/02", "op": "Júnior", "ft": "Tiago (17:30)"},
-            {"d": "04/02", "op": "Lucas", "ft": "Grazi (19:00)"},
-            {"d": "06/02", "op": "Samuel", "ft": "Tiago (19:00)"},
-            {"d": "08/02", "op": "Lucas", "ft": "Grazi (17:30)"},
-            {"d": "11/02", "op": "Samuel", "ft": "Tiago (19:00)"},
-            {"d": "13/02", "op": "Nicholas", "ft": "Grazi (19:00)"},
-            {"d": "15/02", "op": "Samuel", "ft": "Tiago (17:30)"},
-            {"d": "18/02", "op": "Nicholas", "ft": "Grazi (19:00)"},
-            {"d": "20/02", "op": "Lucas", "ft": "Tiago (19:00)"},
-            {"d": "22/02", "op": "Nicholas", "ft": "Grazi (17:30)"},
-            {"d": "25/02", "op": "Lucas", "ft": "Tiago (19:00)"},
-            {"d": "27/02", "op": "Samuel", "ft": "Grazi (19:00)"},
+            {"d": "01/02", "op": "Júnior", "ft": "Tiago (17:30)"}, {"d": "04/02", "op": "Lucas", "ft": "Grazi (19:00)"},
+            {"d": "06/02", "op": "Samuel", "ft": "Tiago (19:00)"}, {"d": "08/02", "op": "Lucas", "ft": "Grazi (17:30)"},
+            {"d": "11/02", "op": "Samuel", "ft": "Tiago (19:00)"}, {"d": "13/02", "op": "Nicholas", "ft": "Grazi (19:00)"},
+            {"d": "15/02", "op": "Samuel", "ft": "Tiago (17:30)"}, {"d": "18/02", "op": "Nicholas", "ft": "Grazi (19:00)"},
+            {"d": "20/02", "op": "Lucas", "ft": "Tiago (19:00)"}, {"d": "22/02", "op": "Nicholas", "ft": "Grazi (17:30)"},
+            {"d": "25/02", "op": "Lucas", "ft": "Tiago (19:00)"}, {"d": "27/02", "op": "Samuel", "ft": "Grazi (19:00)"},
             {"d": "28/02", "op": "Nicholas", "ft": "Tiago (14:30)"}
         ]
         for it in midia_fev:
@@ -157,34 +161,14 @@ elif st.session_state.pagina == "Departamentos":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
     st.markdown('</div>', unsafe_allow_html=True)
-    st.title("👥 Programação dos Departamentos")
-    t_irm, t_jov, t_var, t_kids, t_mis = st.tabs(["🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões"])
+    st.title("👥 Departamentos")
+    t_mul, t_jov, t_var, t_kids, t_mis = st.tabs(["🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões"])
     
-    with t_irm:
-        for m, evs in agenda_2026.items():
-            for e in evs:
-                if "Irmãs" in e or "Mulheres" in e: st.write(f"📅 **{m}:** {e}")
     with t_jov:
         for m, evs in agenda_2026.items():
             for e in evs:
                 if "Jovens" in e: st.write(f"📅 **{m}:** {e}")
-    with t_var:
-        for m, evs in agenda_2026.items():
-            for e in evs:
-                if "Varões" in e: st.write(f"📅 **{m}:** {e}")
-    with t_kids:
-        st.write("Atividades todos os domingos às 18h.")
-        for m, evs in agenda_2026.items():
-            for e in evs:
-                if "Kids" in e: st.write(f"📅 **{m}:** {e}")
     with t_mis:
         for m, evs in agenda_2026.items():
             for e in evs:
                 if "Missões" in e: st.write(f"📅 **{m}:** {e}")
-
-elif st.session_state.pagina == "Devocional":
-    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
-    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.title("📖 Espaço Devocional")
-    st.info("Página em desenvolvimento.")
