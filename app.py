@@ -15,7 +15,6 @@ def navegar(nome_pagina):
 # --- 3. ESTILIZAÇÃO CSS (Clean App, Hub e Cards) ---
 st.markdown("""
     <style>
-    /* Ocultar elementos nativos do Streamlit */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -29,7 +28,6 @@ st.markdown("""
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões Padronizados (Hub e Voltar) */
     div.stButton > button {
         width: 100%; height: 120px; border-radius: 20px;
         background-color: rgba(255, 255, 255, 0.1); color: white;
@@ -40,14 +38,10 @@ st.markdown("""
         background-color: #00ffcc; color: #302b63; transform: scale(1.02);
     }
     
-    /* Botão Voltar (Ajuste de altura menor para não ocupar muito espaço) */
     .btn-voltar div.stButton > button {
-        height: 60px;
-        font-size: 18px;
-        margin-bottom: 20px;
+        height: 60px; font-size: 18px; margin-bottom: 20px;
     }
 
-    /* Cards e Itens de Agenda */
     .card-congresso {
         background: rgba(255, 215, 0, 0.2); padding: 15px;
         border-radius: 10px; border: 2px solid #ffd700; margin-bottom: 20px;
@@ -64,15 +58,70 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS MANTIDOS ---
-agenda_completa = {
-    "Janeiro":   {"Jovens": "16/01", "Varões": "23/01", "Louvor": "30/01"},
-    "Fevereiro": {"Irmãs": "06/02", "Jovens": "13/02", "Varões": "20/02", "Louvor": "27/02"},
-    "Março":     {"Irmãs": "06/03", "Jovens": "13/03", "Varões": "20/03", "Louvor": "27/03"},
-    "Abril":     {"Irmãs": "03/04", "Jovens": "10/04", "Varões": "17/04", "Louvor": "24/04"},
-    "Maio":      {"Irmãs": "01/05 e 29/05", "Jovens": "08/05", "Varões": "15/05", "Louvor": "22/05"}
+# --- 4. DADOS DA AGENDA COMPLETA 2026 ---
+# Incluindo cultos de departamento, congressos e encontros
+agenda_2026_detalhada = {
+    "Janeiro": [
+        "Sexta 16/01: Culto de Jovens",
+        "Domingo 18/01: Culto de Missões",
+        "Sexta 23/01: Culto de Varões",
+        "Sexta 30/01: Culto de Louvor"
+    ],
+    "Fevereiro": [
+        "Sexta 06/02: Culto de Irmãs",
+        "Sexta 13/02: Culto de Jovens",
+        "14 a 17/02: 🚌 Retiro de Jovens",
+        "Domingo 15/02: Culto de Missões",
+        "Sexta 20/02: Culto de Varões",
+        "Sexta 27/02: Culto de Louvor"
+    ],
+    "Março": [
+        "Sexta 06/03: Culto de Irmãs",
+        "Domingo 08/03: 🌸 Evento das Mulheres (Manhã)",
+        "Sexta 13/03: Culto de Jovens",
+        "Domingo 15/03: Culto de Missões",
+        "Sexta 20/03: Culto de Varões",
+        "Sexta 27/03: Culto de Louvor"
+    ],
+    "Abril": [
+        "Sexta 03/04: Culto de Irmãs",
+        "Sexta 10/04: Culto de Jovens",
+        "Sexta 17/04: Culto de Varões",
+        "Domingo 19/04: Culto de Missões",
+        "Sexta 24/04: Culto de Louvor",
+        "24 e 25/04: 🛡️ Congresso de Varões"
+    ],
+    "Maio": [
+        "Sexta 01/05: Culto de Irmãs (Abertura)",
+        "Sexta 08/05: Culto de Jovens",
+        "Sexta 15/05: Culto de Varões",
+        "Domingo 17/05: Culto de Missões",
+        "Sexta 22/05: Culto de Louvor",
+        "Sexta 29/05: Culto de Irmãs (Encerramento)"
+    ],
+    "Junho": [
+        "05 e 06/06: 🔥 Congresso de Jovens",
+        "Sexta 12/06: Culto de Jovens",
+        "Sexta 19/06: Culto de Varões",
+        "Domingo 21/06: Culto de Missões",
+        "Sexta 26/06: Culto de Louvor"
+    ],
+    "Agosto": [
+        "14 e 15/08: 🌍 Congresso de Missões",
+        "Domingo 16/08: Culto de Missões"
+    ],
+    "Outubro": [
+        "Sábado 17/10: 💗 Outubro Rosa (Noite)",
+        "Domingo 18/10: Culto de Missões",
+        "30 e 31/10: 🎈 Congresso de Crianças"
+    ],
+    "Novembro": [
+        "Sexta 20/11: Culto de Varões",
+        "Sábado 21/11: 👑 Conferência de Mulheres (Bispa)"
+    ]
 }
 
+# Dados de Mídia mantidos
 escala_midia_dados = [
     {"data": "01/02", "culto": "Família", "op": "Júnior", "foto": "Tiago (17:30)"},
     {"data": "04/02", "culto": "Quarta", "op": "Lucas", "foto": "Grazi (19:00)"},
@@ -89,7 +138,7 @@ escala_midia_dados = [
     {"data": "28/02", "culto": "Tarde com Deus", "op": "Nicholas", "foto": "Tiago (14:30)"}
 ]
 
-# --- 5. NAVEGAÇÃO ---
+# --- 5. LÓGICA DE NAVEGAÇÃO ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -115,9 +164,11 @@ elif st.session_state.pagina == "Agenda":
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.title("🗓️ Cronograma Geral 2026")
-    for mes, cultos in agenda_completa.items():
+    st.write("Toque nos meses para ver a programação completa.")
+    for mes, eventos in agenda_2026_detalhada.items():
         with st.expander(f"📅 {mes}"):
-            for depto, data in cultos.items(): st.write(f"**{depto}:** {data}")
+            for ev in eventos:
+                st.write(f"• {ev}")
 
 elif st.session_state.pagina == "Departamentos":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
@@ -131,20 +182,18 @@ elif st.session_state.pagina == "Departamentos":
     
     with t_mulh:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSOS:</b><br>08/03: Evento Especial (Manhã)<br>17/10: Outubro Rosa (Noite)<br>21/11: Conferência com a Bispa</div>', unsafe_allow_html=True)
-        for mes, cultos in agenda_completa.items():
-            if "Irmãs" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Irmãs"]}</div>', unsafe_allow_html=True)
+        # Datas de sexta mantidas conforme rodízio original
+        st.markdown('<div class="data-item"><b>Fevereiro:</b> 06/02</div>', unsafe_allow_html=True)
+        st.markdown('<div class="data-item"><b>Março:</b> 06/03</div>', unsafe_allow_html=True)
+        st.markdown('<div class="data-item"><b>Abril:</b> 03/04</div>', unsafe_allow_html=True)
+        st.markdown('<div class="data-item"><b>Maio:</b> 01/05 e 29/05</div>', unsafe_allow_html=True)
+
     with t_jov:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSOS:</b><br>14 a 17/02: Retiro de Jovens<br>05 e 06/06: Congresso de Jovens</div>', unsafe_allow_html=True)
-        for mes, cultos in agenda_completa.items():
-            if "Jovens" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Jovens"]}</div>', unsafe_allow_html=True)
-    with t_varoes:
-        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>24 e 25/04: Congresso de Varões</div>', unsafe_allow_html=True)
-        for mes, cultos in agenda_completa.items():
-            if "Varões" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Varões"]}</div>', unsafe_allow_html=True)
-    with t_kids:
-        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>30 e 31/10: Congresso de Crianças</div>', unsafe_allow_html=True)
-    with t_miss:
-        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>14 e 15/08: Congresso de Missões<br>Todo 3º Domingo: Culto de Missões</div>', unsafe_allow_html=True)
+        st.markdown('<div class="data-item"><b>Janeiro:</b> 16/01</div>', unsafe_allow_html=True)
+        st.markdown('<div class="data-item"><b>Fevereiro:</b> 13/02</div>', unsafe_allow_html=True)
+        st.markdown('<div class="data-item"><b>Março:</b> 13/03</div>', unsafe_allow_html=True)
+
     with t_midia:
         st.subheader("📷 Escala de Fevereiro/2026")
         for item in escala_midia_dados:
@@ -155,6 +204,7 @@ elif st.session_state.pagina == "Departamentos":
             </div>
             """, unsafe_allow_html=True)
 
+# Outras seções Redes e Devocional seguem o padrão
 elif st.session_state.pagina == "Redes":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
