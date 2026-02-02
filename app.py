@@ -12,14 +12,21 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Hub, Cards e Destaques) ---
+# --- 3. ESTILIZAÇÃO CSS (Hub, Cards e Remoção de Cabeçalho) ---
 st.markdown("""
     <style>
+    /* Ocultar botões superiores, 3 pontos e rodapé */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stHeader"] {visibility: hidden;}
+
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(135deg, #00b09b 0%, #302b63 100%);
         color: white;
     }
     [data-testid="stSidebar"] { display: none; }
+    
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
     /* Botões do Hub Central Padronizados */
@@ -33,7 +40,7 @@ st.markdown("""
         background-color: #00ffcc; color: #302b63; transform: scale(1.02);
     }
 
-    /* Cards de Congressos e Eventos */
+    /* Cards de Congressos e Escalas */
     .card-congresso {
         background: rgba(255, 215, 0, 0.2); padding: 15px;
         border-radius: 10px; border: 2px solid #ffd700; margin-bottom: 20px;
@@ -42,8 +49,6 @@ st.markdown("""
         background: rgba(0, 0, 0, 0.3); padding: 8px 15px;
         border-radius: 5px; margin-bottom: 5px; border-left: 3px solid #00ffcc;
     }
-
-    /* Cards de Escala (Otimizado para Celular) */
     .card-escala {
         background: rgba(0, 0, 0, 0.3); padding: 15px;
         border-radius: 12px; border-left: 6px solid #00ffcc; margin-bottom: 12px;
@@ -52,7 +57,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS RESTAURADOS ---
+# --- 4. DADOS (Rigorosamente Mantidos) ---
 agenda_completa = {
     "Janeiro":   {"Jovens": "16/01", "Varões": "23/01", "Louvor": "30/01"},
     "Fevereiro": {"Irmãs": "06/02", "Jovens": "13/02", "Varões": "20/02", "Louvor": "27/02"},
@@ -61,7 +66,6 @@ agenda_completa = {
     "Maio":      {"Irmãs": "01/05 e 29/05", "Jovens": "08/05", "Varões": "15/05", "Louvor": "22/05"}
 }
 
-# Dados das Fotos (Operadores e Fotógrafos)
 escala_midia_dados = [
     {"data": "01/02", "culto": "Família", "op": "Júnior", "foto": "Tiago (17:30)"},
     {"data": "04/02", "culto": "Quarta", "op": "Lucas", "foto": "Grazi (19:00)"},
@@ -78,7 +82,7 @@ escala_midia_dados = [
     {"data": "28/02", "culto": "Tarde com Deus", "op": "Nicholas", "foto": "Tiago (14:30)"}
 ]
 
-# --- 5. NAVEGAÇÃO ---
+# --- 5. LÓGICA DE NAVEGAÇÃO ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -107,37 +111,27 @@ elif st.session_state.pagina == "Agenda":
 
 elif st.session_state.pagina == "Departamentos":
     if st.button("⬅️ VOLTAR"): navegar("Início")
-    st.title("👥 Departamentos e Escalas")
-    
+    st.title("👥 Departamentos")
     t_mulh, t_jov, t_varoes, t_kids, t_miss, t_midia = st.tabs([
         "🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões", "📷 Mídia"
     ])
-
+    
     with t_mulh:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSOS:</b><br>08/03: Evento Especial (Manhã)<br>17/10: Outubro Rosa (Noite)<br>21/11: Conferência com a Bispa</div>', unsafe_allow_html=True)
-        st.subheader("📅 Cultos de Sexta-feira")
         for mes, cultos in agenda_completa.items():
             if "Irmãs" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Irmãs"]}</div>', unsafe_allow_html=True)
-
     with t_jov:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSOS:</b><br>14 a 17/02: Retiro de Jovens<br>05 e 06/06: Congresso de Jovens</div>', unsafe_allow_html=True)
-        st.subheader("📅 Cultos de Sexta-feira")
         for mes, cultos in agenda_completa.items():
             if "Jovens" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Jovens"]}</div>', unsafe_allow_html=True)
-
     with t_varoes:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>24 e 25/04: Congresso de Varões</div>', unsafe_allow_html=True)
-        st.subheader("📅 Cultos de Sexta-feira")
         for mes, cultos in agenda_completa.items():
             if "Varões" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Varões"]}</div>', unsafe_allow_html=True)
-
     with t_kids:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>30 e 31/10: Congresso de Crianças</div>', unsafe_allow_html=True)
-        st.write("Atividades todos os domingos às 18h.")
-
     with t_miss:
         st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>14 e 15/08: Congresso de Missões<br>Todo 3º Domingo: Culto de Missões</div>', unsafe_allow_html=True)
-
     with t_midia:
         st.subheader("📷 Escala de Fevereiro/2026")
         for item in escala_midia_dados:
