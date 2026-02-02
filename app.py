@@ -12,24 +12,24 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Hub, Cards e Remoção de Cabeçalho) ---
+# --- 3. ESTILIZAÇÃO CSS (Clean App, Hub e Cards) ---
 st.markdown("""
     <style>
-    /* Ocultar botões superiores, 3 pontos e rodapé */
+    /* Ocultar elementos nativos do Streamlit */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     [data-testid="stHeader"] {visibility: hidden;}
+    [data-testid="stSidebar"] { display: none; }
 
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(135deg, #00b09b 0%, #302b63 100%);
         color: white;
     }
-    [data-testid="stSidebar"] { display: none; }
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões do Hub Central Padronizados */
+    /* Botões Padronizados (Hub e Voltar) */
     div.stButton > button {
         width: 100%; height: 120px; border-radius: 20px;
         background-color: rgba(255, 255, 255, 0.1); color: white;
@@ -39,8 +39,15 @@ st.markdown("""
     div.stButton > button:hover {
         background-color: #00ffcc; color: #302b63; transform: scale(1.02);
     }
+    
+    /* Botão Voltar (Ajuste de altura menor para não ocupar muito espaço) */
+    .btn-voltar div.stButton > button {
+        height: 60px;
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
 
-    /* Cards de Congressos e Escalas */
+    /* Cards e Itens de Agenda */
     .card-congresso {
         background: rgba(255, 215, 0, 0.2); padding: 15px;
         border-radius: 10px; border: 2px solid #ffd700; margin-bottom: 20px;
@@ -57,7 +64,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS (Rigorosamente Mantidos) ---
+# --- 4. DADOS MANTIDOS ---
 agenda_completa = {
     "Janeiro":   {"Jovens": "16/01", "Varões": "23/01", "Louvor": "30/01"},
     "Fevereiro": {"Irmãs": "06/02", "Jovens": "13/02", "Varões": "20/02", "Louvor": "27/02"},
@@ -82,7 +89,7 @@ escala_midia_dados = [
     {"data": "28/02", "culto": "Tarde com Deus", "op": "Nicholas", "foto": "Tiago (14:30)"}
 ]
 
-# --- 5. LÓGICA DE NAVEGAÇÃO ---
+# --- 5. NAVEGAÇÃO ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -103,15 +110,21 @@ if st.session_state.pagina == "Início":
         st.button("📖 DEVOCIONAL", on_click=navegar, args=("Devocional",))
 
 elif st.session_state.pagina == "Agenda":
-    if st.button("⬅️ VOLTAR"): navegar("Início")
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     st.title("🗓️ Cronograma Geral 2026")
     for mes, cultos in agenda_completa.items():
         with st.expander(f"📅 {mes}"):
             for depto, data in cultos.items(): st.write(f"**{depto}:** {data}")
 
 elif st.session_state.pagina == "Departamentos":
-    if st.button("⬅️ VOLTAR"): navegar("Início")
-    st.title("👥 Departamentos")
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.title("👥 Departamentos e Escalas")
     t_mulh, t_jov, t_varoes, t_kids, t_miss, t_midia = st.tabs([
         "🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões", "📷 Mídia"
     ])
@@ -143,9 +156,13 @@ elif st.session_state.pagina == "Departamentos":
             """, unsafe_allow_html=True)
 
 elif st.session_state.pagina == "Redes":
-    if st.button("⬅️ VOLTAR"): navegar("Início")
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
     st.title("📢 Mídia ISOSED")
 
 elif st.session_state.pagina == "Devocional":
-    if st.button("⬅️ VOLTAR"): navegar("Início")
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
     st.title("📖 Devocional")
