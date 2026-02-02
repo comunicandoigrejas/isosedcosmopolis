@@ -12,7 +12,7 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Layout e Cards de Escala) ---
+# --- 3. ESTILIZAÇÃO CSS (Hub, Cards e Destaques) ---
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] {
@@ -22,7 +22,7 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none; }
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões do Hub Central */
+    /* Botões do Hub Central Padronizados */
     div.stButton > button {
         width: 100%; height: 120px; border-radius: 20px;
         background-color: rgba(255, 255, 255, 0.1); color: white;
@@ -33,26 +33,26 @@ st.markdown("""
         background-color: #00ffcc; color: #302b63; transform: scale(1.02);
     }
 
-    /* Cards de Congressos (Mantidos) */
+    /* Cards de Congressos e Eventos */
     .card-congresso {
         background: rgba(255, 215, 0, 0.2); padding: 15px;
         border-radius: 10px; border: 2px solid #ffd700; margin-bottom: 20px;
     }
+    .data-item {
+        background: rgba(0, 0, 0, 0.3); padding: 8px 15px;
+        border-radius: 5px; margin-bottom: 5px; border-left: 3px solid #00ffcc;
+    }
 
-    /* NOVO: Estilo para Cards de Escala (Evita colunas emboladas) */
+    /* Cards de Escala (Otimizado para Celular) */
     .card-escala {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 15px;
-        border-radius: 12px;
-        border-left: 6px solid #00ffcc;
-        margin-bottom: 12px;
+        background: rgba(0, 0, 0, 0.3); padding: 15px;
+        border-radius: 12px; border-left: 6px solid #00ffcc; margin-bottom: 12px;
     }
     .card-escala b { color: #00ffcc; }
-    .card-escala span { font-size: 0.9rem; opacity: 0.9; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DADOS (Agenda e Escala extraída das fotos) ---
+# --- 4. DADOS RESTAURADOS ---
 agenda_completa = {
     "Janeiro":   {"Jovens": "16/01", "Varões": "23/01", "Louvor": "30/01"},
     "Fevereiro": {"Irmãs": "06/02", "Jovens": "13/02", "Varões": "20/02", "Louvor": "27/02"},
@@ -61,21 +61,21 @@ agenda_completa = {
     "Maio":      {"Irmãs": "01/05 e 29/05", "Jovens": "08/05", "Varões": "15/05", "Louvor": "22/05"}
 }
 
-# Dados consolidados das escalas de Operadores e Fotógrafos
-escala_fevereiro = [
-    {"data": "01/02", "culto": "Culto da Família", "op": "Júnior", "foto": "Tiago (17:30h)"},
-    {"data": "04/02", "culto": "Culto de Quarta", "op": "Lucas", "foto": "Grazi (19:00h)"},
-    {"data": "06/02", "culto": "Culto de Sexta", "op": "Samuel", "foto": "Tiago (19:00h)"},
-    {"data": "08/02", "culto": "Santa Ceia", "op": "Lucas", "foto": "Grazi (17:30h)"},
-    {"data": "11/02", "culto": "Culto de Quarta", "op": "Samuel", "foto": "Tiago (19:00h)"},
-    {"data": "13/02", "culto": "Culto de Sexta", "op": "Nicholas", "foto": "Grazi (19:00h)"},
-    {"data": "15/02", "culto": "Culto de Missões", "op": "Samuel", "foto": "Tiago (17:30h)"},
-    {"data": "18/02", "culto": "Culto de Quarta", "op": "Nicholas", "foto": "Grazi (19:00h)"},
-    {"data": "20/02", "culto": "Culto de Sexta", "op": "Lucas", "foto": "Tiago (19:00h)"},
-    {"data": "22/02", "culto": "Culto da Família", "op": "Nicholas", "foto": "Grazi (17:30h)"},
-    {"data": "25/02", "culto": "Culto de Quarta", "op": "Lucas", "foto": "Tiago (19:00h)"},
-    {"data": "27/02", "culto": "Culto de Sexta", "op": "Samuel", "foto": "Grazi (19:00h)"},
-    {"data": "28/02", "culto": "Tarde com Deus", "op": "Nicholas", "foto": "Tiago (14:30h)"}
+# Dados das Fotos (Operadores e Fotógrafos)
+escala_midia_dados = [
+    {"data": "01/02", "culto": "Família", "op": "Júnior", "foto": "Tiago (17:30)"},
+    {"data": "04/02", "culto": "Quarta", "op": "Lucas", "foto": "Grazi (19:00)"},
+    {"data": "06/02", "culto": "Sexta", "op": "Samuel", "foto": "Tiago (19:00)"},
+    {"data": "08/02", "culto": "Santa Ceia", "op": "Lucas", "foto": "Grazi (17:30)"},
+    {"data": "11/02", "culto": "Quarta", "op": "Samuel", "foto": "Tiago (19:00)"},
+    {"data": "13/02", "culto": "Sexta", "op": "Nicholas", "foto": "Grazi (19:00)"},
+    {"data": "15/02", "culto": "Missões", "op": "Samuel", "foto": "Tiago (17:30)"},
+    {"data": "18/02", "culto": "Quarta", "op": "Nicholas", "foto": "Grazi (19:00)"},
+    {"data": "20/02", "culto": "Sexta", "op": "Lucas", "foto": "Tiago (19:00)"},
+    {"data": "22/02", "culto": "Família", "op": "Nicholas", "foto": "Grazi (17:30)"},
+    {"data": "25/02", "culto": "Quarta", "op": "Lucas", "foto": "Tiago (19:00)"},
+    {"data": "27/02", "culto": "Sexta", "op": "Samuel", "foto": "Grazi (19:00)"},
+    {"data": "28/02", "culto": "Tarde com Deus", "op": "Nicholas", "foto": "Tiago (14:30)"}
 ]
 
 # --- 5. NAVEGAÇÃO ---
@@ -100,28 +100,58 @@ if st.session_state.pagina == "Início":
 
 elif st.session_state.pagina == "Agenda":
     if st.button("⬅️ VOLTAR"): navegar("Início")
-    st.title("🗓️ Cronograma 2026")
+    st.title("🗓️ Cronograma Geral 2026")
     for mes, cultos in agenda_completa.items():
         with st.expander(f"📅 {mes}"):
             for depto, data in cultos.items(): st.write(f"**{depto}:** {data}")
 
 elif st.session_state.pagina == "Departamentos":
     if st.button("⬅️ VOLTAR"): navegar("Início")
-    st.title("👥 Departamentos")
-    t_mulh, t_jov, t_varoes, t_kids, t_miss, t_midia = st.tabs(["🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões", "📷 Mídia"])
+    st.title("👥 Departamentos e Escalas")
+    
+    t_mulh, t_jov, t_varoes, t_kids, t_miss, t_midia = st.tabs([
+        "🌸 Mulheres", "🔥 Jovens", "🛡️ Varões", "🎈 Kids", "🌍 Missões", "📷 Mídia"
+    ])
 
-    # [Abas anteriores mantidas conforme aprovado]
+    with t_mulh:
+        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSOS:</b><br>08/03: Evento Especial (Manhã)<br>17/10: Outubro Rosa (Noite)<br>21/11: Conferência com a Bispa</div>', unsafe_allow_html=True)
+        st.subheader("📅 Cultos de Sexta-feira")
+        for mes, cultos in agenda_completa.items():
+            if "Irmãs" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Irmãs"]}</div>', unsafe_allow_html=True)
+
+    with t_jov:
+        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSOS:</b><br>14 a 17/02: Retiro de Jovens<br>05 e 06/06: Congresso de Jovens</div>', unsafe_allow_html=True)
+        st.subheader("📅 Cultos de Sexta-feira")
+        for mes, cultos in agenda_completa.items():
+            if "Jovens" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Jovens"]}</div>', unsafe_allow_html=True)
+
+    with t_varoes:
+        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>24 e 25/04: Congresso de Varões</div>', unsafe_allow_html=True)
+        st.subheader("📅 Cultos de Sexta-feira")
+        for mes, cultos in agenda_completa.items():
+            if "Varões" in cultos: st.markdown(f'<div class="data-item"><b>{mes}:</b> {cultos["Varões"]}</div>', unsafe_allow_html=True)
+
+    with t_kids:
+        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>30 e 31/10: Congresso de Crianças</div>', unsafe_allow_html=True)
+        st.write("Atividades todos os domingos às 18h.")
+
+    with t_miss:
+        st.markdown('<div class="card-congresso">🌟 <b>CONGRESSO:</b><br>14 e 15/08: Congresso de Missões<br>Todo 3º Domingo: Culto de Missões</div>', unsafe_allow_html=True)
+
     with t_midia:
-        st.subheader("📷 Escala de Mídia e Som - Fevereiro/2026")
-        st.write("Layout otimizado para celular:")
-        
-        for item in escala_fevereiro:
+        st.subheader("📷 Escala de Fevereiro/2026")
+        for item in escala_midia_dados:
             st.markdown(f"""
             <div class="card-escala">
                 <b>{item['data']} - {item['culto']}</b><br>
-                <span>🎧 Som: {item['op']}</span><br>
-                <span>📸 Foto: {item['foto']}</span>
+                <span>🎧 Som: {item['op']} | 📸 Foto: {item['foto']}</span>
             </div>
             """, unsafe_allow_html=True)
 
-# [Outras páginas Redes e Devocional mantidas]
+elif st.session_state.pagina == "Redes":
+    if st.button("⬅️ VOLTAR"): navegar("Início")
+    st.title("📢 Mídia ISOSED")
+
+elif st.session_state.pagina == "Devocional":
+    if st.button("⬅️ VOLTAR"): navegar("Início")
+    st.title("📖 Devocional")
