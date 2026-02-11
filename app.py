@@ -1,22 +1,20 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import os
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
-# --- 2. CONEXÃO COM O GOOGLE SHEETS ---
-# Substitua pela URL da sua planilha pública
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/SUA_ID_AQUI/edit?usp=sharing"
+# --- 2. CONFIGURAÇÃO DA PLANILHA ---
+# COLOQUE APENAS A ID DA SUA PLANILHA AQUI
+ID_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit"
 
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-def carregar_escalas(aba):
+def carregar_escalas(nome_aba):
     try:
-        # Tenta ler a aba específica da planilha
-        return conn.read(spreadsheet=URL_PLANILHA, worksheet=aba)
-    except:
+        # Este link transforma a sua aba num arquivo CSV que o App lê instantaneamente
+        url = f"https://docs.google.com/spreadsheets/d/{https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit}/gviz/tq?tqx=out:csv&sheet={nome_aba}"
+        return pd.read_csv(url)
+    except Exception as e:
         return pd.DataFrame()
 
 # --- 3. CONTROLE DE NAVEGAÇÃO ---
@@ -42,7 +40,7 @@ st.markdown("""
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões Pill Sincronizados (Simetria Vertical e Alinhamento Total) */
+    /* Botões Pill Sincronizados (Alinhamento Vertical e Simetria Total) */
     div.stButton > button {
         width: 100% !important;
         height: 80px !important;
@@ -69,10 +67,10 @@ st.markdown("""
     
     .btn-voltar div.stButton > button {
         background-color: rgba(255,255,255,0.1) !important;
-        height: 50px !important; border-radius: 30px; font-size: 14px;
+        height: 50px !important; border: 1px solid rgba(255,255,255,0.3) !important;
+        font-size: 14px !important;
     }
 
-    /* Cards de Escala com destaque para o Horário */
     .card-escala {
         background: rgba(255, 255, 255, 0.05);
         padding: 15px; border-radius: 20px;
@@ -83,11 +81,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. BANCO DE DADOS AGENDA (MANUAL) ---
+# --- 5. BANCO DE DADOS AGENDA 2026 (RESTAURADO) ---
 agenda_2026 = {
     "Janeiro": ["16/01: 🧑‍🎓 Jovens", "18/01: 🌍 Missões", "23/01: 👔 Varões", "30/01: 🎤 Louvor", "31/01: 🙏 Tarde com Deus"],
     "Fevereiro": ["06/02: 👗 Irmãs", "13/02: 🧑‍🎓 Jovens", "15/02: 🌍 Missões", "20/02: 👔 Varões", "27/02: 🎤 Louvor", "28/02: 🙏 Tarde com Deus"],
-    # ... demais meses conforme o histórico aprovado
+    "Março": ["06/03: 👗 Irmãs", "13/03: 🧑‍🎓 Jovens", "15/03: 🌍 Missões", "20/03: 👔 Varões", "27/03: 🎤 Louvor", "28/03: 🙏 Tarde com Deus"]
 }
 
 # --- 6. NAVEGAÇÃO ---
@@ -125,20 +123,36 @@ elif st.session_state.pagina == "Escalas":
                 <div class="card-escala">
                     <b>{row['data']} - {row['culto']}</b><br>
                     🎧 Som: {row['op']} | 📸 Foto: {row['foto']}<br>
-                    <span class="horario-chegada">⏰ Chegada da equipe: {row['chegada']}</span>
+                    <span class="horario-chegada">⏰ Chegada: {row['chegada']}</span>
                 </div>
                 """, unsafe_allow_html=True)
+        else:
+            st.warning("Verifique se o nome da aba é 'Midia' e se a planilha está como 'Qualquer pessoa com o link'.")
 
     with t_rec:
-        df_recepcao = carregar_escalas("Recepcao")
-        if not df_recepcao.empty:
-            for _, row in df_recepcao.iterrows():
+        df_recep = carregar_escalas("Recepcao")
+        if not df_recep.empty:
+            for _, row in df_recep.iterrows():
                 st.markdown(f"""
                 <div class="card-escala">
                     <b>{row['data']} ({row['dia']})</b><br>
                     👥 Dupla: {row['dupla']}<br>
-                    <span class="horario-chegada">⏰ Chegada da equipe: {row['chegada']}</span>
+                    <span class="horario-chegada">⏰ Chegada: {row['chegada']}</span>
                 </div>
                 """, unsafe_allow_html=True)
+        else:
+            st.warning("Verifique se o nome da aba é 'Recepcao' e se a planilha está como 'Qualquer pessoa com o link'.")
 
-# [As outras páginas: Agenda, Departamentos e Devocional mantêm a lógica anterior]
+elif st.session_state.pagina == "Departamentos":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("👥 Departamentos")
+    t_irm, t_jov, t_var, t_louvor, t_mis = st.tabs(["🌸 Irmãs", "🔥 Jovens", "🛡️ Varões", "🎤 Louvor", "🌍 Missões"])
+    # Lógica de filtros das abas mantida...
+
+elif st.session_state.pagina == "Devocional":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("📖 Espaço Devocional")
