@@ -193,48 +193,51 @@ elif st.session_state.pagina == "Devocional":
     df = carregar_dados("Devocional")
 
     if not df.empty:
+        # Colunas obrigatórias em minúsculo (conforme a função carregar_dados já faz)
+        col_nec = ["tema", "data", "titulo", "versiculo", "texto", "aplicacao", "desafio"]
 
-        # Garante que colunas obrigatórias existam
-        colunas_necessarias = ["tema", "data", "titulo", "versiculo", "texto", "aplicacao", "desafio"]
-
-        if all(col in df.columns for col in colunas_necessarias):
-
-            # Remove linhas vazias
+        if all(col in df.columns for col in col_nec):
+            # Limpeza inicial
             df = df.dropna(subset=["tema", "data", "titulo"])
+            
+            # Garantir que a data seja lida como string para não dar erro na junção
+            df["data"] = df["data"].astype(str)
 
-            # Selecionar tema
+            # 1. Selecionar tema
             temas = sorted(df["tema"].unique())
-            tema_selecionado = st.selectbox("Selecione o tema:", temas)
+            tema_sel = st.selectbox("Selecione o tema:", temas)
 
-            df_filtrado = df[df["tema"] == tema_selecionado]
+            df_filtrado = df[df["tema"] == tema_sel].sort_values(by="data", ascending=False)
 
-            # Ordenar por data
-            df_filtrado = df_filtrado.sort_values(by="data")
-
-            # Criar lista para exibição
+            # 2. Criar lista para exibição (Data - Título)
             opcoes = df_filtrado["data"] + " - " + df_filtrado["titulo"]
-            devocional_escolhido = st.selectbox("Selecione o devocional:", opcoes)
+            dev_escolhido = st.selectbox("Selecione o devocional:", opcoes)
 
-            # Separar data e título
-            data_sel, titulo_sel = devocional_escolhido.split(" - ", 1)
+            # 3. Extrair os dados do devocional selecionado
+            # Usamos o index da opção selecionada para evitar erros com split
+            idx_sel = opcoes[opcoes == dev_escolhido].index[0]
+            devocional = df.loc[idx_sel]
 
-            devocional = df_filtrado[
-                (df_filtrado["data"] == data_sel) &
-                (df_filtrado["titulo"] == titulo_sel)
-            ].iloc[0]
-
+            # --- EXIBIÇÃO DO CONTEÚDO ---
             st.markdown("---")
-            st.subheader(devocional["titulo"])
-            st.markdown(f"📖 **{devocional['versiculo']}**")
+            st.header(devocional["titulo"])
+            st.markdown(f"📅 *Publicado em: {devocional['data']}*")
+            
+            st.success(f"📖 **Versículo Base:** {devocional['versiculo']}")
+            
+            st.markdown("### 📝 Mensagem")
             st.write(devocional["texto"])
 
-            st.markdown("### 💡 Aplicação")
-            st.write(devocional["aplicacao"])
+            # Só mostra Aplicação e Desafio se não estiverem vazios
+            if pd.notna(devocional["aplicacao"]):
+                st.markdown("### 💡 Aplicação")
+                st.info(devocional["aplicacao"])
 
-            st.markdown("### 🎯 Desafio do Dia")
-            st.write(devocional["desafio"])
+            if pd.notna(devocional["desafio"]):
+                st.markdown("### 🎯 Desafio do Dia")
+                st.warning(devocional["desafio"])
 
         else:
-            st.error("As colunas da aba 'Devocional' não estão corretas.")
+            st.error(f"Erro: A planilha precisa ter as colunas: {', '.join(col_nec)}")
     else:
-        st.error("Erro ao carregar dados da aba 'Devocional'. Verifique o nome da aba e o link da planilha.")
+        st.error("Erro ao carregar a aba 'Devocional'. Verifique o link e o nome da aba.")
