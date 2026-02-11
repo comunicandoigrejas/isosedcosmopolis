@@ -187,5 +187,54 @@ elif st.session_state.pagina == "Devocional":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
     st.markdown('</div>', unsafe_allow_html=True)
+
     st.title("📖 Espaço Devocional")
-    st.info("Página reservada para estudos bíblicos.")
+
+    df = carregar_dados("Devocional")
+
+    if not df.empty:
+
+        # Garante que colunas obrigatórias existam
+        colunas_necessarias = ["tema", "data", "titulo", "versiculo", "texto", "aplicacao", "desafio"]
+
+        if all(col in df.columns for col in colunas_necessarias):
+
+            # Remove linhas vazias
+            df = df.dropna(subset=["tema", "data", "titulo"])
+
+            # Selecionar tema
+            temas = sorted(df["tema"].unique())
+            tema_selecionado = st.selectbox("Selecione o tema:", temas)
+
+            df_filtrado = df[df["tema"] == tema_selecionado]
+
+            # Ordenar por data
+            df_filtrado = df_filtrado.sort_values(by="data")
+
+            # Criar lista para exibição
+            opcoes = df_filtrado["data"] + " - " + df_filtrado["titulo"]
+            devocional_escolhido = st.selectbox("Selecione o devocional:", opcoes)
+
+            # Separar data e título
+            data_sel, titulo_sel = devocional_escolhido.split(" - ", 1)
+
+            devocional = df_filtrado[
+                (df_filtrado["data"] == data_sel) &
+                (df_filtrado["titulo"] == titulo_sel)
+            ].iloc[0]
+
+            st.markdown("---")
+            st.subheader(devocional["titulo"])
+            st.markdown(f"📖 **{devocional['versiculo']}**")
+            st.write(devocional["texto"])
+
+            st.markdown("### 💡 Aplicação")
+            st.write(devocional["aplicacao"])
+
+            st.markdown("### 🎯 Desafio do Dia")
+            st.write(devocional["desafio"])
+
+        else:
+            st.error("As colunas da aba 'Devocional' não estão corretas.")
+    else:
+        st.error("Erro ao carregar dados da aba 'Devocional'. Verifique o nome da aba e o link da planilha.")
