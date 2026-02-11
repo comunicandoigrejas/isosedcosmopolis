@@ -12,7 +12,7 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 3. ESTILIZAÇÃO CSS (Simetria Total, Pill e App Clean) ---
+# --- 3. ESTILIZAÇÃO CSS (Simetria Perfeita e App Clean) ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -28,7 +28,7 @@ st.markdown("""
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* Botões Pill com Simetria Vertical e Alinhamento Total */
+    /* Botões Pill Sincronizados (Simetria Total) */
     div.stButton > button {
         width: 100% !important;
         height: 80px !important;
@@ -51,16 +51,11 @@ st.markdown("""
     div.stButton:nth-of-type(3) > button { background-color: #00b894 !important; }
     div.stButton:nth-of-type(4) > button { background-color: #6c5ce7 !important; }
 
-    div.stButton > button:hover {
-        transform: scale(1.02) !important;
-        filter: brightness(1.1) !important;
-    }
+    div.stButton > button:hover { transform: scale(1.02) !important; filter: brightness(1.1) !important; }
     
     .btn-voltar div.stButton > button {
         background-color: rgba(255,255,255,0.1) !important;
-        height: 50px !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
-        font-size: 14px !important;
+        height: 50px !important; border: 1px solid rgba(255,255,255,0.3) !important;
     }
 
     .card-escala {
@@ -68,6 +63,7 @@ st.markdown("""
         padding: 15px; border-radius: 20px;
         border-left: 6px solid #00ffcc; margin-bottom: 12px;
     }
+    .card-escala b { color: #00ffcc; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -123,13 +119,30 @@ elif st.session_state.pagina == "Escalas":
     t_mid, t_rec = st.tabs(["📷 Mídia", "🤝 Recepção"])
     
     with t_mid:
-        st.subheader("Fevereiro/2026")
-        midia_fev = [{"d": "01/02", "op": "Júnior", "ft": "Tiago (17:30)"}, {"d": "04/02", "op": "Lucas", "ft": "Grazi (19:00)"}]
-        for it in midia_fev: st.markdown(f'<div class="card-escala"><b>{it["d"]}</b><br>🎧 Som: {it["op"]} | 📸 Foto: {it["ft"]}</div>', unsafe_allow_html=True)
+        st.subheader("Escala de Fevereiro/2026")
+        midia_fev = [
+            {"d": "01/02", "op": "Júnior", "ft": "Tiago (17:30)"}, {"d": "04/02", "op": "Lucas", "ft": "Grazi (19:00)"},
+            {"d": "06/02", "op": "Samuel", "ft": "Tiago (19:00)"}, {"d": "08/02", "op": "Lucas", "ft": "Grazi (17:30)"},
+            {"d": "11/02", "op": "Samuel", "ft": "Tiago (19:00)"}, {"d": "13/02", "op": "Nicholas", "ft": "Grazi (19:00)"},
+            {"d": "15/02", "op": "Samuel", "ft": "Tiago (17:30)"}, {"d": "18/02", "op": "Nicholas", "ft": "Grazi (19:00)"},
+            {"d": "20/02", "op": "Lucas", "ft": "Tiago (19:00)"}, {"d": "22/02", "op": "Nicholas", "ft": "Grazi (17:30)"},
+            {"d": "25/02", "op": "Lucas", "ft": "Tiago (19:00)"}, {"d": "27/02", "op": "Samuel", "ft": "Grazi (19:00)"},
+            {"d": "28/02", "op": "Nicholas", "ft": "Tiago (14:30)"}
+        ]
+        for it in midia_fev:
+            st.markdown(f'<div class="card-escala"><b>{it["d"]}</b><br>🎧 Som: {it["op"]} | 📸 Foto: {it["ft"]}</div>', unsafe_allow_html=True)
+
     with t_rec:
-        st.subheader("Fevereiro/2026")
-        recep_fev = [{"d": "04/02", "dp": "Ailton e Rita"}, {"d": "06/02", "dp": "Márcia e Felipe"}]
-        for it in recep_fev: st.markdown(f'<div class="card-escala"><b>{it["d"]}</b><br>👥 Dupla: {it["dp"]}</div>', unsafe_allow_html=True)
+        st.subheader("Escala de Fevereiro/2026")
+        recep_fev = [
+            {"d": "04/02", "dp": "Ailton e Rita"}, {"d": "06/02", "dp": "Márcia e Felipe"},
+            {"d": "08/02", "dp": "Simone e Elisabete"}, {"d": "11/02", "dp": "Ceia e Felipe"},
+            {"d": "13/02", "dp": "Ailton e Márcia"}, {"d": "15/02", "dp": "Rita e Simone"},
+            {"d": "18/02", "dp": "Ceia e Elisabete"}, {"d": "20/02", "dp": "Felipe e Márcia"},
+            {"d": "22/02", "dp": "Ailton e Simone"}, {"d": "28/02", "dp": "Ceia e Rita ✨"}
+        ]
+        for it in recep_fev:
+            st.markdown(f'<div class="card-escala"><b>{it["d"]}</b><br>👥 Dupla: {it["dp"]}</div>', unsafe_allow_html=True)
 
 elif st.session_state.pagina == "Departamentos":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
@@ -164,4 +177,4 @@ elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
     st.markdown('</div>', unsafe_allow_html=True)
     st.title("📖 Espaço Devocional")
-    st.info("Página reservada para estudos e devocionais.")
+    st.info("Página reservada para estudos e avisos da igreja.")
