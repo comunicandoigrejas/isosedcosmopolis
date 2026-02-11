@@ -188,56 +188,49 @@ elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.title("📖 Espaço Devocional")
+    st.title("📖 Meditação Diária")
 
     df = carregar_dados("Devocional")
 
     if not df.empty:
-        # Colunas obrigatórias em minúsculo (conforme a função carregar_dados já faz)
-        col_nec = ["tema", "data", "titulo", "versiculo", "texto", "aplicacao", "desafio"]
+        # 1. Calendário de Seleção
+        st.write("Selecione o dia para ler a palavra:")
+        data_selecionada = st.date_input("Escolha a data:", format="DD/MM/YYYY")
+        
+        # Converter a data selecionada para string no formato da planilha (ex: 11/02/2026)
+        # Ajuste o formato '%d/%m/%Y' se na sua planilha estiver diferente (ex: %d/%m)
+        data_str = data_selecionada.strftime('%d/%m/%Y')
 
-        if all(col in df.columns for col in col_nec):
-            # Limpeza inicial
-            df = df.dropna(subset=["tema", "data", "titulo"])
+        # 2. Filtrar os dados
+        df["data"] = df["data"].astype(str).str.strip()
+        devocional_hoje = df[df["data"] == data_str]
+
+        if not devocional_hoje.empty:
+            dev = devocional_hoje.iloc[0]
             
-            # Garantir que a data seja lida como string para não dar erro na junção
-            df["data"] = df["data"].astype(str)
-
-            # 1. Selecionar tema
-            temas = sorted(df["tema"].unique())
-            tema_sel = st.selectbox("Selecione o tema:", temas)
-
-            df_filtrado = df[df["tema"] == tema_sel].sort_values(by="data", ascending=False)
-
-            # 2. Criar lista para exibição (Data - Título)
-            opcoes = df_filtrado["data"] + " - " + df_filtrado["titulo"]
-            dev_escolhido = st.selectbox("Selecione o devocional:", opcoes)
-
-            # 3. Extrair os dados do devocional selecionado
-            # Usamos o index da opção selecionada para evitar erros com split
-            idx_sel = opcoes[opcoes == dev_escolhido].index[0]
-            devocional = df.loc[idx_sel]
-
-            # --- EXIBIÇÃO DO CONTEÚDO ---
             st.markdown("---")
-            st.header(devocional["titulo"])
-            st.markdown(f"📅 *Publicado em: {devocional['data']}*")
+            st.header(f"✨ {dev['titulo']}")
+            st.subheader(f"🏷️ Tema: {dev['tema']}")
             
-            st.success(f"📖 **Versículo Base:** {devocional['versiculo']}")
+            # Cartão do Versículo
+            st.success(f"📖 **Versículo Base:** {dev['versiculo']}")
             
-            st.markdown("### 📝 Mensagem")
-            st.write(devocional["texto"])
+            st.markdown("### 📝 Palavra de Hoje")
+            st.write(dev["texto"])
 
-            # Só mostra Aplicação e Desafio se não estiverem vazios
-            if pd.notna(devocional["aplicacao"]):
-                st.markdown("### 💡 Aplicação")
-                st.info(devocional["aplicacao"])
-
-            if pd.notna(devocional["desafio"]):
-                st.markdown("### 🎯 Desafio do Dia")
-                st.warning(devocional["desafio"])
-
+            # Seções Adicionais
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if pd.notna(dev["aplicacao"]):
+                    st.markdown("### 💡 Aplicação")
+                    st.info(dev["aplicacao"])
+            with col_b:
+                if pd.notna(dev["desafio"]):
+                    st.markdown("### 🎯 Desafio")
+                    st.warning(dev["desafio"])
         else:
-            st.error(f"Erro: A planilha precisa ter as colunas: {', '.join(col_nec)}")
+            st.markdown("---")
+            st.info(f"📅 Não encontramos um devocional cadastrado para o dia {data_str}. Tente selecionar outra data no calendário.")
+    
     else:
-        st.error("Erro ao carregar a aba 'Devocional'. Verifique o link e o nome da aba.")
+        st.error("Erro ao carregar os devocionais. Verifique a conexão com a planilha.")
