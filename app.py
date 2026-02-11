@@ -8,7 +8,7 @@ st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wid
 
 # --- 2. CONFIGURAÇÃO DA PLANILHA ---
 # COLE AQUI O LINK COMPLETO DA SUA PLANILHA (O que aparece na barra de endereços)
-URL_DA_PLANILHA = "COLE_AQUI_O_LINK_DA_PLANILHA"
+URL_DA_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=789833748#gid=789833748"
 
 def carregar_dados(aba):
     try:
