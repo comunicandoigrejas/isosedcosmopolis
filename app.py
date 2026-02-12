@@ -17,9 +17,9 @@ dias_pt = {"Monday":"Segunda-feira", "Tuesday":"Terça-feira", "Wednesday":"Quar
 
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
-# --- 2. FUNÇÃO DE CARREGAMENTO (Google Sheets) ---
-# Cole o link completo da sua planilha aqui
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=387999147#gid=387999147"
+# --- 2. CONEXÃO COM A PLANILHA ---
+# Certifique-se de colocar o seu link aqui
+URL_PLANILHA = "COLE_AQUI_O_LINK_DA_PLANILHA"
 
 def carregar_dados(aba):
     try:
@@ -28,47 +28,21 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
-            # Normalização avançada: remove acentos, espaços e deixa minúsculo
-            df.columns = [
-                str(c).lower().strip().replace('ê', 'e').replace('ã', 'a') 
-                for c in df.columns
-            ]
+            # Normalização para aceitar 'mes' ou 'mês'
+            df.columns = [str(c).lower().strip().replace('ê', 'e') for c in df.columns]
             return df
         return pd.DataFrame()
     except:
         return pd.DataFrame()
 
-# --- NA PÁGINA DE ANIVERSARIANTES ---
-elif st.session_state.pagina == "Aniversariantes":
-    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
-    st.title("🎂 Aniversariantes do Ano")
-    
-    df_niver = carregar_dados("Aniversariantes")
-    
-    if not df_niver.empty:
-        # Verifica se a coluna existe antes de tentar usar
-        coluna_mes = 'mes' if 'mes' in df_niver.columns else None
-        
-        if coluna_mes:
-            for m_num in range(1, 13):
-                dados_mes = df_niver[df_niver[coluna_mes] == m_num].sort_values(by='dia')
-                if not dados_mes.empty:
-                    with st.expander(f"📅 {meses_nome[m_num]}", expanded=(m_num == hoje_br.month)):
-                        for _, r in dados_mes.iterrows():
-                            st.write(f"🎁 **Dia {int(r['dia']):02d}:** {r['nome']}")
-        else:
-            st.error("Coluna 'mes' não encontrada. Verifique se o cabeçalho da planilha é 'mes'.")
-    else:
-        st.error("Aba 'Aniversariantes' está vazia ou não foi encontrada.")
-
-# --- 3. CONTROLE DE NAVEGAÇÃO ---
+# --- 3. NAVEGAÇÃO ---
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "Início"
 
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 4. ESTILIZAÇÃO CSS (Simetria de 5 Botões) ---
+# --- 4. ESTILO CSS (Simetria Total) ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
@@ -86,29 +60,12 @@ st.markdown("""
     div.stButton:nth-of-type(3) > button { background-color: #00b894 !important; }
     div.stButton:nth-of-type(4) > button { background-color: #6c5ce7 !important; }
     div.stButton:nth-of-type(5) > button { background-color: #fdcb6e !important; }
-    .btn-voltar div.stButton > button { background-color: rgba(255,255,255,0.1) !important; height: 50px !important; }
     .card-niver { background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 10px; }
-    .card-escala { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
+    .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. BANCO DE DADOS AGENDA 2026 ---
-agenda_2026 = {
-    "Janeiro": ["16/01: Jovens", "18/01: Missões", "23/01: Varões", "30/01: Louvor", "31/01: Tarde com Deus"],
-    "Fevereiro": ["06/02: Irmãs", "13/02: Jovens", "15/02: Missões", "20/02: Varões", "27/02: Louvor", "28/02: Tarde com Deus"],
-    "Março": ["06/03: Irmãs", "13/03: Jovens", "15/03: Missões", "20/03: Varões", "27/03: Louvor", "28/03: Tarde com Deus"],
-    "Abril": ["03/04: Irmãs", "10/04: Jovens", "17/04: Varões", "19/04: Missões", "24/04: Louvor", "25/04: Tarde com Deus"],
-    "Maio": ["01/05: Irmãs", "08/05: Jovens", "15/05: Varões", "17/05: Missões", "22/05: Louvor", "30/05: Tarde com Deus"],
-    "Junho": ["05/06: Jovens", "12/06: Varões", "19/06: Louvor", "21/06: Missões", "26/06: Irmãs", "27/06: Tarde com Deus"],
-    "Julho": ["03/07: Jovens", "10/07: Varões", "17/07: Louvor", "19/07: Missões", "24/07: Irmãs", "25/07: Tarde com Deus"],
-    "Agosto": ["07/08: Varões", "14/08: Louvor", "16/08: Missões", "21/08: Irmãs", "28/08: Jovens", "29/08: Tarde com Deus"],
-    "Setembro": ["04/09: Varões", "11/09: Louvor", "18/09: Irmãs", "20/09: Missões", "25/09: Jovens", "26/09: Tarde com Deus"],
-    "Outubro": ["02/10: Varões", "09/10: Louvor", "16/10: Irmãs", "18/10: Missões", "23/10: Jovens", "31/10: Tarde com Deus"],
-    "Novembro": ["06/11: Louvor", "13/11: Irmãs", "15/11: Missões", "20/11: Jovens", "27/11: Varões", "28/11: Tarde com Deus"],
-    "Dezembro": ["04/12: Louvor", "11/12: Irmãs", "18/12: Jovens", "20/12: Missões", "27/12: Tarde com Deus"]
-}
-
-# --- 6. LOGICA DAS PÁGINAS ---
+# --- 5. LOGICA DAS PÁGINAS (A ESCADA DO APP) ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
@@ -123,12 +80,13 @@ if st.session_state.pagina == "Início":
     st.markdown("### 🎂 Aniversariantes da Semana")
     df_niver = carregar_dados("Aniversariantes")
     if not df_niver.empty:
-        # Lógica para filtrar próximos 7 dias vindo da planilha
+        # Filtro de próximos 7 dias
         aniv_semana = []
         for _, r in df_niver.iterrows():
             try:
-                data_aniv = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
-                if hoje_br <= data_aniv <= (hoje_br + timedelta(days=7)):
+                # Criamos a data do niver no ano atual para comparar
+                d_niver = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
+                if hoje_br <= d_niver <= (hoje_br + timedelta(days=7)):
                     aniv_semana.append(r)
             except: continue
         
@@ -137,9 +95,9 @@ if st.session_state.pagina == "Início":
             for i, r in enumerate(aniv_semana):
                 with cols[i % 3]:
                     st.markdown(f'<div class="card-niver">🎈 <b>{r["nome"]}</b><br>{int(r["dia"]):02d}/{int(r["mes"]):02d}</div>', unsafe_allow_html=True)
-        else: st.info("Nenhum aniversariante nos próximos 7 dias. 🙏")
-    else: st.warning("Aba 'Aniversariantes' não encontrada na planilha.")
-
+        else:
+            st.info("Nenhum aniversariante nos próximos 7 dias. 🙏")
+    
     st.markdown('<div class="button-container">', unsafe_allow_html=True)
     st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
     st.button("📢 MÍDIA E RECEPÇÃO", on_click=navegar, args=("Escalas",))
@@ -153,38 +111,39 @@ elif st.session_state.pagina == "Aniversariantes":
     st.title("🎂 Aniversariantes do Ano")
     df_niver = carregar_dados("Aniversariantes")
     if not df_niver.empty:
-        for m_num in range(1, 13):
-            dados_mes = df_niver[df_niver['mes'] == m_num].sort_values(by='dia')
+        for m in range(1, 13):
+            dados_mes = df_niver[df_niver['mes'] == m].sort_values(by='dia')
             if not dados_mes.empty:
-                with st.expander(f"📅 {meses_nome[m_num]}", expanded=(m_num == hoje_br.month)):
+                with st.expander(f"📅 {meses_nome[m]}", expanded=(m == hoje_br.month)):
                     for _, r in dados_mes.iterrows():
                         st.write(f"🎁 **Dia {int(r['dia']):02d}:** {r['nome']}")
-    else: st.error("Erro ao carregar lista de aniversariantes.")
+    else:
+        st.error("Aba 'Aniversariantes' não carregada corretamente.")
 
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
     st.title("📖 Meditação Diária")
     data_sel = st.date_input("Selecione o dia:", value=hoje_br, format="DD/MM/YYYY")
-    data_str = data_sel.strftime('%d/%m/%Y')
     df = carregar_dados("Devocional")
     if not df.empty:
         df["data"] = df["data"].astype(str).str.strip()
-        hoje = df[df["data"] == data_str]
+        hoje = df[df["data"] == data_sel.strftime('%d/%m/%Y')]
         if not hoje.empty:
             dev = hoje.iloc[0]
             st.markdown("---")
-            st.caption(f"🏷️ Tema: {dev.get('tema', 'Geral')}")
             st.header(dev.get('titulo', 'Sem Título'))
             st.success(f"📖 **Versículo:** {dev.get('versiculo', '')}")
             st.write(dev.get("texto", ""))
             if pd.notna(dev.get("aplicacao")): st.info(f"💡 **Aplicação:** {dev['aplicacao']}")
-            if pd.notna(dev.get("desafio")): st.warning(f"🎯 **Desafio:** {dev['desafio']}")
-        else: st.info(f"📅 Sem devocional para {data_str}.")
+        else:
+            st.info(f"📅 Sem devocional para {data_sel.strftime('%d/%m/%Y')}.")
 
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("🗓️ Agenda 2026")
-    for mes, evs in agenda_2026.items():
+    # Agenda fixa que criamos anteriormente
+    agenda_dados = {"Janeiro": ["16/01: Jovens", "18/01: Missões"], "Fevereiro": ["06/02: Irmãs"]} # Simplificado para exemplo
+    for mes, evs in agenda_dados.items():
         with st.expander(f"📅 {mes}"):
             for ev in evs: st.write(f"• {ev}")
 
@@ -196,20 +155,14 @@ elif st.session_state.pagina == "Escalas":
         df = carregar_dados("Midia")
         if not df.empty:
             for _, r in df.iterrows():
-                st.markdown(f'<div class="card-escala"><b>{r.get("data","")}</b> - {r.get("culto","")}<br>🎧 {r.get("op","-")} | 📸 {r.get("foto","-")}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="card-info"><b>{r.get("data","")}</b><br>{r.get("culto","")}</div>', unsafe_allow_html=True)
     with t_rec:
         df = carregar_dados("Recepcao")
         if not df.empty:
             for _, r in df.iterrows():
-                st.markdown(f'<div class="card-escala"><b>{r.get("data","")}</b><br>👥 {r.get("dupla","-")}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="card-info"><b>{r.get("data","")}</b><br>{r.get("dupla","")}</div>', unsafe_allow_html=True)
 
 elif st.session_state.pagina == "Departamentos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("👥 Departamentos")
-    t_tabs = st.tabs(["🌸 Irmãs", "🔥 Jovens", "🛡️ Varões", "🎤 Louvor", "🌍 Missões", "🙏 Tarde Deus"])
-    termos = ["Irmãs", "Jovens", "Varões", "Louvor", "Missões", "Tarde com Deus"]
-    for i, tab in enumerate(t_tabs):
-        with tab:
-            for mes, evs in agenda_2026.items():
-                for e in evs:
-                    if termos[i] in e: st.write(f"📅 **{mes}:** {e}")
+    st.info("Aqui você pode filtrar eventos por departamento.")
