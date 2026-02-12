@@ -28,7 +28,6 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
-            # Normalização para aceitar 'mes' ou 'mês'
             df.columns = [str(c).lower().strip().replace('ê', 'e') for c in df.columns]
             return df
         return pd.DataFrame()
@@ -42,7 +41,7 @@ if 'pagina' not in st.session_state:
 def navegar(nome_pagina):
     st.session_state.pagina = nome_pagina
 
-# --- 4. ESTILO CSS (Simetria Total) ---
+# --- 4. ESTILO CSS (Com o quadro amarelo diminuído) ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
@@ -60,12 +59,23 @@ st.markdown("""
     div.stButton:nth-of-type(3) > button { background-color: #00b894 !important; }
     div.stButton:nth-of-type(4) > button { background-color: #6c5ce7 !important; }
     div.stButton:nth-of-type(5) > button { background-color: #fdcb6e !important; }
-    .card-niver { background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 10px; }
+    
+    /* --- AJUSTE DO TAMANHO DO QUADRO AMARELO --- */
+    .card-niver { 
+        background: rgba(255, 215, 0, 0.1); 
+        border: 1px solid #ffd700; 
+        padding: 8px; /* REDUZIDO de 15px para 8px para diminuir o quadro */
+        border-radius: 15px; /* Levemente reduzido para acompanhar */
+        text-align: center; 
+        margin-bottom: 8px;
+        font-size: 0.95em; /* Opcional: Texto ligeiramente menor para ficar mais compacto */
+    }
+    
     .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. LOGICA DAS PÁGINAS (A ESCADA DO APP) ---
+# --- 5. LOGICA DAS PÁGINAS ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
@@ -80,11 +90,9 @@ if st.session_state.pagina == "Início":
     st.markdown("### 🎂 Aniversariantes da Semana")
     df_niver = carregar_dados("Aniversariantes")
     if not df_niver.empty:
-        # Filtro de próximos 7 dias
         aniv_semana = []
         for _, r in df_niver.iterrows():
             try:
-                # Criamos a data do niver no ano atual para comparar
                 d_niver = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
                 if hoje_br <= d_niver <= (hoje_br + timedelta(days=7)):
                     aniv_semana.append(r)
@@ -94,6 +102,7 @@ if st.session_state.pagina == "Início":
             cols = st.columns(min(len(aniv_semana), 3))
             for i, r in enumerate(aniv_semana):
                 with cols[i % 3]:
+                    # HTML simplificado usando o estilo .card-niver ajustado acima
                     st.markdown(f'<div class="card-niver">🎈 <b>{r["nome"]}</b><br>{int(r["dia"]):02d}/{int(r["mes"]):02d}</div>', unsafe_allow_html=True)
         else:
             st.info("Nenhum aniversariante nos próximos 7 dias. 🙏")
@@ -141,8 +150,8 @@ elif st.session_state.pagina == "Devocional":
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("🗓️ Agenda 2026")
-    # Agenda fixa que criamos anteriormente
-    agenda_dados = {"Janeiro": ["16/01: Jovens", "18/01: Missões"], "Fevereiro": ["06/02: Irmãs"]} # Simplificado para exemplo
+    # Agenda fixa (Exemplo simplificado)
+    agenda_dados = {"Janeiro": ["16/01: Jovens", "30/01: Louvor"], "Fevereiro": ["06/02: Irmãs", "20/02: Varões"]} 
     for mes, evs in agenda_dados.items():
         with st.expander(f"📅 {mes}"):
             for ev in evs: st.write(f"• {ev}")
@@ -165,4 +174,4 @@ elif st.session_state.pagina == "Escalas":
 elif st.session_state.pagina == "Departamentos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("👥 Departamentos")
-    st.info("Aqui você pode filtrar eventos por departamento.")
+    st.info("Funcionalidade de filtro por departamento em construção.")
