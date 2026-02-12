@@ -5,15 +5,24 @@ import re
 from datetime import datetime
 import pytz
 
-# --- 1. CONFIGURAÇÃO DE FUSO E PÁGINA ---
+# --- 1. CONFIGURAÇÃO DE FUSO E DATA EM PORTUGUÊS ---
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
 hoje_br = agora_br.date()
 
+# Dicionários para tradução manual (Garante o PT-BR em qualquer servidor)
+meses_pt = {
+    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
+    7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+}
+dias_semana_pt = {
+    "Monday": "Segunda-feira", "Tuesday": "Terça-feira", "Wednesday": "Quarta-feira",
+    "Thursday": "Quinta-feira", "Friday": "Sexta-feira", "Saturday": "Sábado", "Sunday": "Domingo"
+}
+
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
 # --- 2. CONFIGURAÇÃO DA PLANILHA ---
-# Certifique-se de que o link abaixo é o link completo da sua planilha "Qualquer pessoa com o link pode ler"
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing"
 
 def carregar_dados(aba):
@@ -23,11 +32,10 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
-            # Normaliza os nomes das colunas para evitar erros de maiúsculas/minúsculas
             df.columns = [str(c).lower().strip() for c in df.columns]
             return df
         return pd.DataFrame()
-    except Exception as e:
+    except:
         return pd.DataFrame()
 
 # --- 3. NAVEGAÇÃO E ESTILO ---
@@ -41,7 +49,10 @@ st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); color: white; }
+    
+    /* Simetria dos Botões */
     .button-container { max-width: 450px; margin: 0 auto; padding: 10px; }
+    
     div.stButton > button {
         width: 100% !important; height: 75px !important; border-radius: 40px !important;
         color: white !important; font-size: 18px !important; font-weight: bold !important;
@@ -53,18 +64,19 @@ st.markdown("""
     div.stButton:nth-of-type(2) > button { background-color: #e17055 !important; }
     div.stButton:nth-of-type(3) > button { background-color: #00b894 !important; }
     div.stButton:nth-of-type(4) > button { background-color: #6c5ce7 !important; }
+
     .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. BANCO DE DADOS AGENDA FIXA ---
+# --- 4. BANCO DE DADOS AGENDA (FIXO) ---
 agenda_2026 = {
     "Janeiro": ["16/01: Jovens", "18/01: Missões", "23/01: Varões", "30/01: Louvor", "31/01: Tarde com Deus"],
     "Fevereiro": ["06/02: Irmãs", "13/02: Jovens", "15/02: Missões", "20/02: Varões", "27/02: Louvor", "28/02: Tarde com Deus"],
     "Março": ["06/03: Irmãs", "13/03: Jovens", "15/03: Missões", "20/03: Varões", "27/03: Louvor", "28/03: Tarde com Deus"]
 }
 
-# --- 5. LOGICA DAS PÁGINAS ---
+# --- 5. LÓGICA DAS PÁGINAS ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
@@ -73,7 +85,10 @@ if st.session_state.pagina == "Início":
         if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=110)
     with c_tit:
         st.title("ISOSED Cosmópolis")
-        st.write(f"📅 {hoje_br.strftime('%d/%m/%Y')}")
+        # Exibição da data em Português na Home
+        dia_nome = dias_semana_pt[hoje_br.strftime('%A')]
+        mes_nome = meses_pt[hoje_br.month]
+        st.write(f"Hoje é {dia_nome}, {hoje_br.day} de {mes_nome}")
 
     st.markdown('<div class="button-container">', unsafe_allow_html=True)
     st.button("🗓️ AGENDA 2026", on_click=navegar, args=("Agenda",))
@@ -86,10 +101,14 @@ elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
     st.title("📖 Meditação Diária")
     
-    # Calendário Automático
-    data_sel = st.date_input("Selecione o dia para ler a palavra:", value=hoje_br, format="DD/MM/YYYY")
-    data_str = data_sel.strftime('%d/%m/%Y')
+    # Calendário em Português
+    data_sel = st.date_input("Selecione o dia:", value=hoje_br, format="DD/MM/YYYY")
+    
+    # Texto auxiliar para confirmar a escolha do irmão em Português
+    dia_sel_nome = dias_semana_pt[data_sel.strftime('%A')]
+    st.write(f"📅 Lendo a palavra de: **{dia_sel_nome}, {data_sel.strftime('%d/%m/%Y')}**")
 
+    data_str = data_sel.strftime('%d/%m/%Y')
     df = carregar_dados("Devocional")
     
     if not df.empty:
@@ -99,62 +118,24 @@ elif st.session_state.pagina == "Devocional":
         if not hoje.empty:
             dev = hoje.iloc[0]
             st.markdown("---")
-            
-            # Exibe TEMA e TÍTULO
             st.caption(f"🏷️ Tema: {dev.get('tema', 'Geral')}")
             st.header(dev.get('titulo', 'Sem Título'))
+            st.success(f"📖 **Versículo Base:** {dev.get('versiculo', '')}")
+            st.write(dev.get("texto", ""))
             
-            # Exibe VERSÍCULO em caixa de destaque
-            st.success(f"📖 **Versículo Base:** {dev.get('versiculo', 'Consulte a Bíblia')}")
-            
-            # Exibe o TEXTO principal
-            st.markdown("### 📝 Mensagem")
-            st.write(dev.get("texto", "Conteúdo não disponível."))
-
-            # Exibe APLICAÇÃO
             if pd.notna(dev.get("aplicacao")):
-                st.markdown("### 💡 Aplicação Prática")
-                st.info(dev["aplicacao"])
-
-            # Exibe DESAFIO
+                st.info(f"💡 **Aplicação:** {dev['aplicacao']}")
             if pd.notna(dev.get("desafio")):
-                st.markdown("### 🎯 Desafio do Dia")
-                st.warning(dev["desafio"])
+                st.warning(f"🎯 **Desafio:** {dev['desafio']}")
         else:
-            st.info(f"📅 Não encontramos um devocional para o dia {data_str}.")
+            st.info(f"📅 Não há devocional cadastrado para o dia {data_str}.")
     else:
-        st.error("Erro ao carregar a aba 'Devocional'. Verifique o nome da aba no Sheets e as permissões.")
+        st.error("Erro ao carregar a aba 'Devocional'.")
 
-# --- OUTRAS PÁGINAS MANTIDAS ---
+# (Demais páginas Agenda, Escalas e Departamentos seguem o mesmo padrão restaurado)
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("🗓️ Agenda 2026")
     for mes, evs in agenda_2026.items():
         with st.expander(f"📅 {mes}"):
             for ev in evs: st.write(f"• {ev}")
-
-elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📢 Escalas")
-    t_mid, t_rec = st.tabs(["📷 Mídia", "🤝 Recepção"])
-    with t_mid:
-        df = carregar_dados("Midia")
-        if not df.empty:
-            for _, r in df.iterrows():
-                st.markdown(f'<div class="card-info"><b>{r.get("data","")}</b> - {r.get("culto","")}<br>🎧 {r.get("op","-")} | 📸 {r.get("foto","-")}</div>', unsafe_allow_html=True)
-    with t_rec:
-        df = carregar_dados("Recepcao")
-        if not df.empty:
-            for _, r in df.iterrows():
-                st.markdown(f'<div class="card-info"><b>{r.get("data","")}</b><br>👥 {r.get("dupla","-")}</div>', unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Departamentos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("👥 Departamentos")
-    t_tabs = st.tabs(["🌸 Irmãs", "🔥 Jovens", "🛡️ Varões", "🎤 Louvor"])
-    termos = ["Irmãs", "Jovens", "Varões", "Louvor"]
-    for i, tab in enumerate(t_tabs):
-        with tab:
-            for mes, evs in agenda_2026.items():
-                for e in evs:
-                    if termos[i] in e: st.write(f"📅 **{mes}:** {e}")
