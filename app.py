@@ -189,20 +189,22 @@ elif st.session_state.pagina == "Devocional":
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.title("📖 Meditação Diária")
+    st.write("Selecione uma data no calendário para ler a palavra:")
+
+    # 1. O CALENDÁRIO (Substitui todas as caixas de seleção)
+    # Ele aparece como um campo que, ao ser tocado, abre o calendário completo
+    data_selecionada = st.date_input("", format="DD/MM/YYYY")
+    
+    # Converte para o formato de texto da planilha (Ex: 11/02/2026)
+    data_str = data_selecionada.strftime('%d/%m/%Y')
 
     df = carregar_dados("Devocional")
 
     if not df.empty:
-        # 1. Calendário de Seleção
-        st.write("Selecione o dia para ler a palavra:")
-        data_selecionada = st.date_input("Escolha a data:", format="DD/MM/YYYY")
-        
-        # Converter a data selecionada para string no formato da planilha (ex: 11/02/2026)
-        # Ajuste o formato '%d/%m/%Y' se na sua planilha estiver diferente (ex: %d/%m)
-        data_str = data_selecionada.strftime('%d/%m/%Y')
-
-        # 2. Filtrar os dados
+        # Garante que a coluna de data seja texto para comparação
         df["data"] = df["data"].astype(str).str.strip()
+        
+        # Busca o devocional do dia selecionado
         devocional_hoje = df[df["data"] == data_str]
 
         if not devocional_hoje.empty:
@@ -210,27 +212,30 @@ elif st.session_state.pagina == "Devocional":
             
             st.markdown("---")
             st.header(f"✨ {dev['titulo']}")
-            st.subheader(f"🏷️ Tema: {dev['tema']}")
             
-            # Cartão do Versículo
+            # Badge de Tema
+            st.markdown(f"🏷️ **Tema:** {dev['tema']}")
+            
+            # Card de Destaque para o Versículo
             st.success(f"📖 **Versículo Base:** {dev['versiculo']}")
             
-            st.markdown("### 📝 Palavra de Hoje")
+            st.markdown("### 📝 Mensagem de Hoje")
             st.write(dev["texto"])
 
-            # Seções Adicionais
-            col_a, col_b = st.columns(2)
-            with col_a:
+            # Aplicação e Desafio lado a lado
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
                 if pd.notna(dev["aplicacao"]):
-                    st.markdown("### 💡 Aplicação")
+                    st.markdown("#### 💡 Aplicação")
                     st.info(dev["aplicacao"])
-            with col_b:
+            with col2:
                 if pd.notna(dev["desafio"]):
-                    st.markdown("### 🎯 Desafio")
+                    st.markdown("#### 🎯 Desafio")
                     st.warning(dev["desafio"])
         else:
             st.markdown("---")
-            st.info(f"📅 Não encontramos um devocional cadastrado para o dia {data_str}. Tente selecionar outra data no calendário.")
-    
+            st.info(f"📅 Não há um devocional cadastrado para o dia {data_str}.")
+            st.write("Tente navegar para outra data no calendário acima.")
     else:
-        st.error("Erro ao carregar os devocionais. Verifique a conexão com a planilha.")
+        st.error("Erro ao conectar com a base de dados de devocionais.")
