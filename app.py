@@ -2,29 +2,28 @@ import streamlit as st
 import pandas as pd
 import os
 import re
-from datetime import datetime
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
 # --- 2. CONFIGURAÇÃO DA PLANILHA (Link Blindado) ---
-# Cole o LINK COMPLETO da sua planilha aqui
-URL_PLANILHA = "COLE_AQUI_O_LINK_COMPLETO_DA_PLANILHA"
+# Substitua pelo seu link completo do Google Sheets
+URL_PLANILHA = "COLE_AQUI_O_LINK_DA_PLANILHA"
 
 def carregar_dados(aba):
     try:
-        # Extrai o ID da planilha automaticamente
+        # Extrai o ID da planilha automaticamente do link
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", URL_PLANILHA)
         if match:
             id_plan = match.group(1)
-            # URL de exportação direta para CSV (Mais estável)
+            # URL de exportação direta para CSV (Método mais estável)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
             # Padroniza nomes das colunas (minúsculo e sem espaços)
             df.columns = [str(c).lower().strip() for c in df.columns]
             return df
         return pd.DataFrame()
-    except:
+    except Exception as e:
         return pd.DataFrame()
 
 # --- 3. CONTROLE DE NAVEGAÇÃO ---
@@ -54,7 +53,7 @@ st.markdown("""
         padding: 10px;
     }
 
-    /* BOTÕES PILL - Largura 100% para simetria vertical total */
+    /* BOTÕES PILL - Alinhamento vertical simétrico */
     div.stButton > button {
         width: 100% !important;
         height: 75px !important;
@@ -66,6 +65,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
         text-transform: uppercase !important;
         margin-bottom: 20px !important;
+        display: block !important;
     }
     
     /* Cores do Menu Inicial */
@@ -79,7 +79,6 @@ st.markdown("""
         height: 50px !important; border-radius: 25px !important; font-size: 14px !important;
     }
 
-    /* Cards de Informação */
     .card-escala {
         background: rgba(255, 255, 255, 0.05);
         padding: 15px; border-radius: 20px;
@@ -95,12 +94,12 @@ agenda_2026 = {
     "Fevereiro": ["06/02: Irmãs", "13/02: Jovens", "15/02: Missões", "20/02: Varões", "27/02: Louvor", "28/02: Tarde com Deus"],
     "Março": ["06/03: Irmãs", "13/03: Jovens", "15/03: Missões", "20/03: Varões", "27/03: Louvor", "28/03: Tarde com Deus"],
     "Abril": ["03/04: Irmãs", "10/04: Jovens", "17/04: Varões", "19/04: Missões", "24/04: Louvor", "25/04: Tarde com Deus"],
-    "Maio": ["01/05: Irmãs", "08/05: Jovens", "15/05: Varões", "17/05: Missões", "22/05: Louvor", "29/05: Irmãs (5ª)", "30/05: Tarde com Deus"],
-    "Junho": ["05/06: Jovens", "12/06: Varões", "19/06: Louvor", "21/06: Missões", "26/06: Irmãs", "27/06: Tarde com Deus"],
-    "Julho": ["03/07: Jovens", "10/07: Varões", "17/07: Louvor", "19/07: Missões", "24/07: Irmãs", "25/07: Tarde com Deus", "31/07: Jovens (5ª)"],
+    "Maio": ["01/05: Irmãs", "08/05: Jovens", "15/05: Varões", "17/05: Missões", "22/05: Louvor", "29/05: Irmãs (5ª Sex)", "30/05: Tarde com Deus"],
+    "Junho": ["05/06: Jovens", "05-06: Congresso Jovens", "12/06: Varões", "19/06: Louvor", "21/06: Missões", "26/06: Irmãs", "27/06: Tarde com Deus"],
+    "Julho": ["03/07: Jovens", "10/07: Varões", "17/07: Louvor", "19/07: Missões", "24/07: Irmãs", "25/07: Tarde com Deus", "31/07: Jovens (5ª Sex)"],
     "Agosto": ["07/08: Varões", "14/08: Louvor", "16/08: Missões", "21/08: Irmãs", "28/08: Jovens", "29/08: Tarde com Deus"],
     "Setembro": ["04/09: Varões", "11/09: Louvor", "18/09: Irmãs", "20/09: Missões", "25/09: Jovens", "26/09: Tarde com Deus"],
-    "Outubro": ["02/10: Varões", "09/10: Louvor", "16/10: Irmãs", "18/10: Missões", "23/10: Jovens", "30/10: Varões (5ª)", "31/10: Tarde com Deus"],
+    "Outubro": ["02/10: Varões", "09/10: Louvor", "16/10: Irmãs", "18/10: Missões", "23/10: Jovens", "30/10: Varões (5ª Sex)", "31/10: Tarde com Deus"],
     "Novembro": ["06/11: Louvor", "13/11: Irmãs", "15/11: Missões", "20/11: Jovens", "27/11: Varões", "28/11: Tarde com Deus"],
     "Dezembro": ["04/12: Louvor", "11/12: Irmãs", "18/12: Jovens", "20/12: Missões", "27/12: Tarde com Deus"]
 }
@@ -123,6 +122,57 @@ if st.session_state.pagina == "Início":
     st.button("📖 DEVOCIONAL", on_click=navegar, args=("Devocional",))
     st.markdown('</div>', unsafe_allow_html=True)
 
+elif st.session_state.pagina == "Agenda":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("🗓️ Agenda 2026")
+    for mes, evs in agenda_2026.items():
+        with st.expander(f"📅 {mes}"):
+            for ev in evs: st.write(f"• {ev}")
+
+elif st.session_state.pagina == "Escalas":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("📢 Escalas da Equipe")
+    t_mid, t_rec = st.tabs(["📷 Mídia e Som", "🤝 Recepção"])
+    
+    with t_mid:
+        df = carregar_dados("Midia")
+        if not df.empty:
+            for _, r in df.iterrows():
+                st.markdown(f'<div class="card-escala"><b>{r.get("data","")} - {r.get("culto","")}</b><br>🎧 {r.get("op","-")} | 📸 {r.get("foto","-")}<br>⏰ Chegada: {r.get("chegada","-")}</div>', unsafe_allow_html=True)
+        else:
+            st.error("Erro ao carregar Mídia. Verifique se a aba no Sheets chama 'Midia'.")
+
+    with t_rec:
+        df = carregar_dados("Recepcao")
+        if not df.empty:
+            for _, r in df.iterrows():
+                st.markdown(f'<div class="card-escala"><b>{r.get("data","")} ({r.get("dia","")})</b><br>👥 {r.get("dupla","-")}<br>⏰ Chegada: {r.get("chegada","-")}</div>', unsafe_allow_html=True)
+        else:
+            st.error("Erro ao carregar Recepção. Verifique se a aba no Sheets chama 'Recepcao'.")
+
+elif st.session_state.pagina == "Departamentos":
+    st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.title("👥 Departamentos")
+    t_irm, t_jov, t_var, t_lou, t_mis, t_td = st.tabs(["🌸 Irmãs", "🔥 Jovens", "🛡️ Varões", "🎤 Louvor", "🌍 Missões", "🙏 Tarde Deus"])
+    
+    def filtrar(termo):
+        for m, evs in agenda_2026.items():
+            for e in evs:
+                if termo in e: st.write(f"📅 **{m}:** {e}")
+
+    with t_irm: filtrar("Irmãs")
+    with t_jov: filtrar("Jovens")
+    with t_var: filtrar("Varões")
+    with t_lou: filtrar("Louvor")
+    with t_mis: filtrar("Missões")
+    with t_td: filtrar("Tarde com Deus")
+
 elif st.session_state.pagina == "Devocional":
     st.markdown('<div class="btn-voltar">', unsafe_allow_html=True)
     st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
@@ -130,7 +180,7 @@ elif st.session_state.pagina == "Devocional":
 
     st.title("📖 Meditação Diária")
 
-    # CALENDÁRIO APARECE DIRETAMENTE AQUI
+    # CALENDÁRIO APARECE IMEDIATAMENTE
     data_selecionada = st.date_input("Selecione o dia para ler a palavra:", format="DD/MM/YYYY")
     data_str = data_selecionada.strftime('%d/%m/%Y')
 
@@ -144,9 +194,9 @@ elif st.session_state.pagina == "Devocional":
         if not dev_hoje.empty:
             dev = dev_hoje.iloc[0]
             st.markdown("---")
-            st.header(f"✨ {dev['titulo']}")
-            st.success(f"📖 **Versículo Base:** {dev['versiculo']}")
-            st.write(dev["texto"])
+            st.header(f"✨ {dev.get('titulo','')}")
+            st.success(f"📖 **Versículo Base:** {dev.get('versiculo','')}")
+            st.write(dev.get("texto",""))
             
             st.markdown("### 💡 Aplicação")
             st.info(dev.get("aplicacao", "Medite nesta palavra durante o dia."))
@@ -155,8 +205,6 @@ elif st.session_state.pagina == "Devocional":
             st.warning(dev.get("desafio", "Compartilhe esta mensagem com alguém."))
         else:
             st.markdown("---")
-            st.info(f"📅 Não há um devocional cadastrado para o dia {data_str}. Escolha outra data no calendário acima.")
+            st.info(f"📅 Não há um devocional cadastrado para o dia {data_str}.")
     else:
         st.error("Erro ao carregar dados da aba 'Devocional'. Verifique o nome da aba e o link da planilha.")
-
-# [As outras páginas: Agenda, Escalas e Departamentos seguem a mesma lógica restaurada]
