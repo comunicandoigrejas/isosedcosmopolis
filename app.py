@@ -63,7 +63,7 @@ def buscar_aniversariantes_ano():
 def carregar_dados(aba):
     try:
         # SUBSTITUA PELO SEU LINK DA PLANILHA
-        url_planilha = "COLE_AQUI_O_LINK_DA_PLANILHA"
+        url_planilha = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing"
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", url_planilha)
         if match:
             id_plan = match.group(1)
