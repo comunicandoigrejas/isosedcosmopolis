@@ -28,11 +28,38 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
-            df.columns = [str(c).lower().strip() for c in df.columns]
+            # Normalização avançada: remove acentos, espaços e deixa minúsculo
+            df.columns = [
+                str(c).lower().strip().replace('ê', 'e').replace('ã', 'a') 
+                for c in df.columns
+            ]
             return df
         return pd.DataFrame()
     except:
         return pd.DataFrame()
+
+# --- NA PÁGINA DE ANIVERSARIANTES ---
+elif st.session_state.pagina == "Aniversariantes":
+    st.button("⬅️ VOLTAR AO INÍCIO", on_click=navegar, args=("Início",))
+    st.title("🎂 Aniversariantes do Ano")
+    
+    df_niver = carregar_dados("Aniversariantes")
+    
+    if not df_niver.empty:
+        # Verifica se a coluna existe antes de tentar usar
+        coluna_mes = 'mes' if 'mes' in df_niver.columns else None
+        
+        if coluna_mes:
+            for m_num in range(1, 13):
+                dados_mes = df_niver[df_niver[coluna_mes] == m_num].sort_values(by='dia')
+                if not dados_mes.empty:
+                    with st.expander(f"📅 {meses_nome[m_num]}", expanded=(m_num == hoje_br.month)):
+                        for _, r in dados_mes.iterrows():
+                            st.write(f"🎁 **Dia {int(r['dia']):02d}:** {r['nome']}")
+        else:
+            st.error("Coluna 'mes' não encontrada. Verifique se o cabeçalho da planilha é 'mes'.")
+    else:
+        st.error("Aba 'Aniversariantes' está vazia ou não foi encontrada.")
 
 # --- 3. CONTROLE DE NAVEGAÇÃO ---
 if 'pagina' not in st.session_state:
