@@ -60,20 +60,17 @@ st.markdown("""
     div.stButton:nth-of-type(4) > button { background-color: #6c5ce7 !important; }
     div.stButton:nth-of-type(5) > button { background-color: #fdcb6e !important; }
     
-  /* --- QUADRO AMARELO ULTRA COMPACTO --- */
+  /* QUADRO AMARELO COMPACTO */
     .card-niver { 
         background: rgba(255, 215, 0, 0.1); 
         border: 1px solid #ffd700; 
-        padding: 4px 8px;           /* Padding reduzido ao mínimo */
+        padding: 5px; 
         border-radius: 12px; 
         text-align: center; 
-        margin: 0 auto 8px auto;    /* Centraliza e reduz margem inferior */
-        max-width: 160px;           /* Limita a largura do quadro */
-        font-size: 0.85em;          /* Fonte um pouco menor */
-        line-height: 1.2;           /* Espaçamento entre linhas menor */
+        margin-bottom: 10px;
+        font-size: 0.85em;
+        width: 100%; /* Ocupa a coluna */
     }
-    
-    .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 # --- 5. LOGICA DAS PÁGINAS ---
