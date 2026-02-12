@@ -71,7 +71,7 @@ st.markdown("""
         font-size: 0.95em; /* Opcional: Texto ligeiramente menor para ficar mais compacto */
     }
     
-    .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
+    .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 5px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
