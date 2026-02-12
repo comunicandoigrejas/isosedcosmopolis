@@ -14,7 +14,7 @@ hoje_br = agora_br.date()
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
 # --- 3. CONFIGURAÇÃO DA PLANILHA ---
-URL_PLANILHA = "COLE_AQUI_O_LINK_DA_PLANILHA"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing"
 
 def carregar_dados(aba):
     try:
