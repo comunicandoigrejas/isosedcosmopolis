@@ -65,7 +65,7 @@ st.markdown("""
         background: rgba(255, 215, 0, 0.1); 
         border: 1px solid #ffd700; 
         padding: 8px; /* REDUZIDO de 15px para 8px para diminuir o quadro */
-        border-radius: 15px; /* Levemente reduzido para acompanhar */
+        border-radius: 8px; /* Levemente reduzido para acompanhar */
         text-align: center; 
         margin-bottom: 8px;
         font-size: 0.95em; /* Opcional: Texto ligeiramente menor para ficar mais compacto */
