@@ -36,15 +36,15 @@ def carregar_dados(aba):
 if 'pagina' not in st.session_state: st.session_state.pagina = "Início"
 def navegar(p): st.session_state.pagina = p
 
-# --- 4. ESTILO CSS (Cards Maiores e Nome Completo) ---
+# --- 4. ESTILO CSS (Data maior, Logo 210px e Títulos) ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); color: white; }
     
-    .main-wrapper { max-width: 520px; margin: 0 auto; padding: 5px; }
+    .main-wrapper { max-width: 550px; margin: 0 auto; padding: 5px; }
 
-    /* === REGRA GERAL DE LARGURA (130px para manter alinhamento) === */
+    /* BOTÕES E CARDS */
     div.stButton > button, .card-niver {
         width: 130px !important; 
         border-radius: 12px !important;
@@ -55,7 +55,6 @@ st.markdown("""
         margin-bottom: 10px !important; 
     }
 
-    /* === BOTÕES (Mantêm altura compacta de 55px) === */
     div.stButton > button {
         height: 55px !important;
         font-size: 11px !important;
@@ -65,41 +64,51 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 
-    /* === CARDS DE ANIVERSÁRIO (Altura aumentada para 80px para caber nome completo) === */
     .card-niver {
-        height: 80px !important; /* Mais altos que os botões */
+        height: 85px !important; /* Aumentado para acomodar fontes maiores */
         background: rgba(255, 215, 0, 0.1) !important;
         border: 1px solid #ffd700 !important;
-        flex-direction: column !important; /* Garante que data fique embaixo do nome */
-        padding: 5px !important;
+        flex-direction: column !important;
+        padding: 8px !important;
     }
 
-    /* ESTILO DO NOME COMPLETO */
+    /* --- FONTES DOS ANIVERSARIANTES --- */
     .niver-nome { 
-        font-size: 0.9em !important; /* Fonte ajustada */
+        font-size: 0.95em !important; 
         font-weight: 900; 
         color: #ffd700; 
         text-transform: uppercase; 
         text-align: center; 
         line-height: 1.1 !important;
-        /* Permite que o nome quebre em duas linhas se for longo */
         white-space: normal !important;
-        word-wrap: break-word !important;
-        max-height: 40px;
-        overflow: hidden;
     }
-    .niver-data { font-size: 0.7em !important; opacity: 0.8; margin-top: 5px; }
+    /* DATA AUMENTADA */
+    .niver-data { 
+        font-size: 0.85em !important; 
+        font-weight: bold;
+        color: white;
+        opacity: 1; 
+        margin-top: 4px; 
+    }
 
-    /* Distâncias Simétricas */
+    .niver-titulo {
+        font-size: 0.9em;
+        font-weight: bold;
+        color: #ffd700;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Alinhamentos */
     .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
     .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
     .niver-left { display: flex; justify-content: flex-end; margin-right: 5px; }
     .niver-right { display: flex; justify-content: flex-start; margin-left: 5px; }
 
     [data-testid="column"] { padding: 0 !important; }
-    .logo-side { display: flex; align-items: center; justify-content: flex-start; padding-left: 10px; }
+    .logo-side { display: flex; align-items: center; justify-content: flex-start; padding-left: 15px; }
     
-    /* Cores dos Botões */
     .btn-1 button { background-color: #0984e3 !important; } .btn-2 button { background-color: #e17055 !important; }
     .btn-3 button { background-color: #00b894 !important; } .btn-4 button { background-color: #6c5ce7 !important; }
     .btn-5 button { background-color: #fdcb6e !important; } .btn-6 button { background-color: #ff7675 !important; }
@@ -111,9 +120,9 @@ st.markdown("""
 if st.session_state.pagina == "Início":
     st.markdown('<div class="main-wrapper">', unsafe_allow_html=True)
     
-    st.markdown("<h3 style='text-align: center; margin-bottom: 15px; color: white; font-weight: 800;'>ISOSED COSMÓPOLIS</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; margin-bottom: 20px; color: white; font-weight: 800; letter-spacing: 2px;'>ISOSED COSMÓPOLIS</h3>", unsafe_allow_html=True)
 
-    # 1. ANIVERSARIANTES (Com Nome Completo)
+    # 1. SEÇÃO DE ANIVERSARIANTES
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         aniv = []
@@ -124,17 +133,19 @@ if st.session_state.pagina == "Início":
             except: continue
         
         if aniv:
-            # Mantém o alinhamento de colunas [1.5, 1.5, 2]
+            # TEXTO "ANIVERSÁRIOS DA SEMANA"
+            st.markdown("<p class='niver-titulo' style='text-align: center;'>🎊 Aniversários da semana</p>", unsafe_allow_html=True)
+            
             cn1, cn2, _extra = st.columns([1.5, 1.5, 2])
             with cn1:
-                # Removido o .split()[0] para mostrar o nome completo
                 st.markdown(f'<div class="niver-left"><div class="card-niver"><div class="niver-nome">🎈 {aniv[0]["nome"]}</div><div class="niver-data">{int(aniv[0]["dia"]):02d}/{int(aniv[0]["mes"]):02d}</div></div></div>', unsafe_allow_html=True)
             with cn2:
                 if len(aniv) > 1:
-                    # Removido o .split()[0] para mostrar o nome completo
                     st.markdown(f'<div class="niver-right"><div class="card-niver"><div class="niver-nome">🎈 {aniv[1]["nome"]}</div><div class="niver-data">{int(aniv[1]["dia"]):02d}/{int(aniv[1]["mes"]):02d}</div></div></div>', unsafe_allow_html=True)
 
-    # 2. MENU + LOGO
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+    # 2. MENU E LOGO
     c_menu1, c_menu2, c_logo_img = st.columns([1.5, 1.5, 2])
 
     with c_menu1:
@@ -158,8 +169,8 @@ if st.session_state.pagina == "Início":
     with c_logo_img:
         st.markdown('<div class="logo-side">', unsafe_allow_html=True)
         if os.path.exists("logo igreja.png"):
-            # --- LOGO AUMENTADO PARA 180px ---
-            st.image("logo igreja.png", width=180) 
+            # LOGO AUMENTADO PARA 210px
+            st.image("logo igreja.png", width=210) 
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
