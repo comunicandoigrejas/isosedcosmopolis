@@ -36,7 +36,7 @@ def carregar_dados(aba):
 if 'pagina' not in st.session_state: st.session_state.pagina = "Início"
 def navegar(p): st.session_state.pagina = p
 
-# --- 4. ESTILO CSS (Botões Compactos e Alinhamento Lateral) ---
+# --- 4. ESTILO CSS (Botões Compactos e Próximos ao Centro) ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
@@ -44,7 +44,7 @@ st.markdown("""
     
     .central-wrapper { max-width: 610px; margin: 0 auto; }
 
-    /* CARDS DE ANIVERSARIANTES (Permanecem grandes e centrais) */
+    /* CARDS DE ANIVERSARIANTES (300px) */
     .card-niver {
         width: 300px !important; 
         height: 100px !important; 
@@ -59,10 +59,10 @@ st.markdown("""
         box-sizing: border-box !important;
     }
 
-    /* BOTÕES DIMINUÍDOS */
+    /* BOTÕES COMPACTOS (140px) */
     div.stButton > button {
-        width: 140px !important; /* Metade do tamanho anterior */
-        height: 60px !important;  /* Mais baixo/fino */
+        width: 140px !important; 
+        height: 60px !important;  
         border-radius: 15px !important;
         font-size: 13px !important;
         font-weight: bold !important;
@@ -72,9 +72,12 @@ st.markdown("""
         margin-bottom: 8px !important;
     }
 
-    /* ALINHAMENTO DOS BOTÕES PARA OS CANTOS */
-    .btn-left div.stButton > button { margin-right: auto !important; margin-left: 0 !important; }
-    .btn-right div.stButton > button { margin-left: auto !important; margin-right: 0 !important; }
+    /* ALINHAMENTO PARA O CENTRO (Aproximação) */
+    /* Botão da esquerda corre para a DIREITA da coluna */
+    .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
+    
+    /* Botão da direita corre para a ESQUERDA da coluna */
+    .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
 
     /* Cores dos Botões */
     .btn-1 button { background-color: #0984e3 !important; } .btn-2 button { background-color: #e17055 !important; }
@@ -84,7 +87,7 @@ st.markdown("""
     .niver-nome { font-size: 1.5em !important; font-weight: 900 !important; color: #ffd700 !important; text-transform: uppercase; margin: 0; line-height: 1; }
     .niver-data { font-size: 0.95em !important; opacity: 0.9; margin-top: 5px; }
 
-    [data-testid="column"] { padding: 0 5px !important; }
+    [data-testid="column"] { padding: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -92,15 +95,15 @@ st.markdown("""
 
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center;'>ISOSED</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>ISOSED</h1>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align: center; opacity: 0.8;'>✨ {dias_pt[hoje_br.strftime('%A')]}, {hoje_br.day} de {meses_nome[hoje_br.month]}</p>", unsafe_allow_html=True)
 
-    _, centro, _ = st.columns([1, 6, 1]) # Ajuste leve na proporção do centro
+    _, centro, _ = st.columns([1, 8, 1]) 
     
     with centro:
         st.markdown('<div class="central-wrapper">', unsafe_allow_html=True)
         
-        # ANIVERSARIANTES (Ficam como estavam)
+        # ANIVERSARIANTES
         df_n = carregar_dados("Aniversariantes")
         if not df_n.empty:
             aniv = []
@@ -112,20 +115,21 @@ if st.session_state.pagina == "Início":
             
             if aniv:
                 for i in range(0, len(aniv), 2):
-                    cols = st.columns(2)
+                    cols_n = st.columns(2)
                     par = aniv[i:i+2]
                     for idx, p in enumerate(par):
-                        with cols[idx]:
-                            st.markdown(f"""
+                        with cols_n[idx]:
+                            # Garante que os cards fiquem centralizados na coluna
+                            st.markdown(f"""<center>
                                 <div class="card-niver">
                                     <div class="niver-nome">{p['nome'].split()[0]}</div>
                                     <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
-                                </div>
+                                </div></center>
                             """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
 
-        # BOTÕES (Menores e encostados nos cantos)
+        # BOTÕES (Agora aproximados ao centro)
         c1, c2 = st.columns(2)
         with c1:
             st.markdown('<div class="btn-left btn-1">', unsafe_allow_html=True)
