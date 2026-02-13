@@ -54,7 +54,7 @@ st.markdown("""
         font-size: 16px !important; 
         font-weight: bold !important;
         text-transform: uppercase !important; 
-        margin-bottom: 10px !important;
+        margin-bottom: 50px !important;
         border: 1px solid rgba(255,255,255,0.2) !important;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
         display: flex;
