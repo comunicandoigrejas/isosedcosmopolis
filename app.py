@@ -20,7 +20,7 @@ dias_pt = {"Monday":"Segunda-feira", "Tuesday":"Terça-feira", "Wednesday":"Quar
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
 # --- 2. CONEXÃO COM A PLANILHA ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=1531527697#gid=1531527697"
+URL_PLANILHA = "COLE_AQUI_O_LINK_DA_PLANILHA"
 
 def carregar_dados(aba):
     try:
@@ -57,23 +57,43 @@ if 'usuario' not in st.session_state: st.session_state.usuario = None
 
 def navegar(p): st.session_state.pagina = p
 
-# --- 4. ESTILO CSS ---
+# --- 4. ESTILO CSS UNIFORME ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); color: white; }
-    .menu-grid { max-width: 500px; margin: 0 auto; }
+    
+    /* Container Central Unificado */
+    .main-container { max-width: 500px; margin: 0 auto; padding: 10px; }
+    
+    /* Botões do Menu */
     div.stButton > button {
-        width: 100% !important; height: 80px !important; border-radius: 20px !important;
+        width: 100% !important; height: 85px !important; border-radius: 20px !important;
         color: white !important; font-size: 14px !important; font-weight: bold !important;
-        text-transform: uppercase !important; margin-bottom: 5px !important;
+        text-transform: uppercase !important; margin-bottom: 8px !important;
         border: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
     }
     .btn-1 button { background-color: #0984e3 !important; } .btn-2 button { background-color: #e17055 !important; }
     .btn-3 button { background-color: #00b894 !important; } .btn-4 button { background-color: #6c5ce7 !important; }
     .btn-5 button { background-color: #fdcb6e !important; } .btn-6 button { background-color: #ff7675 !important; }
-    .card-niver { background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 5px; border-radius: 12px; text-align: center; margin-bottom: 10px; font-size: 0.85em; }
-    .card-agenda { background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 15px; border-left: 5px solid #0984e3; margin-bottom: 10px; }
+    
+    /* Cards de Aniversariantes (Uniformizados com os botões) */
+    .card-niver { 
+        background: rgba(255, 215, 0, 0.1); 
+        border: 1px solid #ffd700; 
+        padding: 15px 5px; 
+        border-radius: 20px; 
+        text-align: center; 
+        margin-bottom: 8px; 
+        font-size: 0.85em; 
+        height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .card-info { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 20px; border-left: 6px solid #00ffcc; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -81,17 +101,20 @@ st.markdown("""
 
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
-    # Tenta carregar o logo com ajuste de largura
-    c_logo, c_tit = st.columns([1, 3])
-    with c_logo:
-        if os.path.exists("logo igreja.png"): 
-            st.image("logo igreja.png", width=100)
-    with c_tit:
-        st.title("ISOSED Cosmópolis")
+    
+    # Header Centralizado
+    col_l, col_r = st.columns([1, 4])
+    with col_l:
+        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=80)
+    with col_r:
+        st.title("ISOSED")
         st.write(f"✨ {dias_pt[hoje_br.strftime('%A')]}, {hoje_br.day} de {meses_nome[hoje_br.month]}")
 
-    # Aniversariantes (Pares)
-    st.markdown("<h3 style='text-align: center;'>🎂 Aniversariantes da Semana</h3>", unsafe_allow_html=True)
+    # CONTAINER CENTRAL UNIFORME
+    st.markdown('<div class="main-container">', unsafe_allow_html=True)
+    
+    # Seção de Aniversariantes alinhada
+    st.markdown("<h4 style='text-align: center; margin-bottom: 15px;'>🎂 Aniversariantes da Semana</h4>", unsafe_allow_html=True)
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         aniv = []
@@ -100,18 +123,20 @@ if st.session_state.pagina == "Início":
                 d_n = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
                 if hoje_br <= d_n <= (hoje_br + timedelta(days=7)): aniv.append(r)
             except: continue
+        
         if aniv:
-            _, centro, _ = st.columns([0.2, 3, 0.2])
-            with centro:
-                for i in range(0, len(aniv), 2):
-                    par = aniv[i:i+2]
-                    cols = st.columns(2)
-                    for idx, p in enumerate(par):
-                        with cols[idx]: st.markdown(f'<div class="card-niver">🎈 <b>{p["nome"]}</b><br>{int(p["dia"]):02d}/{int(p["mes"]):02d}</div>', unsafe_allow_html=True)
-        else: st.info("Nenhum aniversariante nos próximos 7 dias.")
+            for i in range(0, len(aniv), 2):
+                cols = st.columns(2)
+                par = aniv[i:i+2]
+                for idx, p in enumerate(par):
+                    with cols[idx]:
+                        st.markdown(f'<div class="card-niver">🎈 <b>{p["nome"]}</b><br>{int(p["dia"]):02d}/{int(p["mes"]):02d}</div>', unsafe_allow_html=True)
+        else:
+            st.info("Nenhum aniversariante nos próximos 7 dias. 🙏")
 
-    # Menu em Grade
-    st.markdown('<div class="menu-grid">', unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 20px 0; opacity: 0.2;'>", unsafe_allow_html=True)
+
+    # Menu em Grade (Alinhado com os aniversariantes)
     m1, m2 = st.columns(2)
     with m1:
         st.markdown('<div class="btn-1">', unsafe_allow_html=True)
@@ -129,8 +154,27 @@ if st.session_state.pagina == "Início":
         st.markdown('</div><div class="btn-6">', unsafe_allow_html=True)
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
         st.markdown('</div>', unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
+elif st.session_state.pagina == "Escalas":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.title("📢 Escalas")
+    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
+    with t1:
+        df = carregar_dados("Midia")
+        if not df.empty:
+            for _, r in df.iterrows(): 
+                # Agora exibindo o campo 'op' (operador/nome da pessoa)
+                st.info(f"📅 {r.get('data','')} - {r.get('culto','')} | 👤 **{r.get('op','Não definido')}**")
+        else: st.warning("Aba 'Midia' vazia ou não encontrada.")
+    with t2:
+        df = carregar_dados("Recepcao")
+        if not df.empty:
+            for _, r in df.iterrows(): 
+                st.success(f"📅 {r.get('data','')} - 👥 {r.get('dupla','')}")
+
+# (As outras páginas permanecem com a mesma lógica anterior para garantir o funcionamento total)
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("🗓️ Agenda 2026")
@@ -141,21 +185,7 @@ elif st.session_state.pagina == "Agenda":
             evs = df[df['data'].dt.month == m].sort_values(by='data')
             if not evs.empty:
                 with st.expander(f"📅 {meses_nome[m]}"):
-                    for _, r in evs.iterrows():
-                        st.markdown(f'<div class="card-agenda"><b>{r["data"].strftime("%d/%m")}</b> - {r["evento"]}</div>', unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📢 Escalas")
-    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
-    with t1:
-        df = carregar_dados("Midia")
-        if not df.empty:
-            for _, r in df.iterrows(): st.info(f"📅 {r.get('data','')} - {r.get('culto','')}")
-    with t2:
-        df = carregar_dados("Recepcao")
-        if not df.empty:
-            for _, r in df.iterrows(): st.success(f"📅 {r.get('data','')} - {r.get('dupla','')}")
+                    for _, r in evs.iterrows(): st.write(f"• **{r['data'].strftime('%d/%m')}**: {r['evento']}")
 
 elif st.session_state.pagina == "Departamentos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
@@ -174,7 +204,7 @@ elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("📖 Devocional")
     df = carregar_dados("Devocional")
-    d_sel = st.date_input("Data:", value=hoje_br)
+    d_sel = st.date_input("Selecione a Data:", value=hoje_br)
     if not df.empty:
         hoje = df[df["data"].astype(str).str.strip() == d_sel.strftime('%d/%m/%Y')]
         if not hoje.empty:
@@ -182,11 +212,11 @@ elif st.session_state.pagina == "Devocional":
             st.header(d.get('titulo', ''))
             st.success(f"📖 {d.get('versiculo', '')}")
             st.write(d.get('texto', ''))
-        else: st.info("Sem devocional para hoje.")
+        else: st.info("Sem devocional para esta data.")
 
 elif st.session_state.pagina == "Aniversariantes":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("🎂 Todos os Aniversariantes")
+    st.title("🎂 Aniversariantes do Ano")
     df = carregar_dados("Aniversariantes")
     if not df.empty:
         for m in range(1, 13):
@@ -197,29 +227,26 @@ elif st.session_state.pagina == "Aniversariantes":
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    
     if st.session_state.usuario is None:
-        t1, t2 = st.tabs(["Entrar pelo Nome", "Novo Cadastro"])
+        t1, t2 = st.tabs(["Entrar", "Novo Cadastro"])
         with t1:
-            nome_login = st.text_input("Digite o seu nome completo (exatamente como cadastrou)")
-            if st.button("Acessar meu Plano"):
+            nome_login = st.text_input("Nome Completo")
+            if st.button("Acessar"):
                 df_u = carregar_dados("Usuarios_Progresso")
                 user = df_u[df_u['nome'].str.lower() == nome_login.lower().strip()]
                 if not user.empty:
                     st.session_state.usuario = user.iloc[0].to_dict()
                     st.rerun()
-                else: st.error("Nome não encontrado. Verifique se escreveu corretamente ou faça o cadastro.")
+                else: st.error("Nome não encontrado.")
         with t2:
-            n = st.text_input("Nome Completo")
-            d = st.date_input("Data de Nascimento", min_value=datetime(1920,1,1))
-            if st.button("Cadastrar e Iniciar"):
-                if registrar_usuario_planilha(n, d):
-                    st.success("Cadastro realizado! Agora entre pelo seu nome na aba 'Entrar'.")
+            n = st.text_input("Nome")
+            d = st.date_input("Nascimento", min_value=datetime(1920,1,1))
+            if st.button("Cadastrar"):
+                if registrar_usuario_planilha(n, d): st.success("Sucesso! Entre pelo login.")
     else:
         st.subheader(f"📖 Plano de {st.session_state.usuario['nome']}")
         df_l = carregar_dados("Leitura")
-        hoje_s = hoje_br.strftime('%d/%m/%Y')
-        l = df_l[df_l['data'].astype(str).str.strip() == hoje_s]
+        l = df_l[df_l['data'].astype(str).str.strip() == hoje_br.strftime('%d/%m/%Y')]
         if not l.empty:
             item = l.iloc[0]
             st.info(f"🔥 Tema: {item.get('tema','')}")
