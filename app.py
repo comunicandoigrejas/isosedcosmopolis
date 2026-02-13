@@ -78,7 +78,7 @@ st.markdown("""
     }
 
     /* AJUSTE PARA DISTÂNCIA HORIZONTAL IGUAL À VERTICAL */
-    .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; } /* 5px + 5px = 10px total */
+    .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; } /* 2px + 2px = 4px total */
     .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
 
     /* Alinhamento dos aniversariantes acompanhando os botões */
