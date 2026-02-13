@@ -34,7 +34,7 @@ def carregar_dados(aba):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-def registrar_usuario_planilha(nome, email, senha, nascimento):
+def registrar_usuario_planilha(nome, nascimento):
     try:
         if "gcp_service_account" not in st.secrets: return False
         creds = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
@@ -42,12 +42,11 @@ def registrar_usuario_planilha(nome, email, senha, nascimento):
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", URL_PLANILHA)
         sheet_id = match.group(1)
         
-        # Formata a data para texto DD/MM/YYYY
         data_nasc_str = nascimento.strftime('%d/%m/%Y')
-        values = [[nome, email, senha, data_nasc_str, ""]] 
+        values = [[nome.strip(), data_nasc_str, ""]] 
         body = {'values': values}
         service.spreadsheets().values().append(
-            spreadsheetId=sheet_id, range="Usuarios_Progresso!A:E",
+            spreadsheetId=sheet_id, range="Usuarios_Progresso!A:C",
             valueInputOption="RAW", body=body).execute()
         return True
     except: return False
@@ -68,19 +67,48 @@ st.markdown("""
         width: 100% !important; height: 80px !important; border-radius: 20px !important;
         color: white !important; font-size: 14px !important; font-weight: bold !important;
         text-transform: uppercase !important; margin-bottom: 5px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
     }
     .btn-1 button { background-color: #0984e3 !important; } .btn-2 button { background-color: #e17055 !important; }
     .btn-3 button { background-color: #00b894 !important; } .btn-4 button { background-color: #6c5ce7 !important; }
     .btn-5 button { background-color: #fdcb6e !important; } .btn-6 button { background-color: #ff7675 !important; }
     .card-niver { background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 5px; border-radius: 12px; text-align: center; margin-bottom: 10px; font-size: 0.85em; }
+    .card-agenda { background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 15px; border-left: 5px solid #0984e3; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. PÁGINA INICIAL ---
+# --- 5. LOGICA DAS PÁGINAS ---
+
 if st.session_state.pagina == "Início":
     st.markdown("<br>", unsafe_allow_html=True)
-    st.title("ISOSED Cosmópolis")
-    st.write(f"✨ {dias_pt[hoje_br.strftime('%A')]}, {hoje_br.day} de {meses_nome[hoje_br.month]}")
+    # Tenta carregar o logo com ajuste de largura
+    c_logo, c_tit = st.columns([1, 3])
+    with c_logo:
+        if os.path.exists("logo igreja.png"): 
+            st.image("logo igreja.png", width=100)
+    with c_tit:
+        st.title("ISOSED Cosmópolis")
+        st.write(f"✨ {dias_pt[hoje_br.strftime('%A')]}, {hoje_br.day} de {meses_nome[hoje_br.month]}")
+
+    # Aniversariantes (Pares)
+    st.markdown("<h3 style='text-align: center;'>🎂 Aniversariantes da Semana</h3>", unsafe_allow_html=True)
+    df_n = carregar_dados("Aniversariantes")
+    if not df_n.empty:
+        aniv = []
+        for _, r in df_n.iterrows():
+            try:
+                d_n = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
+                if hoje_br <= d_n <= (hoje_br + timedelta(days=7)): aniv.append(r)
+            except: continue
+        if aniv:
+            _, centro, _ = st.columns([0.2, 3, 0.2])
+            with centro:
+                for i in range(0, len(aniv), 2):
+                    par = aniv[i:i+2]
+                    cols = st.columns(2)
+                    for idx, p in enumerate(par):
+                        with cols[idx]: st.markdown(f'<div class="card-niver">🎈 <b>{p["nome"]}</b><br>{int(p["dia"]):02d}/{int(p["mes"]):02d}</div>', unsafe_allow_html=True)
+        else: st.info("Nenhum aniversariante nos próximos 7 dias.")
 
     # Menu em Grade
     st.markdown('<div class="menu-grid">', unsafe_allow_html=True)
@@ -91,7 +119,7 @@ if st.session_state.pagina == "Início":
         st.markdown('</div><div class="btn-3">', unsafe_allow_html=True)
         st.button("👥 Grupos", on_click=navegar, args=("Departamentos",))
         st.markdown('</div><div class="btn-5">', unsafe_allow_html=True)
-        st.button("🎂 Aniv.", on_click=navegar, args=("Aniversariantes",))
+        st.button("🎂 Aniversários", on_click=navegar, args=("Aniversariantes",))
         st.markdown('</div>', unsafe_allow_html=True)
     with m2:
         st.markdown('<div class="btn-2">', unsafe_allow_html=True)
@@ -103,48 +131,98 @@ if st.session_state.pagina == "Início":
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 6. PÁGINA LEITURA (COM AUTOCADASTRO) ---
+elif st.session_state.pagina == "Agenda":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.title("🗓️ Agenda 2026")
+    df = carregar_dados("Agenda")
+    if not df.empty:
+        df['data'] = pd.to_datetime(df['data'], dayfirst=True)
+        for m in range(1, 13):
+            evs = df[df['data'].dt.month == m].sort_values(by='data')
+            if not evs.empty:
+                with st.expander(f"📅 {meses_nome[m]}"):
+                    for _, r in evs.iterrows():
+                        st.markdown(f'<div class="card-agenda"><b>{r["data"].strftime("%d/%m")}</b> - {r["evento"]}</div>', unsafe_allow_html=True)
+
+elif st.session_state.pagina == "Escalas":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.title("📢 Escalas")
+    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
+    with t1:
+        df = carregar_dados("Midia")
+        if not df.empty:
+            for _, r in df.iterrows(): st.info(f"📅 {r.get('data','')} - {r.get('culto','')}")
+    with t2:
+        df = carregar_dados("Recepcao")
+        if not df.empty:
+            for _, r in df.iterrows(): st.success(f"📅 {r.get('data','')} - {r.get('dupla','')}")
+
+elif st.session_state.pagina == "Departamentos":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.title("👥 Grupos")
+    df = carregar_dados("Agenda")
+    if not df.empty:
+        df['data'] = pd.to_datetime(df['data'], dayfirst=True)
+        tabs = st.tabs(["Irmãs", "Jovens", "Varões", "Louvor", "Missões"])
+        termos = ["Irmãs", "Jovens", "Varões", "Louvor", "Missões"]
+        for i, tab in enumerate(tabs):
+            with tab:
+                f = df[df['evento'].str.contains(termos[i], case=False, na=False)]
+                for _, r in f.iterrows(): st.write(f"📅 {r['data'].strftime('%d/%m')} - {r['evento']}")
+
+elif st.session_state.pagina == "Devocional":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.title("📖 Devocional")
+    df = carregar_dados("Devocional")
+    d_sel = st.date_input("Data:", value=hoje_br)
+    if not df.empty:
+        hoje = df[df["data"].astype(str).str.strip() == d_sel.strftime('%d/%m/%Y')]
+        if not hoje.empty:
+            d = hoje.iloc[0]
+            st.header(d.get('titulo', ''))
+            st.success(f"📖 {d.get('versiculo', '')}")
+            st.write(d.get('texto', ''))
+        else: st.info("Sem devocional para hoje.")
+
+elif st.session_state.pagina == "Aniversariantes":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.title("🎂 Todos os Aniversariantes")
+    df = carregar_dados("Aniversariantes")
+    if not df.empty:
+        for m in range(1, 13):
+            mes = df[df['mes'] == m].sort_values(by='dia')
+            if not mes.empty:
+                with st.expander(f"📅 {meses_nome[m]}"):
+                    for _, r in mes.iterrows(): st.write(f"🎁 {int(r['dia']):02d}: {r['nome']}")
+
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     
     if st.session_state.usuario is None:
-        t_login, t_cad = st.tabs(["Entrar", "Novo Cadastro"])
-        with t_login:
-            with st.form("login"):
-                e = st.text_input("E-mail")
-                s = st.text_input("Senha", type="password")
-                if st.form_submit_button("Entrar"):
-                    df_u = carregar_dados("Usuarios_Progresso")
-                    user = df_u[(df_u['email'] == e) & (df_u['senha'].astype(str) == s)]
-                    if not user.empty:
-                        st.session_state.usuario = user.iloc[0].to_dict()
-                        st.rerun()
-                    else: st.error("E-mail ou senha incorretos.")
-        with t_cad:
-            with st.form("cadastro"):
-                n = st.text_input("Como quer ser chamado?")
-                e_c = st.text_input("E-mail")
-                s_c = st.text_input("Crie uma senha", type="password")
-                d_n = st.date_input("Data de Nascimento", min_value=datetime(1920, 1, 1), max_value=datetime.now())
-                if st.form_submit_button("Criar minha conta"):
-                    if registrar_usuario_planilha(n, e_c, s_c, d_n):
-                        st.success("Conta criada! Já pode fazer login.")
-                    else: st.error("Erro ao salvar. Verifique a aba 'Usuarios_Progresso'.")
+        t1, t2 = st.tabs(["Entrar pelo Nome", "Novo Cadastro"])
+        with t1:
+            nome_login = st.text_input("Digite o seu nome completo (exatamente como cadastrou)")
+            if st.button("Acessar meu Plano"):
+                df_u = carregar_dados("Usuarios_Progresso")
+                user = df_u[df_u['nome'].str.lower() == nome_login.lower().strip()]
+                if not user.empty:
+                    st.session_state.usuario = user.iloc[0].to_dict()
+                    st.rerun()
+                else: st.error("Nome não encontrado. Verifique se escreveu corretamente ou faça o cadastro.")
+        with t2:
+            n = st.text_input("Nome Completo")
+            d = st.date_input("Data de Nascimento", min_value=datetime(1920,1,1))
+            if st.button("Cadastrar e Iniciar"):
+                if registrar_usuario_planilha(n, d):
+                    st.success("Cadastro realizado! Agora entre pelo seu nome na aba 'Entrar'.")
     else:
-        # Lógica de Boas-vindas e Aniversário
-        nome_curto = st.session_state.usuario['nome'].split()[0]
-        
-        # Verifica se hoje é aniversário
-        try:
-            data_nasc = datetime.strptime(st.session_state.usuario['nascimento'], '%d/%m/%Y')
-            if data_nasc.day == hoje_br.day and data_nasc.month == hoje_br.month:
-                st.balloons()
-                st.markdown(f"### 🎂 Parabéns, {nome_curto}! 🎉")
-                st.info("A ISOSED celebra a sua vida hoje! Que Deus te abençoe ricamente.")
-            else:
-                st.markdown(f"### Olá, {nome_curto}! 👋")
-        except:
-            st.markdown(f"### Olá, {nome_curto}! 👋")
-
-        st.write("Aqui está o seu plano de leitura para hoje:")
-        # [Lógica da leitura diária conforme as versões anteriores]
+        st.subheader(f"📖 Plano de {st.session_state.usuario['nome']}")
+        df_l = carregar_dados("Leitura")
+        hoje_s = hoje_br.strftime('%d/%m/%Y')
+        l = df_l[df_l['data'].astype(str).str.strip() == hoje_s]
+        if not l.empty:
+            item = l.iloc[0]
+            st.info(f"🔥 Tema: {item.get('tema','')}")
+            st.header(item.get('referencia',''))
+            st.write(f"*Propósito: {item.get('proposito','')}*")
+            if st.button("✅ CONCLUÍDO"): st.balloons()
