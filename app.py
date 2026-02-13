@@ -76,15 +76,16 @@ st.markdown("""
         padding: 5px !important;
     }
 
-    .niver-titulo { font-size: 1.25em !important; font-weight: 800; color: #ffd700; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
-    .niver-nome { font-size: 0.95em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; text-align: center; line-height: 1.1; }
-    .niver-data { font-size: 0.85em !important; font-weight: bold; color: white; margin-top: 4px; }
+    .niver-titulo { font-size: 1.2em !important; font-weight: 800; color: #ffd700; margin-bottom: 12px; text-transform: uppercase; text-align: center; }
+    .niver-nome { font-size: 0.9em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; text-align: center; line-height: 1.1; }
+    .niver-data { font-size: 0.8em !important; font-weight: bold; color: white; margin-top: 4px; }
 
     /* Alinhamentos */
     .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
     .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
-    .niver-left { display: flex; justify-content: flex-end; margin-right: 5px; }
-    .niver-right { display: flex; justify-content: flex-start; margin-left: 5px; }
+    
+    /* Centralização dos cards quando em linha */
+    .niver-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
 
     [data-testid="column"] { padding: 0 !important; }
     
@@ -112,14 +113,11 @@ if st.session_state.pagina == "Início":
         
         if aniv:
             st.markdown("<p class='niver-titulo'>🎊 Aniversários da semana</p>", unsafe_allow_html=True)
-            for i in range(0, len(aniv), 2):
-                c1, c2, _ = st.columns([1.5, 1.5, 2])
-                dupla = aniv[i:i+2]
-                with c1:
-                    st.markdown(f'<div class="niver-left"><div class="card-niver"><div class="niver-nome">{dupla[0]["nome"]}</div><div class="niver-data">{int(dupla[0]["dia"]):02d}/{int(dupla[0]["mes"]):02d}</div></div></div>', unsafe_allow_html=True)
-                with c2:
-                    if len(dupla) > 1:
-                        st.markdown(f'<div class="niver-right"><div class="card-niver"><div class="niver-nome">{dupla[1]["nome"]}</div><div class="niver-data">{int(dupla[1]["dia"]):02d}/{int(dupla[1]["mes"]):02d}</div></div></div>', unsafe_allow_html=True)
+            # Criando colunas dinâmicas para colocar todos na mesma linha
+            cols_aniv = st.columns(len(aniv) if len(aniv) <= 4 else 4)
+            for idx, p in enumerate(aniv):
+                with cols_aniv[idx % 4]:
+                    st.markdown(f'<div class="card-niver"><div class="niver-nome">🎈 {p["nome"]}</div><div class="niver-data">{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
 
     st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
 
@@ -145,70 +143,25 @@ if st.session_state.pagina == "Início":
         if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=210)
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("🗓️ Agenda 2026")
-    df = carregar_dados("Agenda")
-    if not df.empty:
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True)
-        for m in range(1, 13):
-            evs = df[df['data'].dt.month == m].sort_values(by='data')
-            if not evs.empty:
-                with st.expander(f"📅 {meses_nome[m]}"):
-                    for _, r in evs.iterrows(): st.write(f"• **{r['data'].strftime('%d/%m')}**: {r['evento']}")
-
-elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📢 Escalas")
-    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
-    with t1:
-        df = carregar_dados("Midia")
-        if not df.empty:
-            for _, r in df.iterrows(): st.info(f"📅 {r.get('data','')} - 👤 {r.get('op','N/A')}")
-    with t2:
-        df = carregar_dados("Recepcao")
-        if not df.empty:
-            for _, r in df.iterrows(): st.success(f"📅 {r.get('data','')} - 👥 {r.get('dupla','')}")
-
-elif st.session_state.pagina == "Departamentos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("👥 Grupos e Departamentos")
-    df = carregar_dados("Agenda")
-    if not df.empty:
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True)
-        tabs = st.tabs(["Irmãs", "Jovens", "Varões", "Louvor", "Missões"])
-        termos = ["Irmãs", "Jovens", "Varões", "Louvor", "Missões"]
-        for i, tab in enumerate(tabs):
-            with tab:
-                f = df[df['evento'].str.contains(termos[i], case=False, na=False)]
-                for _, r in f.iterrows(): st.write(f"📅 {r['data'].strftime('%d/%m')} - {r['evento']}")
-
-elif st.session_state.pagina == "Aniversariantes":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("🎂 Todos os Aniversariantes")
-    df = carregar_dados("Aniversariantes")
-    if not df.empty:
-        for m in range(1, 13):
-            mes = df[df['mes'] == m].sort_values(by='dia')
-            if not mes.empty:
-                with st.expander(f"📅 {meses_nome[m]}"):
-                    for _, r in mes.iterrows(): st.write(f"🎁 {int(r['dia']):02d}: {r['nome']}")
-
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("📖 Meditar / Devocional")
+    
+    # Calendário em Português BR
+    d_sel = st.date_input("Selecione a data para ler o versículo:", value=hoje_br, format="DD/MM/YYYY")
+    
     df = carregar_dados("Devocional")
     if not df.empty:
-        hoje = df[df["data"].astype(str).str.strip() == hoje_br.strftime('%d/%m/%Y')]
+        # Busca a data selecionada no formato da planilha (ex: 13/02/2026)
+        data_busca = d_sel.strftime('%d/%m/%Y')
+        hoje = df[df["data"].astype(str).str.strip() == data_busca]
+        
         if not hoje.empty:
             d = hoje.iloc[0]
-            st.header(d.get('titulo', 'Hoje'))
-            st.success(f"📖 {d.get('versiculo', '')}")
-            st.write(d.get('texto', ''))
-        else: st.info("Sem devocional para hoje.")
+            st.markdown(f"### {d.get('titulo', 'Devocional do Dia')}")
+            st.info(f"📖 **Versículo:** {d.get('versiculo', 'Referência não encontrada')}")
+            st.write(d.get('texto', 'O texto para esta data ainda não foi cadastrado.'))
+        else:
+            st.warning(f"Não encontramos um devocional para o dia {data_busca}. Escolha outra data no calendário.")
 
-elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📜 Plano de Leitura")
-    # Aqui entrará a lógica da barra de progresso em seguida
-    st.info("Área de leitura bíblica diária.")
+# ... (Manter os outros blocos elif para Agenda, Escalas, Departamentos, Aniversariantes e Leitura)
