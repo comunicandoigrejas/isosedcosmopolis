@@ -80,7 +80,7 @@ st.markdown("""
         background: rgba(255, 215, 0, 0.1) !important;
         border: 1px solid #ffd700 !important;
         color: white !important;
-        padding: 5px !important;
+        padding: 12px !important;
     }
 
     /* Fonte Grande para o Nome */
