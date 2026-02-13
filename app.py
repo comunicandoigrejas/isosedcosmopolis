@@ -53,7 +53,7 @@ st.markdown("""
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 100% !important;
+        width: 300% !important;
         box-sizing: border-box !important;
     }
 
