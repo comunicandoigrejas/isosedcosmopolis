@@ -306,7 +306,7 @@ elif st.session_state.pagina == "Meditar":
             st.write(d.get('desafio', ''))
         else: st.warning("Sem devocional para esta data.")
 
-elif st.session_state.pagina == "P_Leitura":
+elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_le")
     st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
 
