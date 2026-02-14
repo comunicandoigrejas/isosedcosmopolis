@@ -204,25 +204,25 @@ def salvar_novo_usuario(lista_dados):
         st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gr")
         st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
     
-    # 1. Carrega os dados da aba Agenda (onde estão os eventos dos grupos)
+        # 1. Carrega os dados da aba Agenda (onde estão os eventos dos grupos)
         df = carregar_dados("Agenda")
     
             if not df.empty:
-        # Limpeza e conversão de data
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        df = df.dropna(subset=['data'])
+            # Limpeza e conversão de data
+            df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+            df = df.dropna(subset=['data'])
         
-        # 2. Criar as abas para cada departamento
-        # Note: Usei "Irmãs" conforme aparece na sua planilha (imagem 59ba68)
-        tabs = st.tabs(["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"])
+            # 2. Criar as abas para cada departamento
+            # Note: Usei "Irmãs" conforme aparece na sua planilha (imagem 59ba68)
+            tabs = st.tabs(["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"])
         
-        # Lista de termos para busca
-        departamentos = ["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"]
-        
-        for i, depto in enumerate(departamentos):
-            with tabs[i]:
-                # Filtra a planilha procurando o nome do departamento na coluna 'evento'
-                filtro = df[df['evento'].str.contains(depto, case=False, na=False)].sort_values(by='data')
+            # Lista de termos para busca
+            departamentos = ["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"]
+            
+            for i, depto in enumerate(departamentos):
+                with tabs[i]:
+                    # Filtra a planilha procurando o nome do departamento na coluna 'evento'
+                    filtro = df[df['evento'].str.contains(depto, case=False, na=False)].sort_values(by='data')
                 
                 if not filtro.empty:
                     st.markdown(f"### Próximas datas: {depto}")
