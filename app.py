@@ -206,17 +206,24 @@ elif st.session_state.pagina == "Leitura":
     
     if st.session_state.usuario is None:
         aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
-        with aba_acc := aba_ac[0]:
+        
+        # CORREÇÃO AQUI: Removido o := que causava o SyntaxError
+        with aba_ac[0]:
             l_nome = st.text_input("Nome completo:", key="l_n").strip().title()
             l_senha = st.text_input("Senha:", type="password", key="l_s")
             if st.button("Acessar", key="l_b"):
                 df_u = carregar_dados("Usuarios")
-                match = df_u[(df_u['nome'] == l_nome) & (df_u['senha'].astype(str) == str(l_senha))]
-                if not match.empty:
-                    st.session_state.usuario = l_nome
-                    st.rerun()
-                else: st.error("Incorreto.")
-        with aba_cad := aba_ac[1]:
+                if not df_u.empty:
+                    match = df_u[(df_u['nome'] == l_nome) & (df_u['senha'].astype(str) == str(l_senha))]
+                    if not match.empty:
+                        st.session_state.usuario = l_nome
+                        st.rerun()
+                    else: 
+                        st.error("Nome ou senha incorretos.")
+                else:
+                    st.error("Base de usuários não encontrada.")
+
+        with aba_ac[1]:
             with st.form("f_cad"):
                 n = st.text_input("Nome Completo:").strip().title()
                 tel = st.text_input("WhatsApp:")
@@ -225,12 +232,19 @@ elif st.session_state.pagina == "Leitura":
                 sen = st.text_input("Senha:", type="password")
                 if st.form_submit_button("Finalizar"):
                     if n and sen:
+                        # Chama a função que criamos no topo do arquivo
                         if salvar_novo_usuario([n, tel, minis, str(nasc), sen, 1, "Plano Anual"]):
-                            st.success("Sucesso! Faça Login.")
+                            st.success("Sucesso! Faça Login na aba ao lado.")
+                        else: 
+                            st.error("Erro ao salvar na planilha.")
+                    else:
+                        st.warning("Preencha Nome e Senha.")
     else:
         u = st.session_state.usuario
         st.write(f"Olá, **{u}**!")
-        if st.button("Sair"): st.session_state.usuario = None; st.rerun()
+        if st.button("Sair"): 
+            st.session_state.usuario = None
+            st.rerun()
         
         df_l = carregar_dados("Leitura")
         dia_p = st.session_state.get(f"dia_{u}", 1)
