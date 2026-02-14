@@ -228,7 +228,7 @@ elif st.session_state.pagina == "Leitura":
                 n = st.text_input("Nome Completo:").strip().title()
                 tel = st.text_input("WhatsApp:")
                 minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
-                nasc = st.date_input("Nascimento:")
+                nasc = st.date_input("Nascimento:"
                 min_value=datetime(1900, 1, 1), 
                 max_value=hoje_br,
                 format="DD/MM/YYYY")
