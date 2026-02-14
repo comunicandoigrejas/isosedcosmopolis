@@ -306,25 +306,96 @@ elif st.session_state.pagina == "Meditar":
             st.write(d.get('desafio', ''))
         else: st.warning("Sem devocional para esta data.")
 
-elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
-    df_l = carregar_dados("Leitura")
-    if not df_l.empty:
-        # Mostra a leitura sugerida para o dia atual
-        hoje_l = df_l[df_l['dia'].astype(str) == str(hoje_br.day)]
-        if not hoje_l.empty:
-            l = hoje_l.iloc[0]
-            st.info(f"📍 **Plano:** {l.get('plano', 'Anual')}")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.write(f"📖 **Antigo Testamento:** {l.get('antigo_testamento','')}")
-                st.write(f"📖 **Novo Testamento:** {l.get('novo_testamento','')}")
-            with col2:
-                st.write(f"🎶 **Salmos:** {l.get('salmos','')}")
-                st.write(f"💡 **Provérbios:** {l.get('proverbios','')}")
-        st.divider()
-        st.dataframe(df_l, use_container_width=True)
+elif st.session_state.pagina == "P_Leitura":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_le")
+    st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
+
+    # 1. Sistema de Identificação
+    if st.session_state.usuario is None:
+        st.markdown("### Bem-vindo! Identifique-se para ver seu progresso.")
+        nome_input = st.text_input("Digite seu nome completo:", key="input_nome")
+        if st.button("Entrar no Plano", key="btn_login"):
+            if nome_input:
+                st.session_state.usuario = nome_input.strip().title()
+                st.rerun()
+            else:
+                st.warning("Por favor, digite seu nome.")
+    
+    else:
+        # Usuário logado
+        st.markdown(f"Olá, **{st.session_state.usuario}**! 👋")
+        if st.button("Sair / Trocar Usuário", key="btn_logout"):
+            st.session_state.usuario = None
+            st.rerun()
+
+        # 2. Carregar dados da aba Leitura
+        df_leitura = carregar_dados("Leitura")
+        
+        if not df_leitura.empty:
+            # Pegar todos os planos disponíveis na planilha
+            planos_disponiveis = df_leitura['plano'].unique()
+            
+            plano_escolhido = st.selectbox("Selecione seu plano de leitura:", planos_disponiveis)
+            
+            # 3. Lógica de "De onde parou"
+            # Para o teste, vamos usar o dia 1. 
+            # (Futuramente buscaremos esse dia na aba 'Progresso')
+            dia_parada = st.session_state.get(f"progresso_{st.session_state.usuario}", 1)
+
+            dados_plano = df_leitura[(df_leitura['plano'] == plano_escolhido) & (df_leitura['dia'].astype(str) == str(dia_parada))]
+
+            if not dados_plano.empty:
+                leitura = dados_plano.iloc[0]
+                
+                st.markdown(f"### 📍 Você está no Dia {dia_parada}")
+                
+                # Exibição das colunas específicas que você pediu
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"""
+                        <div style="background: rgba(10, 61, 98, 0.3); padding: 15px; border-radius: 10px; border-left: 5px solid #ff7675;">
+                            <p style='margin:0; color:#ff7675; font-weight:bold;'>📜 Antigo Testamento</p>
+                            <p style='margin:0; font-size:1.2em;'>{leitura.get('antigo_testamento', '---')}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div style="background: rgba(10, 61, 98, 0.3); padding: 15px; border-radius: 10px; border-left: 5px solid #00b894;">
+                            <p style='margin:0; color:#00b894; font-weight:bold;'>📖 Novo Testamento</p>
+                            <p style='margin:0; font-size:1.2em;'>{leitura.get('novo_testamento', '---')}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                with col2:
+                    st.markdown(f"""
+                        <div style="background: rgba(10, 61, 98, 0.3); padding: 15px; border-radius: 10px; border-left: 5px solid #0984e3;">
+                            <p style='margin:0; color:#0984e3; font-weight:bold;'>🎶 Salmos</p>
+                            <p style='margin:0; font-size:1.2em;'>{leitura.get('salmos', '---')}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div style="background: rgba(10, 61, 98, 0.3); padding: 15px; border-radius: 10px; border-left: 5px solid #f1c40f;">
+                            <p style='margin:0; color:#f1c40f; font-weight:bold;'>💡 Provérbios</p>
+                            <p style='margin:0; font-size:1.2em;'>{leitura.get('proverbios', '---')}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
+                    # Incrementa o dia no estado da sessão
+                    st.session_state[f"progresso_{st.session_state.usuario}"] = dia_parada + 1
+                    st.success("Parabéns! Progresso salvo. Vá para o próximo dia!")
+                    st.balloons()
+                    st.rerun()
+            else:
+                st.success("🎉 Você concluiu todo o plano de leitura! Glória a Deus!")
+                if st.button("Recomeçar Plano"):
+                    st.session_state[f"progresso_{st.session_state.usuario}"] = 1
+                    st.rerun()
+        else:
+            st.error("Não foi possível carregar os planos de leitura. Verifique a aba 'Leitura'.")
 
 elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
