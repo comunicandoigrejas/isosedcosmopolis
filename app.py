@@ -200,7 +200,7 @@ def salvar_novo_usuario(lista_dados):
     else:
         st.error("⚠️ Não foi possível carregar os dados da aba 'Agenda'. Verifique o nome da aba na planilha.")
         
-elif st.session_state.pagina == "Grupos":
+    elif st.session_state.pagina == "Grupos":
         st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gr")
         st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
     
