@@ -62,29 +62,35 @@ if 'usuario' not in st.session_state:
 def navegar(p): 
     st.session_state.pagina = p
 
-# --- 4. ESTILO CSS ---
+# --- 4. ESTILO CSS (Correção de Visibilidade e Cores) ---
 st.markdown("""
     <style>
+    /* Esconde elementos padrão do Streamlit */
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
-    [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); color: white; }
-    .main-wrapper { max-width: 550px; margin: 0 auto; padding: 5px; }
     
-    div.stButton > button, .card-niver {
-        width: 130px !important; border-radius: 12px !important;
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        box-sizing: border-box !important; margin-bottom: 10px !important; 
+    /* Fundo do App */
+    [data-testid="stAppViewContainer"] { 
+        background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); 
+        color: white; 
     }
-    div.stButton > button { height: 55px !important; font-size: 11px !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid rgba(255,255,255,0.1) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important; }
-    .card-niver { height: 85px !important; background: rgba(255, 215, 0, 0.1) !important; border: 1px solid #ffd700 !important; flex-direction: column !important; padding: 5px !important; text-align: center !important; }
     
-    .niver-titulo { font-size: 1.3em !important; font-weight: 800; color: #ffd700; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
-    .niver-nome { font-size: 0.9em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; line-height: 1.1; }
-    .niver-data { font-size: 0.85em !important; font-weight: bold; color: white; margin-top: 4px; }
-    
-    .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
-    .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
-    [data-testid="column"] { padding: 0 !important; }
-    
+    .main-wrapper { max-width: 550px; margin: 0 auto; padding: 5px; }
+
+    /* CONFIGURAÇÃO DOS BOTÕES */
+    div.stButton > button {
+        width: 130px !important; 
+        height: 55px !important; 
+        border-radius: 12px !important;
+        font-size: 12px !important;
+        font-weight: 900 !important; /* Fonte bem grossa */
+        text-transform: uppercase !important;
+        color: #FFFFFF !important; /* FORÇA TEXTO BRANCO */
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;
+        margin-bottom: 10px !important;
+        transition: 0.3s;
+    }
+
     /* CORES DE FUNDO ESPECÍFICAS (Forçando a cor para não ficar branco) */
     .btn-1 button { background-color: #0984e3 !important; } /* Azul */
     .btn-2 button { background-color: #e17055 !important; } /* Laranja */
@@ -92,9 +98,39 @@ st.markdown("""
     .btn-4 button { background-color: #6c5ce7 !important; } /* Roxo */
     .btn-5 button { background-color: #fdcb6e !important; } /* Amarelo Escuro */
     .btn-6 button { background-color: #ff7675 !important; } /* Vermelho/Rosa */
+
+    /* Efeito ao passar o mouse */
+    div.stButton > button:hover {
+        transform: scale(1.05);
+        border: 1px solid white !important;
+    }
+
+    /* CARDS DE ANIVERSÁRIO */
+    .card-niver { 
+        width: 130px !important;
+        height: 85px !important; 
+        background: rgba(255, 215, 0, 0.15) !important; 
+        border: 2px solid #ffd700 !important; 
+        border-radius: 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        margin-bottom: 10px !important;
+    }
+
+    .niver-titulo { font-size: 1.3em !important; font-weight: 800; color: #ffd700; text-align: center; margin-bottom: 15px; text-transform: uppercase; }
+    .niver-nome { font-size: 0.9em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; line-height: 1.1; padding: 2px; }
+    .niver-data { font-size: 0.85em !important; font-weight: bold; color: #FFFFFF !important; margin-top: 4px; }
+
+    /* Alinhamentos laterais */
+    .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
+    .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
+    
+    [data-testid="column"] { padding: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
-
 # --- 5. LÓGICA DE PÁGINAS ---
 
 if st.session_state.pagina == "Início":
