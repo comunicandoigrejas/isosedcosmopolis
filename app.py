@@ -212,6 +212,58 @@ elif st.session_state.pagina == "Grupos":
     else:
         st.error("Não foi possível carregar os dados da Agenda para filtrar os grupos.")
 
+elif st.session_state.pagina == "AnivMês":
+    # Botão de Voltar para a Home
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_aniv")
+    
+    st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
+    
+    # 1. Carregar os dados da aba Aniversariantes
+    df_aniv = carregar_dados("Aniversariantes")
+    
+    if not df_aniv.empty:
+        # Garantir que a coluna 'mes' e 'dia' sejam tratadas como números
+        df_aniv['mes'] = pd.to_numeric(df_aniv['mes'], errors='coerce')
+        df_aniv['dia'] = pd.to_numeric(df_aniv['dia'], errors='coerce')
+        df_aniv = df_aniv.dropna(subset=['mes', 'dia'])
+
+        # 2. Criar os botões dos meses (igual à Agenda)
+        meses_lista = {
+            1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+            7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+        }
+        
+        cols_aniv = st.columns(12)
+        # Define o mês atual como padrão se nenhum for selecionado
+        if 'mes_selecionado_aniv' not in st.session_state:
+            st.session_state.mes_selecionado_aniv = hoje_br.month
+
+        for i, (num, nome) in enumerate(meses_lista.items()):
+            with cols_aniv[i]:
+                if st.button(nome, key=f"btn_aniv_{num}"):
+                    st.session_state.mes_selecionado_aniv = num
+                    st.rerun()
+
+        # 3. Filtrar e Exibir os aniversariantes do mês escolhido
+        mes_atual = st.session_state.mes_selecionado_aniv
+        lista_mes = df_aniv[df_aniv['mes'] == mes_atual].sort_values(by='dia')
+
+        st.markdown(f"### 🎉 Comemorações de {meses_lista[mes_atual]}")
+        
+        if not lista_mes.empty:
+            for _, r in lista_mes.iterrows():
+                # Estilo de card para cada aniversariante
+                st.markdown(f"""
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #f1c40f;">
+                        <span style="color: #f1c40f; font-weight: bold;">Dia {int(r['dia']):02d}</span> - 
+                        <span style="color: white; font-size: 1.1em;">{r['nome']}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info(f"Nenhum aniversariante registrado para {meses_lista[mes_atual]}.")
+    else:
+        st.error("⚠️ Não foi possível carregar a lista de aniversariantes. Verifique a aba na planilha.")
+
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
