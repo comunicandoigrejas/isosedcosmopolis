@@ -122,12 +122,57 @@ if st.session_state.pagina == "Início":
     with c_logo:
         if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=200)
 
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
+elif st.session_state.pagina == "P_Agenda":
+    # Botão de Voltar
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_ag")
+    
+    st.markdown("<h1>🗓️ Agenda ISOSED 2026</h1>", unsafe_allow_html=True)
+    
+    # 1. Carregar os dados
     df = carregar_dados("Agenda")
+    
     if not df.empty:
-        st.dataframe(df, use_container_width=True)
+        # Converter a coluna 'data' para o formato de data real do Python
+        df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        df = df.dropna(subset=['data']) # Remove linhas sem data
+        
+        # 2. Criar os botões dos meses em uma linha (Layout de abas)
+        meses_lista = {
+            1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+            7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+        }
+        
+        # Criar colunas para os botões dos meses
+        cols_meses = st.columns(12)
+        mes_selecionado = st.session_state.get('mes_agenda', hoje_br.month)
+
+        for i, (num, nome) in enumerate(meses_lista.items()):
+            with cols_meses[i]:
+                # Se o mês for o selecionado, o botão pode ter um destaque visual
+                if st.button(nome, key=f"mes_{num}"):
+                    st.session_state.mes_agenda = num
+                    st.rerun()
+
+        # 3. Filtrar e Exibir
+        mes_final = st.session_state.get('mes_agenda', hoje_br.month)
+        eventos_mes = df[df['data'].dt.month == mes_final].sort_values(by='data')
+
+        st.markdown(f"### Eventos de {meses_lista[mes_final]}")
+        
+        if not eventos_mes.empty:
+            for _, r in eventos_mes.iterrows():
+                # Formata a exibição: Dia - Evento
+                dia_formatado = r['data'].strftime('%d/%m')
+                st.markdown(f"""
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #0a3d62;">
+                        <span style="color: #ffd700; font-weight: bold;">{dia_formatado}</span> - 
+                        <span style="color: white;">{r['evento']}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info(f"Nenhum evento agendado para {meses_lista[mes_final]}.")
+    else:
+        st.error("⚠️ Não foi possível carregar os dados da aba 'Agenda'. Verifique o nome da aba na planilha.")
 
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
