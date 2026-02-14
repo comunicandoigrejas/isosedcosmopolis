@@ -120,23 +120,23 @@ st.markdown("""
 
 # --- 5. LÓGICA DA PÁGINA INICIAL ---
 if st.session_state.pagina == "Início":
+    st.markdown('<div class="main-wrapper">', unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center; margin-bottom: 25px;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
 
-    # 1. ANIVERSARIANTES (Lógica Domingo a Segunda)
+    # 1. ANIVERSARIANTES (Domingo a Segunda)
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         aniv_semana = []
         for _, r in df_n.iterrows():
             try:
-                # Ajuste de data: Domingo desta semana até Segunda da próxima
                 d_aniv = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
                 if domingo_atual <= d_aniv <= segunda_proxima:
                     aniv_semana.append(r)
-            except: continue
+            except: 
+                continue
         
         if aniv_semana:
             st.markdown("<p style='text-align:center; color:#ffd700; font-weight:bold; font-size:1.1em;'>🎊 ANIVERSÁRIOS DA SEMANA</p>", unsafe_allow_html=True)
-            # Exibe todos os aniversariantes em linha
             cols_aniv = st.columns(len(aniv_semana) if len(aniv_semana) <= 4 else 4)
             for idx, p in enumerate(aniv_semana):
                 with cols_aniv[idx % 4]:
@@ -149,7 +149,8 @@ if st.session_state.pagina == "Início":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 2. MENU + LOGO (Aproximados e Legíveis)
+    # 2. MENU + LOGO (Aproximados e Coloridos)
+    # A proporção [1.5, 1.5, 2] garante que os botões fiquem juntos à esquerda e o logo à direita
     c1, c2, c_logo = st.columns([1.5, 1.5, 2])
     
     with c1:
@@ -166,249 +167,15 @@ if st.session_state.pagina == "Início":
         st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
         st.markdown('</div><div class="btn-purple">', unsafe_allow_html=True)
         st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
+        # AQUI ESTAVA O ERRO DE INDENTAÇÃO - AGORA CORRIGIDO:
         st.markdown('</div><div class="btn-red">', unsafe_allow_html=True)
-        # LINHA CORRIGIDA ABAIXO:
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_logo:
         if os.path.exists("logo igreja.png"):
+            # Centraliza o logo verticalmente para alinhar com os botões
+            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
             st.image("logo igreja.png", width=200)
 
-# --- 5. LÓGICA DA PÁGINA INICIAL ---
-if st.session_state.pagina == "Início":
-    st.markdown("<h2 style='text-align: center; margin-bottom: 25px;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
-
-    # 1. ANIVERSARIANTES (Domingo a Segunda)
-    df_n = carregar_dados("Aniversariantes")
-    if not df_n.empty:
-        aniv = []
-        for _, r in df_n.iterrows():
-            try:
-                d_aniv = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
-                if domingo_atual <= d_aniv <= segunda_proxima:
-                    aniv.append(r)
-            except: continue
-        
-        if aniv:
-            st.markdown("<p style='text-align:center; color:#ffd700; font-weight:bold; font-size:1.2em;'>🎊 ANIVERSÁRIOS DA SEMANA</p>", unsafe_allow_html=True)
-            # Centraliza os cards em uma linha
-            cols_aniv = st.columns(len(aniv) if len(aniv) <= 4 else 4)
-            for idx, p in enumerate(aniv):
-                with cols_aniv[idx % 4]:
-                    st.markdown(f"""
-                        <div class="card-niver">
-                            <div class="niver-nome">{p['nome']}</div>
-                            <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # 2. MENU + LOGO (Aproximados e Coloridos)
-    c1, c2, c_logo = st.columns([1.5, 1.5, 2])
-    
-    with c1:
-        st.markdown('<div class="btn-agenda">', unsafe_allow_html=True)
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
-        st.markdown('</div><div class="btn-grupos">', unsafe_allow_html=True)
-        st.button("👥 Grupos", on_click=navegar, args=("Departamentos",))
-        st.markdown('</div><div class="btn-aniv">', unsafe_allow_html=True)
-        st.button("🎂 Aniversários", on_click=navegar, args=("Aniversariantes",))
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c2:
-        st.markdown('<div class="btn-escalas">', unsafe_allow_html=True)
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
-        st.markdown('</div><div class="btn-meditar">', unsafe_allow_html=True)
-        st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
-        st.markdown('</div><div class="btn-leitura">', unsafe_allow_html=True)
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_logo:
-        if os.path.exists("logo igreja.png"):
-            st.image("logo igreja.png", width=200)
-
-# --- 5. LÓGICA DA PÁGINA INICIAL ---
-if st.session_state.pagina == "Início":
-    st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
-
-    # 1. ANIVERSARIANTES (Aproximados no Centro)
-    df_n = carregar_dados("Aniversariantes")
-    # ... (mesma lógica de busca de antes) ...
-    
-    if aniv:
-        st.markdown("<p style='text-align:center; color:#ffd700; font-weight:bold;'>🎊 ANIVERSÁRIOS DA SEMANA</p>", unsafe_allow_html=True)
-        # Colunas estreitas para os cards não "fugirem" (corrige image_d918ca.png)
-        _, c_n1, c_n2, _ = st.columns([1, 2, 2, 1]) 
-        with c_n1:
-            st.markdown(f'<div class="card-niver"><div class="niver-nome">{aniv[0]["nome"]}</div><div class="niver-data">{int(aniv[0]["dia"]):02d}/{int(aniv[0]["mes"]):02d}</div></div>', unsafe_allow_html=True)
-        with c_n2:
-            if len(aniv) > 1:
-                st.markdown(f'<div class="card-niver"><div class="niver-nome">{aniv[1]["nome"]}</div><div class="niver-data">{int(aniv[1]["dia"]):02d}/{int(aniv[1]["mes"]):02d}</div></div>', unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # 2. MENU + LOGO (Aproximados)
-    c_btn1, c_btn2, c_logo = st.columns([1.5, 1.5, 2])
-
-    with c_btn1:
-        st.markdown('<div class="cor-1"></div>', unsafe_allow_html=True)
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
-        st.markdown('<div class="cor-3"></div>', unsafe_allow_html=True)
-        st.button("👥 Grupos", on_click=navegar, args=("Departamentos",))
-        st.markdown('<div class="cor-5"></div>', unsafe_allow_html=True)
-        st.button("🎂 Aniversários", on_click=navegar, args=("Aniversariantes",))
-
-    with c_btn2:
-        st.markdown('<div class="cor-2"></div>', unsafe_allow_html=True)
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
-        st.markdown('<div class="cor-4"></div>', unsafe_allow_html=True)
-        st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
-        st.markdown('<div class="cor-6"></div>', unsafe_allow_html=True)
-       st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
-        st.markdown('</div>', unsafe_allow_html=True)
-# --- 5. LÓGICA DE PÁGINAS ---
-
-if st.session_state.pagina == "Início":
-    st.markdown('<div class="main-wrapper">', unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; margin-bottom: 20px; font-weight: 800;'>ISOSED COSMÓPOLIS</h3>", unsafe_allow_html=True)
-
-    # Aniversariantes
-    df_n = carregar_dados("Aniversariantes")
-    if not df_n.empty:
-        aniv = []
-        for _, r in df_n.iterrows():
-            try:
-                data_aniv = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
-                if domingo_atual <= data_aniv <= segunda_proxima: aniv.append(r)
-            except: continue
-        
-        if aniv:
-            st.markdown("<p class='niver-titulo'>🎊 Aniversários da semana</p>", unsafe_allow_html=True)
-            cols_aniv = st.columns(len(aniv) if len(aniv) <= 4 else 4)
-            for idx, p in enumerate(aniv):
-                with cols_aniv[idx % 4]:
-                    st.markdown(f'<div class="card-niver"><div class="niver-nome">{p["nome"]}</div><div class="niver-data">{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
-
-    st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
-    c1, c2, c_logo = st.columns([1.5, 1.5, 2])
-    with c1:
-        st.markdown('<div class="btn-left btn-1">', unsafe_allow_html=True)
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
-        st.markdown('</div><div class="btn-left btn-3">', unsafe_allow_html=True)
-        st.button("👥 Grupos", on_click=navegar, args=("Departamentos",))
-        st.markdown('</div><div class="btn-left btn-5">', unsafe_allow_html=True)
-        st.button("🎂 Aniversários", on_click=navegar, args=("Aniversariantes",))
-        st.markdown('</div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="btn-right btn-2">', unsafe_allow_html=True)
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
-        st.markdown('</div><div class="btn-right btn-4">', unsafe_allow_html=True)
-        st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
-        st.markdown('</div><div class="btn-right btn-6">', unsafe_allow_html=True)
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
-        st.markdown('</div>', unsafe_allow_html=True)
-    with c_logo:
-        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=180)
     st.markdown('</div>', unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("🗓️ Agenda 2026")
-    df = carregar_dados("Agenda")
-    if not df.empty:
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True)
-        for m in range(1, 13):
-            evs = df[df['data'].dt.month == m].sort_values(by='data')
-            if not evs.empty:
-                with st.expander(f"📅 {meses_nome[m]}"):
-                    for _, r in evs.iterrows(): st.write(f"• **{r['data'].strftime('%d/%m')}**: {r['evento']}")
-
-elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📢 Escalas")
-    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
-    with t1:
-        df = carregar_dados("Midia")
-        if not df.empty:
-            for _, r in df.iterrows(): st.info(f"📅 {r.get('data','')} - 👤 {r.get('op','N/A')}")
-    with t2:
-        df = carregar_dados("Recepcao")
-        if not df.empty:
-            for _, r in df.iterrows(): st.success(f"📅 {r.get('data','')} - 👥 {r.get('dupla','')}")
-
-elif st.session_state.pagina == "Departamentos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("👥 Grupos e Departamentos")
-    df = carregar_dados("Agenda")
-    if not df.empty:
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True)
-        tabs = st.tabs(["Irmãs", "Jovens", "Varões", "Louvor", "Missões"])
-        termos = ["Irmãs", "Jovens", "Varões", "Louvor", "Missões"]
-        for i, tab in enumerate(tabs):
-            with tab:
-                f = df[df['evento'].str.contains(termos[i], case=False, na=False)]
-                for _, r in f.iterrows(): st.write(f"📅 {r['data'].strftime('%d/%m')} - {r['evento']}")
-
-elif st.session_state.pagina == "Aniversariantes":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("🎂 Todos os Aniversariantes")
-    df = carregar_dados("Aniversariantes")
-    if not df.empty:
-        for m in range(1, 13):
-            mes = df[df['mes'] == m].sort_values(by='dia')
-            if not mes.empty:
-                with st.expander(f"📅 {meses_nome[m]}"):
-                    for _, r in mes.iterrows(): st.write(f"🎁 {int(r['dia']):02d}: {r['nome']}")
-
-elif st.session_state.pagina == "Devocional":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📖 Meditar")
-    d_sel = st.date_input("Escolha a data:", value=hoje_br, format="DD/MM/YYYY")
-    df = carregar_dados("Devocional")
-    if not df.empty:
-        data_busca = d_sel.strftime('%d/%m/%Y')
-        hoje = df[df["data"].astype(str).str.strip() == data_busca]
-        if not hoje.empty:
-            d = hoje.iloc[0]
-            st.header(d.get('titulo', 'Devocional'))
-            st.success(f"📖 **Versículo:** {d.get('versiculo', 'N/A')}")
-            st.write(d.get('texto', ''))
-            st.markdown("---")
-            st.subheader("🎯 Aplicação")
-            st.write(d.get('aplicacao', 'Reflexão...'))
-            st.subheader("💪 Desafio")
-            st.write(d.get('desafio', 'Ação...'))
-        else: st.warning(f"Sem devocional para {data_busca}.")
-
-elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📜 Plano de Leitura")
-    if st.session_state.usuario is None:
-        st.warning("⚠️ Identifique-se para salvar progresso.")
-        n_log = st.text_input("Seu Nome Completo:")
-        if st.button("Acessar"):
-            df_u = carregar_dados("Usuarios_Progresso")
-            u = df_u[df_u['nome'].str.lower() == n_log.lower().strip()]
-            if not u.empty:
-                st.session_state.usuario = u.iloc[0].to_dict()
-                st.rerun()
-    else:
-        st.write(f"📖 Olá, **{st.session_state.usuario['nome']}**!")
-        df_l = carregar_dados("Leitura")
-        if not df_l.empty:
-            d_hj = hoje_br.strftime('%d/%m/%Y')
-            l = df_l[df_l['dia'].astype(str).str.strip() == d_hj]
-            if not l.empty:
-                item = l.iloc[0]
-                c_at, c_nt = st.columns(2)
-                with c_at: st.info(f"📜 **A.T:** {item.get('antigo_testamento','-')}")
-                with c_nt: st.success(f"✝️ **N.T:** {item.get('novo_testamento','-')}")
-                c_sl, c_pv = st.columns(2)
-                with c_sl: st.warning(f"🎵 **Salmos:** {item.get('salmos','-')}")
-                with c_pv: st.error(f"💡 **Provérbios:** {item.get('proverbios','-')}")
-                if st.button("✅ CONCLUIR LEITURA"):
-                    if registrar_leitura_log(st.session_state.usuario['nome'], d_hj):
-                        st.balloons(); st.success("Salvo!")
