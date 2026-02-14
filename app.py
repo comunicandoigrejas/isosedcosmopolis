@@ -19,6 +19,9 @@ st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wid
 # --- 2. NAVEGAÇÃO E ESTADO ---
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "Início"
+    
+    if 'usuario' not in st.session_state:
+    st.session_state.usuario = None
 
 def navegar(p):
     st.session_state.pagina = p
