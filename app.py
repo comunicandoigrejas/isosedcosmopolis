@@ -154,7 +154,7 @@ elif st.session_state.pagina == "Agenda":
         aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
         aba.append_row(lista_dados)
         return True
-    except Exception as e:
+      except Exception as e:
         st.error(f"Erro ao gravar na planilha: {e}")
         return False
         
