@@ -4,13 +4,15 @@ import os
 import re
 from datetime import datetime, timedelta
 import pytz
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 # --- 1. CONFIGURAÇÃO DE DATA E FUSO ---
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
 hoje_br = agora_br.date()
 
-# Lógica da Semana: De Domingo (passado) até Segunda (próxima)
+# Lógica: Domingo desta semana até Segunda da próxima (Janela de 9 dias)
 domingo_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
 segunda_proxima = domingo_atual + timedelta(days=8)
 
@@ -22,7 +24,7 @@ dias_pt = {"Monday":"Segunda-feira", "Tuesday":"Terça-feira", "Wednesday":"Quar
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
 # --- 2. CONEXÃO COM A PLANILHA ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=1283101789#gid=1283101789"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=504320066#gid=504320066"
 
 def carregar_dados(aba):
     try:
@@ -31,7 +33,6 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
-            # Normaliza colunas: remove acentos e deixa minúsculo
             df.columns = [str(c).lower().strip().replace('ê', 'e').replace('ã', 'a').replace('ç', 'c') for c in df.columns]
             return df
         return pd.DataFrame()
@@ -39,41 +40,27 @@ def carregar_dados(aba):
 
 def registrar_leitura_log(nome, data):
     try:
-        # Usa os segredos que você já configurou para o Google Cloud
         if "gcp_service_account" not in st.secrets: return False
         creds = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
         service = build('sheets', 'v4', credentials=creds)
-        
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", URL_PLANILHA)
         sheet_id = match.group(1)
-        
         values = [[nome, data]]
         body = {'values': values}
-        
-        # Adiciona uma nova linha na aba Leitura_Log
         service.spreadsheets().values().append(
             spreadsheetId=sheet_id, range="Leitura_Log!A:B",
             valueInputOption="RAW", body=body).execute()
         return True
-    except Exception as e:
-        print(f"Erro: {e}")
-        return False
+    except: return False
 
-# --- 3. NAVEGAÇÃO E ESTADO (Adicione estas linhas) ---
+# --- 3. NAVEGAÇÃO E ESTADO ---
 if 'pagina' not in st.session_state: 
     st.session_state.pagina = "Início"
-
-if 'usuario' not in st.session_state:# --- 3. NAVEGAÇÃO E ESTADO (Obrigatório no topo) ---
-if 'pagina' not in st.session_state: 
-    st.session_state.pagina = "Início"
-
 if 'usuario' not in st.session_state: 
     st.session_state.usuario = None
 
-# Esta é a função que estava faltando!
 def navegar(p): 
-    st.session_state.pagina = p 
-    st.session_state.usuario = None
+    st.session_state.pagina = p
 
 # --- 4. ESTILO CSS ---
 st.markdown("""
@@ -81,6 +68,7 @@ st.markdown("""
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); color: white; }
     .main-wrapper { max-width: 550px; margin: 0 auto; padding: 5px; }
+    
     div.stButton > button, .card-niver {
         width: 130px !important; border-radius: 12px !important;
         display: flex !important; align-items: center !important; justify-content: center !important;
@@ -88,12 +76,15 @@ st.markdown("""
     }
     div.stButton > button { height: 55px !important; font-size: 11px !important; font-weight: bold !important; text-transform: uppercase !important; border: 1px solid rgba(255,255,255,0.1) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important; }
     .card-niver { height: 85px !important; background: rgba(255, 215, 0, 0.1) !important; border: 1px solid #ffd700 !important; flex-direction: column !important; padding: 5px !important; text-align: center !important; }
-    .niver-titulo { font-size: 1.25em !important; font-weight: 800; color: #ffd700; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
+    
+    .niver-titulo { font-size: 1.3em !important; font-weight: 800; color: #ffd700; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
     .niver-nome { font-size: 0.9em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; line-height: 1.1; }
     .niver-data { font-size: 0.85em !important; font-weight: bold; color: white; margin-top: 4px; }
+    
     .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
     .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
     [data-testid="column"] { padding: 0 !important; }
+    
     .btn-1 button { background-color: #0984e3 !important; } .btn-2 button { background-color: #e17055 !important; }
     .btn-3 button { background-color: #00b894 !important; } .btn-4 button { background-color: #6c5ce7 !important; }
     .btn-5 button { background-color: #fdcb6e !important; } .btn-6 button { background-color: #ff7675 !important; }
@@ -106,6 +97,7 @@ if st.session_state.pagina == "Início":
     st.markdown('<div class="main-wrapper">', unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; margin-bottom: 20px; font-weight: 800;'>ISOSED COSMÓPOLIS</h3>", unsafe_allow_html=True)
 
+    # Aniversariantes
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         aniv = []
@@ -117,7 +109,6 @@ if st.session_state.pagina == "Início":
         
         if aniv:
             st.markdown("<p class='niver-titulo'>🎊 Aniversários da semana</p>", unsafe_allow_html=True)
-            # Alinhamento em linha única quando couber
             cols_aniv = st.columns(len(aniv) if len(aniv) <= 4 else 4)
             for idx, p in enumerate(aniv):
                 with cols_aniv[idx % 4]:
@@ -209,58 +200,37 @@ elif st.session_state.pagina == "Devocional":
             st.write(d.get('texto', ''))
             st.markdown("---")
             st.subheader("🎯 Aplicação")
-            st.write(d.get('aplicacao', 'Reflexão para hoje...'))
+            st.write(d.get('aplicacao', 'Reflexão...'))
             st.subheader("💪 Desafio")
-            st.write(d.get('desafio', 'Ação prática para hoje...'))
+            st.write(d.get('desafio', 'Ação...'))
         else: st.warning(f"Sem devocional para {data_busca}.")
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📜 Plano de Leitura Anual")
-
-    # Verifica se o usuário está logado
+    st.title("📜 Plano de Leitura")
     if st.session_state.usuario is None:
-        st.warning("⚠️ Identifique-se para marcar seu progresso.")
-        nome_login = st.text_input("Digite seu Nome Completo (Exatamente como na planilha):")
-        if st.button("Acessar meu Plano"):
+        st.warning("⚠️ Identifique-se para salvar progresso.")
+        n_log = st.text_input("Seu Nome Completo:")
+        if st.button("Acessar"):
             df_u = carregar_dados("Usuarios_Progresso")
-            if not df_u.empty:
-                # Busca o nome ignorando maiúsculas/minúsculas
-                user = df_u[df_u['nome'].str.lower() == nome_login.lower().strip()]
-                if not user.empty:
-                    st.session_state.usuario = user.iloc[0].to_dict()
-                    st.rerun()
-                else:
-                    st.error("Nome não encontrado na base de membros.")
+            u = df_u[df_u['nome'].str.lower() == n_log.lower().strip()]
+            if not u.empty:
+                st.session_state.usuario = u.iloc[0].to_dict()
+                st.rerun()
     else:
-        # Layout da Leitura para o Usuário Logado
-        st.write(f"📖 Paz do Senhor, **{st.session_state.usuario['nome']}**!")
-        
+        st.write(f"📖 Olá, **{st.session_state.usuario['nome']}**!")
         df_l = carregar_dados("Leitura")
         if not df_l.empty:
-            data_hoje = hoje_br.strftime('%d/%m/%Y')
-            leitura = df_l[df_l['dia'].astype(str).str.strip() == data_hoje]
-
-            if not leitura.empty:
-                item = leitura.iloc[0]
-                st.subheader(f"📅 Leitura de Hoje ({data_hoje})")
-                
-                # Exibição em Cards Simétricos
-                col_at, col_nt = st.columns(2)
-                with col_at:
-                    st.info(f"📜 **Antigo Testamento:**\n{item.get('antigo_testamento', '-')}")
-                    st.warning(f"🎵 **Salmos:**\n{item.get('salmos', '-')}")
-                with col_nt:
-                    st.success(f"✝️ **Novo Testamento:**\n{item.get('novo_testamento', '-')}")
-                    st.error(f"💡 **Provérbios:**\n{item.get('proverbios', '-')}")
-
-                st.markdown("---")
+            d_hj = hoje_br.strftime('%d/%m/%Y')
+            l = df_l[df_l['dia'].astype(str).str.strip() == d_hj]
+            if not l.empty:
+                item = l.iloc[0]
+                c_at, c_nt = st.columns(2)
+                with c_at: st.info(f"📜 **A.T:** {item.get('antigo_testamento','-')}")
+                with c_nt: st.success(f"✝️ **N.T:** {item.get('novo_testamento','-')}")
+                c_sl, c_pv = st.columns(2)
+                with c_sl: st.warning(f"🎵 **Salmos:** {item.get('salmos','-')}")
+                with c_pv: st.error(f"💡 **Provérbios:** {item.get('proverbios','-')}")
                 if st.button("✅ CONCLUIR LEITURA"):
-                    # Aqui você usa a função registrar_leitura_log que enviei antes
-                    if registrar_leitura_log(st.session_state.usuario['nome'], data_hoje):
-                        st.balloons()
-                        st.success("Leitura registrada com sucesso! Deus te abençoe.")
-                    else:
-                        st.error("Não foi possível salvar o progresso. Tente novamente.")
-            else:
-                st.warning("Plano de leitura não encontrado para a data de hoje.")
+                    if registrar_leitura_log(st.session_state.usuario['nome'], d_hj):
+                        st.balloons(); st.success("Salvo!")
