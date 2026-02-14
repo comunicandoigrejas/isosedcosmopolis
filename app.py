@@ -148,15 +148,17 @@ elif st.session_state.pagina == "Agenda":
         client = gspread.authorize(creds)
         return client.open_by_url(URL_PLANILHA)
 
-    def salvar_novo_usuario(lista_dados):
+    # Linha 151: O início da função (na margem esquerda)
+def salvar_novo_usuario(lista_dados):
+    # Linha 152: Agora com 4 espaços de recuo
     try:
-        # 1 TAB de recuo para estas linhas
+        # Estas linhas têm 8 espaços de recuo (pertencem ao try)
         sh = conectar_planilha()
         aba = sh.worksheet("Usuarios") 
         aba.append_row(lista_dados)
         return True
     except Exception as e:
-        # O 'except' precisa estar alinhado perfeitamente com o 'try'
+        # Alinhado perfeitamente com o try (4 espaços)
         st.error(f"Erro ao gravar na planilha: {e}")
         return False
         
