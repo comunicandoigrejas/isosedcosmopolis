@@ -149,12 +149,14 @@ elif st.session_state.pagina == "Agenda":
         return client.open_by_url(URL_PLANILHA)
 
     def salvar_novo_usuario(lista_dados):
-     try:
+    try:
+        # 1 TAB de recuo para estas linhas
         sh = conectar_planilha()
-        aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
+        aba = sh.worksheet("Usuarios") 
         aba.append_row(lista_dados)
         return True
-        except Exception as e:
+    except Exception as e:
+        # O 'except' precisa estar alinhado perfeitamente com o 'try'
         st.error(f"Erro ao gravar na planilha: {e}")
         return False
         
