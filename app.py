@@ -21,7 +21,7 @@ st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wid
 
 # --- 2. CONEXÃO COM A PLANILHA ---
 # O link capturado na sua imagem
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=504320066#gid=504320066"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing"
 
 def carregar_dados(aba):
     try:
