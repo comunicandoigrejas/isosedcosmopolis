@@ -132,4 +132,37 @@ if st.session_state.pagina == "Início":
     with c_logo:
         if os.path.exists("logo igreja.png"):
             st.image("logo igreja.png", width=200)
-t.markdown('</div>', unsafe_allow_html=True)
+# PÁGINAS DESTINO (Blocos de código que o botão abre)
+elif st.session_state.pagina == "Agenda":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>🗓️ Agenda ISOSED 2026</h1>", unsafe_allow_html=True)
+    df = carregar_dados("Agenda")
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("Nenhum evento encontrado na planilha.")
+
+elif st.session_state.pagina == "Escalas":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
+    st.write("Aqui serão exibidas as escalas de Mídia e Recepção.")
+
+elif st.session_state.pagina == "Grupos":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
+    st.write("Informações sobre Jovens, Irmãs, Varões e Missões.")
+
+elif st.session_state.pagina == "Meditar":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>📖 Meditar</h1>", unsafe_allow_html=True)
+    d_sel = st.date_input("Selecione a data:", value=hoje_br, format="DD/MM/YYYY")
+    # Lógica do devocional aqui...
+
+elif st.session_state.pagina == "Leitura":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
+    st.info("Acompanhe seu progresso anual de leitura bíblica.")
+
+elif st.session_state.pagina == "AnivGeral":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
