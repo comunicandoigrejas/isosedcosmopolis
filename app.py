@@ -267,7 +267,8 @@ if st.session_state.pagina == "Início":
         st.markdown('<div class="cor-4"></div>', unsafe_allow_html=True)
         st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
         st.markdown('<div class="cor-6"></div>', unsafe_allow_html=True)
-        st.button("📜 Leitura", on_
+       st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
+        st.markdown('</div>', unsafe_allow_html=True)
 # --- 5. LÓGICA DE PÁGINAS ---
 
 if st.session_state.pagina == "Início":
