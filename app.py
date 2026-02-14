@@ -382,7 +382,7 @@ elif st.session_state.pagina == "AnivMês":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
     
-elif st.session_state.pagina == "P_Leitura":
+elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_le")
     st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
 
