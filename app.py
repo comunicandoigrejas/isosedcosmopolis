@@ -224,24 +224,34 @@ elif st.session_state.pagina == "Leitura":
                     st.error("Base de usuários não encontrada.")
 
         with aba_ac[1]:
-            with st.form("f_cad"):
-                n = st.text_input("Nome Completo:").strip().title()
-                tel = st.text_input("WhatsApp:")
-                minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
-                nasc = st.date_input("Nascimento:"
-                min_value=datetime(1900, 1, 1), 
+         with st.form("f_cad"):
+            n = st.text_input("Nome Completo:").strip().title()
+            tel = st.text_input("WhatsApp:")
+            # Verifique se esta linha abaixo termina com ])
+            minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
+            
+            # Calendário configurado para aceitar desde 1950
+            nasc = st.date_input(
+                "Data de Nascimento:", 
+                min_value=datetime(1950, 1, 1), 
                 max_value=hoje_br,
-                format="DD/MM/YYYY")
-                sen = st.text_input("Senha:", type="password")
-                if st.form_submit_button("Finalizar"):
-                    if n and sen:
-                        # Chama a função que criamos no topo do arquivo
-                        if salvar_novo_usuario([n, tel, minis, str(nasc), sen, 1, "Plano Anual"]):
-                            st.success("Sucesso! Faça Login na aba ao lado.")
-                        else: 
-                            st.error("Erro ao salvar na planilha.")
+                format="DD/MM/YYYY"
+            )
+            
+            sen = st.text_input("Crie uma Senha:", type="password")
+            
+            # Botão de finalizar
+            if st.form_submit_button("Finalizar Cadastro", use_container_width=True):
+                if n and sen:
+                    # Organiza os dados para a planilha
+                    dados_usuario = [n, tel, minis, str(nasc), sen, 1, "Plano Anual"]
+                    if salvar_novo_usuario(dados_usuario):
+                        st.success("Cadastro realizado com sucesso! Vá para a aba 'Entrar'.")
+                        st.balloons()
                     else:
-                        st.warning("Preencha Nome e Senha.")
+                        st.error("Erro ao salvar na planilha. Verifique a conexão.")
+                else:
+                    st.warning("Por favor, preencha o Nome e a Senha.")
     else:
         u = st.session_state.usuario
         st.write(f"Olá, **{u}**!")
