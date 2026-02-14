@@ -37,6 +37,28 @@ def carregar_dados(aba):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
+def registrar_leitura_log(nome, data):
+    try:
+        # Usa os segredos que você já configurou para o Google Cloud
+        if "gcp_service_account" not in st.secrets: return False
+        creds = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
+        service = build('sheets', 'v4', credentials=creds)
+        
+        match = re.search(r"/d/([a-zA-Z0-9-_]+)", URL_PLANILHA)
+        sheet_id = match.group(1)
+        
+        values = [[nome, data]]
+        body = {'values': values}
+        
+        # Adiciona uma nova linha na aba Leitura_Log
+        service.spreadsheets().values().append(
+            spreadsheetId=sheet_id, range="Leitura_Log!A:B",
+            valueInputOption="RAW", body=body).execute()
+        return True
+    except Exception as e:
+        print(f"Erro: {e}")
+        return False
+
 # --- 3. NAVEGAÇÃO ---
 if 'pagina' not in st.session_state: st.session_state.pagina = "Início"
 def navegar(p): st.session_state.pagina = p
@@ -182,5 +204,54 @@ elif st.session_state.pagina == "Devocional":
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.title("📜 Plano de Leitura")
-    st.info("Acompanhe aqui o seu progresso de leitura bíblica.")
+    st.title("📜 Plano de Leitura Anual")
+
+    # 1. VERIFICAÇÃO DE LOGIN
+    if st.session_state.usuario is None:
+        st.warning("⚠️ Você precisa entrar com seu nome para registrar o progresso.")
+        nome_login = st.text_input("Digite seu Nome Completo:")
+        if st.button("Acessar Plano"):
+            df_u = carregar_dados("Usuarios_Progresso")
+            user = df_u[df_u['nome'].str.lower() == nome_login.lower().strip()]
+            if not user.empty:
+                st.session_state.usuario = user.iloc[0].to_dict()
+                st.rerun()
+            else:
+                st.error("Nome não encontrado. Cadastre-se na secretaria.")
+    
+    else:
+        # 2. USUÁRIO LOGADO - MOSTRAR LEITURA
+        st.write(f"📖 Olá, **{st.session_state.usuario['nome']}**! Veja sua leitura de hoje:")
+        
+        df_l = carregar_dados("Leitura")
+        if not df_l.empty:
+            data_hoje = hoje_br.strftime('%d/%m/%Y')
+            hoje = df_l[df_l['dia'].astype(str).str.strip() == data_hoje]
+
+            if not hoje.empty:
+                item = hoje.iloc[0]
+                
+                # Exibição do Plano
+                st.markdown(f"### 🗓️ {item.get('plano', 'Plano ISOSED')}")
+                
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.info(f"📜 **A.T:** {item.get('antigo_testamento', '-')}")
+                    st.success(f"✝️ **N.T:** {item.get('novo_testamento', '-')}")
+                with c2:
+                    st.warning(f"🎵 **Salmos:** {item.get('salmos', '-')}")
+                    st.error(f"💡 **Provérbios:** {item.get('proverbios', '-')}")
+
+                st.markdown("---")
+
+                # 3. BOTÃO DE CONCLUIR (GRAVA NA PLANILHA)
+                if st.button("✅ CONCLUIR LEITURA DE HOJE"):
+                    # Aqui usamos a função de registro que você já tem no código
+                    sucesso = registrar_leitura_log(st.session_state.usuario['nome'], data_hoje)
+                    if sucesso:
+                        st.balloons()
+                        st.success("Progresso salvo com sucesso! Até amanhã!")
+                    else:
+                        st.error("Erro ao salvar. Verifique sua conexão.")
+            else:
+                st.info("Nenhuma leitura agendada para hoje.")
