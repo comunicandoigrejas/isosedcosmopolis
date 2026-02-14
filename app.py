@@ -149,7 +149,7 @@ elif st.session_state.pagina == "Agenda":
         return client.open_by_url(URL_PLANILHA)
 
     def salvar_novo_usuario(lista_dados):
-        try:
+     try:
         sh = conectar_planilha()
         aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
         aba.append_row(lista_dados)
