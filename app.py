@@ -156,6 +156,6 @@ elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
 
-elif st.session_state.pagina == "AnivGeral":
+elif st.session_state.pagina == "Aniversariantes":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🎂 Todos os Aniversariantes</h1>", unsafe_allow_html=True)
