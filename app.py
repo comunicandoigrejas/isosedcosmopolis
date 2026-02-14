@@ -63,7 +63,16 @@ def registrar_leitura_log(nome, data):
 if 'pagina' not in st.session_state: 
     st.session_state.pagina = "Início"
 
+if 'usuario' not in st.session_state:# --- 3. NAVEGAÇÃO E ESTADO (Obrigatório no topo) ---
+if 'pagina' not in st.session_state: 
+    st.session_state.pagina = "Início"
+
 if 'usuario' not in st.session_state: 
+    st.session_state.usuario = None
+
+# Esta é a função que estava faltando!
+def navegar(p): 
+    st.session_state.pagina = p 
     st.session_state.usuario = None
 
 # --- 4. ESTILO CSS ---
