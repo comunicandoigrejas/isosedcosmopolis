@@ -149,14 +149,14 @@ elif st.session_state.pagina == "Agenda":
         return client.open_by_url(URL_PLANILHA)
 
     def salvar_novo_usuario(lista_dados):
-    try:
-        sh = conectar_planilha()
-        aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
-        aba.append_row(lista_dados)
-        return True
+        try:
+            sh = conectar_planilha()
+            aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
+            aba.append_row(lista_dados)
+            return True
     except Exception as e:
-        st.error(f"Erro ao gravar na planilha: {e}")
-        return False
+            st.error(f"Erro ao gravar na planilha: {e}")
+            return False
         
         # 2. Criar os botões dos meses em uma linha (Layout de abas)
         meses_lista = {
