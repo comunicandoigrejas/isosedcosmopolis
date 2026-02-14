@@ -10,7 +10,7 @@ fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
 hoje_br = agora_br.date()
 
-# Lógica: Domingo que passou até Segunda que vem
+# Lógica Aniversariantes: Domingo a Segunda
 domingo_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
 segunda_proxima = domingo_atual + timedelta(days=8)
 
@@ -24,7 +24,6 @@ def navegar(p):
     st.session_state.pagina = p
 
 # --- 3. CONEXÃO COM A PLANILHA ---
-# Link capturado da sua configuração
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVAcqFcPK0/edit"
 
 def carregar_dados(aba):
@@ -39,33 +38,34 @@ def carregar_dados(aba):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- 4. ESTILO CSS (Blindagem de Cores e Fontes) ---
+# --- 4. ESTILO CSS (Foco em Azul Escuro e Contraste) ---
 st.markdown("""
     <style>
-    /* 1. Reset de Fundo e Remoção de Lixo Visual */
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
 
-    /* 2. FORÇAR TÍTULOS E TEXTOS EM BRANCO PURO (Resolve o erro da imagem 585cce) */
-    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown { 
+    /* FORÇAR TÍTULOS EM BRANCO */
+    h1, h2, h3, h4, h5, h6, [data-testid="stMarkdownContainer"] p { 
         color: #FFFFFF !important; 
+        font-weight: 700 !important;
     }
 
-    /* 3. ESTILO DOS BOTÕES (Resolve o erro das imagens 57cda9 e 58d474) */
-    /* Força o fundo a não ser branco e a borda a aparecer */
-    div.stButton > button {
+    /* ESTILO DOS BOTÕES - AZUL ESCURO UNIFICADO */
+    button[data-testid="stBaseButton-secondary"] {
         width: 150px !important;
         height: 65px !important;
+        background-color: #0a3d62 !important; /* AZUL ESCURO */
         border-radius: 12px !important;
-        border: 2px solid rgba(255,255,255,0.4) !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+        border: 2px solid #3c6382 !important; /* Borda levemente mais clara */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        transition: 0.3s;
     }
 
-    /* FORÇAR A COR DO TEXTO DENTRO DOS BOTÕES */
-    div.stButton > button p {
+    /* FORÇAR TEXTO BRANCO EM TODOS OS BOTÕES */
+    button[data-testid="stBaseButton-secondary"] p {
         color: #FFFFFF !important; 
         font-weight: 900 !important;
         font-size: 13px !important;
@@ -73,18 +73,14 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* CLASSES DE CORES PARA OS BOTÕES */
-    .btn-blue button { background-color: #0984e3 !important; }
-    .btn-green button { background-color: #00b894 !important; }
-    .btn-orange button { background-color: #e17055 !important; }
-    .btn-purple button { background-color: #6c5ce7 !important; }
-    .btn-red button { background-color: #ff7675 !important; }
-    
-    /* Amarelo com letra PRETA para garantir leitura */
-    .btn-yellow button { background-color: #f1c40f !important; }
-    .btn-yellow button p { color: #000000 !important; }
+    /* Efeito ao passar o mouse */
+    button[data-testid="stBaseButton-secondary"]:hover {
+        background-color: #3c6382 !important;
+        border-color: #FFFFFF !important;
+        transform: translateY(-2px);
+    }
 
-    /* 4. CARDS DE ANIVERSÁRIO */
+    /* CARDS DE ANIVERSÁRIO */
     .card-niver {
         width: 140px !important; height: 90px !important;
         background: rgba(255, 215, 0, 0.1) !important;
@@ -123,53 +119,43 @@ if st.session_state.pagina == "Início":
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Menu e Logo
+    # Menu Principal Azul Escuro
     c1, c2, c_logo = st.columns([1.5, 1.5, 2])
     with c1:
-        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-        st.button("🗓️ Agenda", key="bt_1", on_click=navegar, args=("Agenda",))
-        st.markdown('</div><div class="btn-green">', unsafe_allow_html=True)
-        st.button("👥 Grupos", key="bt_2", on_click=navegar, args=("Grupos",))
-        st.markdown('</div><div class="btn-yellow">', unsafe_allow_html=True)
-        st.button("🎂 Aniversários", key="bt_3", on_click=navegar, args=("AnivMês",))
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.button("🗓️ Agenda", key="bt_ag", on_click=navegar, args=("Agenda",))
+        st.button("👥 Grupos", key="bt_gr", on_click=navegar, args=("Grupos",))
+        st.button("🎂 Aniversários", key="bt_an", on_click=navegar, args=("AnivGeral",))
     with c2:
-        st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
-        st.button("📢 Escalas", key="bt_4", on_click=navegar, args=("Escalas",))
-        st.markdown('</div><div class="btn-purple">', unsafe_allow_html=True)
-        st.button("📖 Meditar", key="bt_5", on_click=navegar, args=("Meditar",))
-        st.markdown('</div><div class="btn-red">', unsafe_allow_html=True)
-        st.button("📜 Leitura", key="bt_6", on_click=navegar, args=("Leitura",))
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.button("📢 Escalas", key="bt_es", on_click=navegar, args=("Escalas",))
+        st.button("📖 Meditar", key="bt_me", on_click=navegar, args=("Meditar",))
+        st.button("📜 Leitura", key="bt_le", on_click=navegar, args=("Leitura",))
     with c_logo:
-        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=200)
+        if os.path.exists("logo igreja.png"):
+            st.image("logo igreja.png", width=200)
 
-# BLOCOS QUE FAZEM OS BOTÕES FUNCIONAREM
+# PÁGINAS DE DESTINO
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     df = carregar_dados("Agenda")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
+    if not df.empty: st.dataframe(df, use_container_width=True)
 
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
-    st.write("Consulte aqui as escalas de Mídia e Recepção.")
 
 elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>👥 Grupos</h1>", unsafe_allow_html=True)
 
 elif st.session_state.pagina == "Meditar":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📖 Meditar</h1>", unsafe_allow_html=True)
-    # Lógica do Devocional...
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
 
-elif st.session_state.pagina == "AnivMês":
+elif st.session_state.pagina == "AnivGeral":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🎂 Todos os Aniversariantes</h1>", unsafe_allow_html=True)
