@@ -10,7 +10,7 @@ fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
 hoje_br = agora_br.date()
 
-# Lógica Aniversariantes: Domingo a Segunda
+# Janela de Aniversários: Domingo a Segunda
 domingo_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
 segunda_proxima = domingo_atual + timedelta(days=8)
 
@@ -24,7 +24,7 @@ def navegar(p):
     st.session_state.pagina = p
 
 # --- 3. CONEXÃO COM A PLANILHA ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=0#gid=0"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing"
 
 def carregar_dados(aba):
     try:
@@ -33,38 +33,36 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
+            # Normalização: remove acentos e espaços dos nomes das colunas
             df.columns = [str(c).lower().strip().replace('ê', 'e').replace('ã', 'a').replace('ç', 'c') for c in df.columns]
             return df
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- 4. ESTILO CSS (Foco em Azul Escuro e Contraste) ---
+# --- 4. ESTILO CSS (Blindagem contra botões brancos e fontes cinzas) ---
 st.markdown("""
     <style>
+    /* Reset de Fundo e Menus */
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
 
-    /* FORÇAR TÍTULOS EM BRANCO */
+    /* FORÇAR TÍTULOS EM BRANCO PURO */
     h1, h2, h3, h4, h5, h6, [data-testid="stMarkdownContainer"] p { 
         color: #FFFFFF !important; 
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
 
-    /* ESTILO DOS BOTÕES - AZUL ESCURO UNIFICADO */
+    /* ESTILO DOS BOTÕES AZUL ESCURO */
     button[data-testid="stBaseButton-secondary"] {
         width: 150px !important;
         height: 65px !important;
-        background-color: #0a3d62 !important; /* AZUL ESCURO */
+        background-color: #0a3d62 !important; /* Azul Marinho */
         border-radius: 12px !important;
-        border: 2px solid #3c6382 !important; /* Borda levemente mais clara */
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        transition: 0.3s;
+        border: 2px solid #3c6382 !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
     }
 
-    /* FORÇAR TEXTO BRANCO EM TODOS OS BOTÕES */
+    /* FORÇAR TEXTO BRANCO DENTRO DOS BOTÕES */
     button[data-testid="stBaseButton-secondary"] p {
         color: #FFFFFF !important; 
         font-weight: 900 !important;
@@ -73,14 +71,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* Efeito ao passar o mouse */
-    button[data-testid="stBaseButton-secondary"]:hover {
-        background-color: #3c6382 !important;
-        border-color: #FFFFFF !important;
-        transform: translateY(-2px);
-    }
-
-    /* CARDS DE ANIVERSÁRIO */
+    /* Cards de Aniversário */
     .card-niver {
         width: 140px !important; height: 90px !important;
         background: rgba(255, 215, 0, 0.1) !important;
@@ -95,12 +86,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. ROTEADOR DE PÁGINAS ---
+# --- 5. LÓGICA DE EXIBIÇÃO (Roteador) ---
 
 if st.session_state.pagina == "Início":
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
 
-    # Aniversariantes da Semana
+    # Aniversariantes
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         aniv_f = []
@@ -109,7 +100,6 @@ if st.session_state.pagina == "Início":
                 da = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
                 if domingo_atual <= da <= segunda_proxima: aniv_f.append(r)
             except: continue
-        
         if aniv_f:
             st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
             cols = st.columns(len(aniv_f))
@@ -119,50 +109,92 @@ if st.session_state.pagina == "Início":
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Menu Principal Azul Escuro
+    # Menu Principal
     c1, c2, c_logo = st.columns([1.5, 1.5, 2])
     with c1:
-        st.button("🗓️ Agenda", key="bt_ag", on_click=navegar, args=("Agenda",))
-        st.button("👥 Grupos", key="bt_gr", on_click=navegar, args=("Grupos",))
-        st.button("🎂 Aniversários", key="bt_an", on_click=navegar, args=("Aniversariantes",))
+        st.button("🗓️ Agenda", key="bt_1", on_click=navegar, args=("Agenda",))
+        st.button("👥 Grupos", key="bt_2", on_click=navegar, args=("Grupos",))
+        st.button("🎂 Aniversários", key="bt_3", on_click=navegar, args=("AnivMês",))
     with c2:
-        st.button("📢 Escalas", key="bt_es", on_click=navegar, args=("Escalas",))
-        st.button("📖 Meditar", key="bt_me", on_click=navegar, args=("Meditar",))
-        st.button("📜 Leitura", key="bt_le", on_click=navegar, args=("Leitura",))
+        st.button("📢 Escalas", key="bt_4", on_click=navegar, args=("Escalas",))
+        st.button("📖 Meditar", key="bt_5", on_click=navegar, args=("Meditar",))
+        st.button("📜 Leitura", key="bt_6", on_click=navegar, args=("Leitura",))
     with c_logo:
-        if os.path.exists("logo igreja.png"):
-            st.image("logo igreja.png", width=200)
-# PÁGINAS DESTINO (Blocos de código que o botão abre)
+        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=200)
+
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🗓️ Agenda ISOSED 2026</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     df = carregar_dados("Agenda")
     if not df.empty:
         st.dataframe(df, use_container_width=True)
-    else:
-        st.info("Nenhum evento encontrado na planilha.")
 
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
-    st.write("Aqui serão exibidas as escalas de Mídia e Recepção.")
-
-elif st.session_state.pagina == "Grupos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
-    st.write("Informações sobre Jovens, Irmãs, Varões e Missões.")
+    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
+    
+    with t1:
+        df_m = carregar_dados("Midia")
+        if not df_m.empty:
+            for _, r in df_m.iterrows():
+                with st.expander(f"📅 {r.get('data','')} - {r.get('culto','')}"):
+                    st.write(f"**Operador:** {r.get('op','')}")
+                    st.write(f"**Foto:** {r.get('foto','')}")
+                    st.write(f"**Chegada:** {r.get('chegada','')}")
+    with t2:
+        df_r = carregar_dados("Recepcao")
+        if not df_r.empty:
+            for _, r in df_r.iterrows():
+                with st.expander(f"📅 {r.get('data','')} ({r.get('dia','')})"):
+                    st.write(f"**Dupla:** {r.get('dupla','')}")
+                    st.write(f"**Chegada:** {r.get('chegada','')}")
 
 elif st.session_state.pagina == "Meditar":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📖 Meditar</h1>", unsafe_allow_html=True)
-    d_sel = st.date_input("Selecione a data:", value=hoje_br, format="DD/MM/YYYY")
-    # Lógica do devocional aqui...
+    d_sel = st.date_input("Escolha a data:", value=hoje_br, format="DD/MM/YYYY")
+    df = carregar_dados("Devocional")
+    if not df.empty:
+        dt_str = d_sel.strftime('%d/%m/%Y')
+        hj = df[df["data"].astype(str).str.strip() == dt_str]
+        if not hj.empty:
+            d = hj.iloc[0]
+            st.markdown(f"**Tema:** {d.get('tema', '')}")
+            st.markdown(f"### {d.get('titulo', '')}")
+            st.success(f"📖 **Versículo:** {d.get('versiculo', '')}")
+            st.write(d.get('texto', ''))
+            st.markdown("---")
+            st.subheader("🎯 Aplicação")
+            st.write(d.get('aplicacao', ''))
+            st.subheader("💪 Desafio")
+            st.write(d.get('desafio', ''))
+        else: st.warning("Sem devocional para esta data.")
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
-    st.info("Acompanhe seu progresso anual de leitura bíblica.")
+    df_l = carregar_dados("Leitura")
+    if not df_l.empty:
+        # Mostra a leitura sugerida para o dia atual
+        hoje_l = df_l[df_l['dia'].astype(str) == str(hoje_br.day)]
+        if not hoje_l.empty:
+            l = hoje_l.iloc[0]
+            st.info(f"📍 **Plano:** {l.get('plano', 'Anual')}")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"📖 **Antigo Testamento:** {l.get('antigo_testamento','')}")
+                st.write(f"📖 **Novo Testamento:** {l.get('novo_testamento','')}")
+            with col2:
+                st.write(f"🎶 **Salmos:** {l.get('salmos','')}")
+                st.write(f"💡 **Provérbios:** {l.get('proverbios','')}")
+        st.divider()
+        st.dataframe(df_l, use_container_width=True)
 
-elif st.session_state.pagina == "AnivGeral":
+elif st.session_state.pagina == "Grupos":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
+
+elif st.session_state.pagina == "AnivMês":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
