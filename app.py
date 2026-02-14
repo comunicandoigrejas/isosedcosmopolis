@@ -122,7 +122,7 @@ if st.session_state.pagina == "Início":
     with c_logo:
         if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=200)
 
-elif st.session_state.pagina == "P_Agenda":
+elif st.session_state.pagina == "Agenda":
     # Botão de Voltar
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_ag")
     
