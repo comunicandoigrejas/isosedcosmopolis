@@ -141,14 +141,14 @@ elif st.session_state.pagina == "Agenda":
         df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
         df = df.dropna(subset=['data']) # Remove linhas sem data
 
-def conectar_planilha():
+    def conectar_planilha():
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     # Puxa a chave dos Secrets do Streamlit Cloud
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
         client = gspread.authorize(creds)
         return client.open_by_url(URL_PLANILHA)
 
-def salvar_novo_usuario(lista_dados):
+    def salvar_novo_usuario(lista_dados):
     try:
         sh = conectar_planilha()
         aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
@@ -196,7 +196,7 @@ def salvar_novo_usuario(lista_dados):
     else:
         st.error("⚠️ Não foi possível carregar os dados da aba 'Agenda'. Verifique o nome da aba na planilha.")
 
-elif st.session_state.pagina == "Grupos":
+    elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gr")
     st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
     
