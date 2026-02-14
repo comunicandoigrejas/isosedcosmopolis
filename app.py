@@ -384,66 +384,94 @@ elif st.session_state.pagina == "AnivMês":
     
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_le")
-    st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
 
-    # 1. Sistema de Identificação (Verificação de Segurança)
+    # 1. Carregar base de usuários da planilha
+    df_usuarios = carregar_dados("Usuarios")
+
+    # Se não estiver logado, mostra as opções de acesso
     if st.session_state.get('usuario') is None:
-        st.markdown("### Bem-vindo! Identifique-se para ver seu progresso.")
-        nome_input = st.text_input("Digite seu nome completo:", key="input_nome")
-        if st.button("Entrar no Plano", key="btn_login"):
-            if nome_input:
-                st.session_state.usuario = nome_input.strip().title()
-                st.rerun()
-            else:
-                st.warning("Por favor, digite seu nome.")
-    
+        aba_acesso = st.tabs(["🔐 Entrar", "📝 Cadastrar-se"])
+
+        # --- TELA DE LOGIN ---
+        with aba_acesso[0]:
+            st.markdown("### Acesse seu Plano")
+            login_nome = st.text_input("Nome completo:", key="log_nome").strip().title()
+            login_senha = st.text_input("Senha:", type="password", key="log_pass")
+            
+            if st.button("Acessar Leitura", use_container_width=True):
+                if not df_usuarios.empty:
+                    # Verifica se nome e senha batem na planilha
+                    user_match = df_usuarios[(df_usuarios['nome'] == login_nome) & 
+                                            (df_usuarios['senha'].astype(str) == str(login_senha))]
+                    
+                    if not user_match.empty:
+                        st.session_state.usuario = login_nome
+                        st.session_state.dados_user = user_match.iloc[0].to_dict()
+                        st.success(f"Bem-vindo de volta, {login_nome}!")
+                        st.rerun()
+                    else:
+                        st.error("Nome ou senha incorretos. Verifique e tente novamente.")
+                else:
+                    st.error("Erro ao carregar banco de usuários.")
+
+        # --- TELA DE CADASTRO ---
+        with aba_acesso[1]:
+            st.markdown("### Criar nova conta")
+            with st.form("form_cadastro"):
+                new_nome = st.text_input("Nome Completo:").strip().title()
+                new_tel = st.text_input("Telefone (WhatsApp):")
+                new_min = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
+                new_nasc = st.date_input("Data de Nascimento:", min_value=datetime(1930,1,1), max_value=hoje_br)
+                new_pass = st.text_input("Crie uma Senha:", type="password")
+                
+                enviar = st.form_submit_state = st.form_submit_button("Finalizar Cadastro", use_container_width=True)
+                
+                if enviar:
+                    if new_nome and new_pass:
+                        st.success("Cadastro pré-aprovado!")
+                        st.info(f"Para ativar, adicione {new_nome} na aba 'Usuarios' da sua planilha.")
+                        # Nota: No Streamlit Cloud, para 'escrever' na planilha sozinho,
+                        # precisaríamos configurar o Google Sheets API.
+                    else:
+                        st.warning("Preencha Nome e Senha para continuar.")
+
+    # 2. TELA DO PLANO (USUÁRIO LOGADO)
     else:
-        # Usuário já está logado
-        st.markdown(f"Olá, **{st.session_state.usuario}**! 👋")
-        if st.button("Sair / Trocar Usuário", key="btn_logout"):
+        u = st.session_state.usuario
+        st.markdown(f"### Olá, {u}! 👋")
+        
+        # Logout
+        if st.button("Sair da conta", key="logout"):
             st.session_state.usuario = None
             st.rerun()
 
-        # 2. Carregar dados da aba Leitura
-        df_leitura = carregar_dados("Leitura")
+        # Busca o progresso do usuário
+        # Se for a primeira vez, ele começa no dia 1
+        dia_parada = st.session_state.get(f"dia_{u}", 1)
         
+        df_leitura = carregar_dados("Leitura")
         if not df_leitura.empty:
-            planos_disponiveis = df_leitura['plano'].unique()
-            plano_escolhido = st.selectbox("Selecione seu plano de leitura:", planos_disponiveis)
+            # Filtro simples para exemplo (Plano Anual)
+            dados_hj = df_leitura[df_leitura['dia'].astype(str) == str(dia_parada)]
             
-            # Recupera o progresso do usuário (ou começa no dia 1)
-            chave_progresso = f"progresso_{st.session_state.usuario}"
-            if chave_progresso not in st.session_state:
-                st.session_state[chave_progresso] = 1
-            
-            dia_parada = st.session_state[chave_progresso]
-            
-            # Filtra a leitura do dia
-            dados_plano = df_leitura[(df_leitura['plano'] == plano_escolhido) & 
-                                     (df_leitura['dia'].astype(str) == str(dia_parada))]
-
-            if not dados_plano.empty:
-                leitura = dados_plano.iloc[0]
-                st.markdown(f"### 📍 Hoje: Dia {dia_parada}")
+            if not dados_hj.empty:
+                l = dados_hj.iloc[0]
+                st.markdown(f"#### 📍 Hoje: Dia {dia_parada}")
                 
-                # Exibição organizada por colunas
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.info(f"**Antigo Testamento:**\n\n{leitura.get('antigo_testamento', '---')}")
-                    st.success(f"**Novo Testamento:**\n\n{leitura.get('novo_testamento', '---')}")
-                with col2:
-                    st.warning(f"**Salmos:**\n\n{leitura.get('salmos', '---')}")
-                    st.error(f"**Provérbios:**\n\n{leitura.get('proverbios', '---')}")
-
+                # Visual das Leituras (Seguindo seu modelo de colunas)
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown(f"**📖 Antigo Testamento:**\n{l.get('antigo_testamento','-')}")
+                    st.markdown(f"**📖 Novo Testamento:**\n{l.get('novo_testamento','-')}")
+                with c2:
+                    st.markdown(f"**🎶 Salmos:**\n{l.get('salmos','-')}")
+                    st.markdown(f"**💡 Provérbios:**\n{l.get('proverbios','-')}")
+                
                 st.divider()
                 if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
-                    st.session_state[chave_progresso] = dia_parada + 1
-                    st.success("Progresso salvo! Bom descanso.")
+                    st.session_state[f"dia_{u}"] = dia_parada + 1
                     st.balloons()
                     st.rerun()
             else:
-                st.success("🎉 Parabéns! Você concluiu este plano de leitura!")
-                if st.button("Recomeçar Plano"):
-                    st.session_state[chave_progresso] = 1
-                    st.rerun()
-
+                st.success("Você concluiu o plano de hoje!")
