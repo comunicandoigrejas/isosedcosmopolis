@@ -1,22 +1,21 @@
 import streamlit as st
 import pandas as pd
-import os
 import re
 from datetime import datetime, timedelta
 import pytz
+import os
 
 # --- 1. CONFIGURAÇÃO DE DATA E FUSO ---
 fuso_br = pytz.timezone('America/Sao_Paulo')
-agora_br = datetime.now(fuso_br)
-hoje_br = agora_br.date()
+hoje_br = datetime.now(fuso_br).date()
 
-# Lógica: Domingo que passou até Segunda que vem (Janela de 9 dias)
+# Lógica: Domingo que passou até Segunda que vem
 domingo_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
 segunda_proxima = domingo_atual + timedelta(days=8)
 
 st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
 
-# --- 2. NAVEGAÇÃO E ESTADO ---
+# --- 2. NAVEGAÇÃO (O "Cérebro" do App) ---
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "Início"
 
@@ -24,7 +23,7 @@ def navegar(p):
     st.session_state.pagina = p
 
 # --- 3. CONEXÃO COM A PLANILHA (Link Salvo) ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?gid=0#gid=0"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVAcqFcPK0/edit"
 
 def carregar_dados(aba):
     try:
@@ -38,33 +37,30 @@ def carregar_dados(aba):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- 4. ESTILO CSS (FORÇANDO CONTRASTE TOTAL) ---
+# --- 4. CSS NUCLEAR (Forçando Cores e Fontes) ---
 st.markdown("""
     <style>
-    /* 1. Reset de Fundo e Esconder Lixo */
-    #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
+    /* Forçar Fundo Escuro */
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
+    #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
 
-    /* 2. FORÇAR CABEÇALHOS EM BRANCO PURO */
+    /* FORÇAR TEXTO DOS CABEÇALHOS EM BRANCO */
     h1, h2, h3, h4, h5, h6, [data-testid="stMarkdownContainer"] p { 
         color: #FFFFFF !important; 
-        font-weight: 800 !important;
     }
 
-    /* 3. ESTILO DOS BOTÕES (Blindagem contra o Branco) */
-    /* Target direto no botão secundário do Streamlit */
+    /* ESTILO DOS BOTÕES - ALTA PRIORIDADE */
     button[data-testid="stBaseButton-secondary"] {
         width: 150px !important;
         height: 65px !important;
-        border-radius: 15px !important;
+        border-radius: 12px !important;
         border: 2px solid rgba(255,255,255,0.4) !important;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.5) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
     }
 
-    /* FORÇAR COR DO TEXTO (O segredo para não sumir) */
+    /* FORÇAR COR DA FONTE DENTRO DOS BOTÕES (Resolve o "branco no branco") */
     button[data-testid="stBaseButton-secondary"] p {
         color: #FFFFFF !important; 
         font-weight: 900 !important;
@@ -73,18 +69,16 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 4. CORES INDIVIDUAIS (Usando Classes de Wrapper) */
-    .btn-blue button { background-color: #0984e3 !important; }
-    .btn-green button { background-color: #00b894 !important; }
-    .btn-orange button { background-color: #e17055 !important; }
-    .btn-purple button { background-color: #6c5ce7 !important; }
-    .btn-red button { background-color: #ff7675 !important; }
-    
-    /* Amarelo com Letra PRETA para contraste */
-    .btn-yellow button { background-color: #f1c40f !important; }
-    .btn-yellow button p { color: #000000 !important; }
+    /* CORES DE FUNDO POR BOTÃO (Usando classes de div para isolar) */
+    .c-ag button { background-color: #0984e3 !important; }
+    .c-gr button { background-color: #00b894 !important; }
+    .c-es button { background-color: #e17055 !important; }
+    .c-me button { background-color: #6c5ce7 !important; }
+    .c-le button { background-color: #ff7675 !important; }
+    .c-an button { background-color: #f1c40f !important; }
+    .c-an button p { color: #000000 !important; } /* Texto preto no amarelo */
 
-    /* 5. CARDS DE ANIVERSÁRIO */
+    /* Cards de Aniversário */
     .card-niver {
         width: 140px !important; height: 90px !important;
         background: rgba(255, 215, 0, 0.1) !important;
@@ -94,89 +88,74 @@ st.markdown("""
         align-items: center !important; justify-content: center !important;
         margin: 0 auto !important;
     }
-    .niver-nome { font-size: 0.9em !important; font-weight: 900; color: #ffd700 !important; text-transform: uppercase; text-align: center; }
+    .niver-nome { font-size: 0.85em !important; font-weight: 900; color: #ffd700 !important; text-transform: uppercase; text-align: center; }
     .niver-data { font-size: 1em !important; font-weight: bold; color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. LÓGICA DE PÁGINAS ---
+# --- 5. ROTEADOR DE PÁGINAS ---
 
+# PÁGINA INICIAL
 if st.session_state.pagina == "Início":
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
 
-    # Aniversariantes (Mariane e Fátima juntas se for a semana delas)
+    # Aniversariantes (Domingo a Segunda)
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
-        aniv_list = []
-        for _, r in df_n.iterrows():
-            try:
-                da = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
-                if domingo_atual <= da <= segunda_proxima: aniv_list.append(r)
-            except: continue
-        
-        if aniv_list:
+        aniv_f = [r for _, r in df_n.iterrows() if domingo_atual <= datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date() <= segunda_proxima]
+        if aniv_f:
             st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
-            cols = st.columns(len(aniv_list))
-            for i, p in enumerate(aniv_list):
+            cols = st.columns(len(aniv_f))
+            for i, p in enumerate(aniv_f):
                 with cols[i]:
                     st.markdown(f'<div class="card-niver"><div class="niver-nome">{p["nome"]}</div><div class="niver-data">{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # MENU PRINCIPAL (2 Colunas + Logo à direita)
-    c1, c2, c_logo = st.columns([1.5, 1.5, 2.5])
-    
+    # Menu e Logo
+    c1, c2, c_logo = st.columns([1.5, 1.5, 2])
     with c1:
-        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-        st.button("🗓️ Agenda", key="ag", on_click=navegar, args=("Agenda",))
-        st.markdown('</div><div class="btn-green">', unsafe_allow_html=True)
-        st.button("👥 Grupos", key="gr", on_click=navegar, args=("Grupos",))
-        st.markdown('</div><div class="btn-yellow">', unsafe_allow_html=True)
-        st.button("🎂 Aniversários", key="an", on_click=navegar, args=("AnivGeral",))
+        st.markdown('<div class="c-ag">', unsafe_allow_html=True)
+        st.button("🗓️ Agenda", key="b1", on_click=navegar, args=("P_Agenda",))
+        st.markdown('</div><div class="c-gr">', unsafe_allow_html=True)
+        st.button("👥 Grupos", key="b2", on_click=navegar, args=("P_Grupos",))
+        st.markdown('</div><div class="c-an">', unsafe_allow_html=True)
+        st.button("🎂 Aniversários", key="b3", on_click=navegar, args=("P_Aniv",))
         st.markdown('</div>', unsafe_allow_html=True)
-
     with c2:
-        st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
-        st.button("📢 Escalas", key="es", on_click=navegar, args=("Escalas",))
-        st.markdown('</div><div class="btn-purple">', unsafe_allow_html=True)
-        st.button("📖 Meditar", key="me", on_click=navegar, args=("Meditar",))
-        st.markdown('</div><div class="btn-red">', unsafe_allow_html=True)
-        st.button("📜 Leitura", key="le", on_click=navegar, args=("Leitura",))
+        st.markdown('<div class="c-es">', unsafe_allow_html=True)
+        st.button("📢 Escalas", key="b4", on_click=navegar, args=("P_Escalas",))
+        st.markdown('</div><div class="c-me">', unsafe_allow_html=True)
+        st.button("📖 Meditar", key="b5", on_click=navegar, args=("P_Meditar",))
+        st.markdown('</div><div class="c-le">', unsafe_allow_html=True)
+        st.button("📜 Leitura", key="b6", on_click=navegar, args=("P_Leitura",))
         st.markdown('</div>', unsafe_allow_html=True)
-
     with c_logo:
-        if os.path.exists("logo igreja.png"):
-            st.image("logo igreja.png", use_container_width=True)
+        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=200)
 
-# --- BLOCO DE PÁGINAS (Faz os botões funcionarem) ---
-
-elif st.session_state.pagina == "Agenda":
+# PÁGINAS DE DESTINO (O que faz o botão funcionar)
+elif st.session_state.pagina == "P_Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     df = carregar_dados("Agenda")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
+    if not df.empty: st.dataframe(df, use_container_width=True)
 
-elif st.session_state.pagina == "Escalas":
+elif st.session_state.pagina == "P_Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
-    st.write("Consulte as escalas de Mídia e Recepção aqui.")
+    st.markdown("<h1>📢 Escalas</h1>", unsafe_allow_html=True)
 
-elif st.session_state.pagina == "Grupos":
+elif st.session_state.pagina == "P_Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>👥 Grupos</h1>", unsafe_allow_html=True)
-    st.write("Informações sobre Jovens, Irmãs e Varões.")
 
-elif st.session_state.pagina == "Meditar":
+elif st.session_state.pagina == "P_Meditar":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📖 Meditar</h1>", unsafe_allow_html=True)
-    # Lógica do Devocional...
+    st.markdown("<h1>📖 Devocional</h1>", unsafe_allow_html=True)
 
-elif st.session_state.pagina == "Leitura":
+elif st.session_state.pagina == "P_Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
-    st.info("Acesse seu progresso bíblico.")
 
-elif st.session_state.pagina == "AnivGeral":
+elif st.session_state.pagina == "P_Aniv":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🎂 Todos os Aniversariantes</h1>", unsafe_allow_html=True)
