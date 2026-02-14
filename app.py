@@ -199,14 +199,15 @@ def salvar_novo_usuario(lista_dados):
             st.info(f"Nenhum evento agendado para {meses_lista[mes_final]}.")
     else:
         st.error("⚠️ Não foi possível carregar os dados da aba 'Agenda'. Verifique o nome da aba na planilha.")
-elif st.session_state.pagina == "Grupos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gr")
-    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
+        
+    elif st.session_state.pagina == "Grupos":
+        st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gr")
+        st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
     
     # 1. Carrega os dados da aba Agenda (onde estão os eventos dos grupos)
-    df = carregar_dados("Agenda")
+        df = carregar_dados("Agenda")
     
-    if not df.empty:
+            if not df.empty:
         # Limpeza e conversão de data
         df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
         df = df.dropna(subset=['data'])
