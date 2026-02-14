@@ -124,7 +124,7 @@ if st.session_state.pagina == "Início":
     with c1:
         st.button("🗓️ Agenda", key="bt_ag", on_click=navegar, args=("Agenda",))
         st.button("👥 Grupos", key="bt_gr", on_click=navegar, args=("Grupos",))
-        st.button("🎂 Aniversários", key="bt_an", on_click=navegar, args=("AnivGeral",))
+        st.button("🎂 Aniversários", key="bt_an", on_click=navegar, args=("Aniversariantes",))
     with c2:
         st.button("📢 Escalas", key="bt_es", on_click=navegar, args=("Escalas",))
         st.button("📖 Meditar", key="bt_me", on_click=navegar, args=("Meditar",))
