@@ -62,37 +62,47 @@ if 'usuario' not in st.session_state:
 def navegar(p): 
     st.session_state.pagina = p
 
-# --- 4. ESTILO CSS (Contraste Total e Forçado) ---
+# --- 4. ESTILO CSS (Contraste Máximo e Forçado) ---
 st.markdown("""
     <style>
+    /* Esconde elementos do Streamlit */
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
+    
+    /* Fundo Escuro para Contraste */
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; color: white !important; }
 
-    /* Estilo Base dos Botões */
+    .main-wrapper { max-width: 550px; margin: 0 auto; padding: 5px; }
+
+    /* ESTILO DOS BOTÕES (Forçando cor da fonte) */
     div.stButton > button {
         width: 140px !important; 
         height: 60px !important; 
         border-radius: 12px !important;
-        font-size: 12px !important;
-        font-weight: 900 !important;
+        font-size: 11px !important;
+        font-weight: 900 !important; /* Fonte bem grossa */
         text-transform: uppercase !important;
-        color: #FFFFFF !important; /* TEXTO BRANCO PURO */
+        color: #FFFFFF !important; /* TEXTO BRANCO POR PADRÃO */
         border: 1px solid rgba(255,255,255,0.2) !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
         display: block !important;
     }
 
-    /* FORÇAR CORES NOS BOTÕES (Gatilhos de Classe) */
-    .btn-agenda button { background-color: #0984e3 !important; }
-    .btn-escalas button { background-color: #e17055 !important; }
-    .btn-grupos button { background-color: #00b894 !important; }
-    .btn-meditar button { background-color: #6c5ce7 !important; }
-    .btn-aniv button { background-color: #f1c40f !important; color: #000000 !important; } /* Texto preto no amarelo */
-    .btn-leitura button { background-color: #ff7675 !important; }
+    /* WRAPPERS PARA AS CORES (Garante que a cor apareça) */
+    .btn-blue button { background-color: #0984e3 !important; }
+    .btn-orange button { background-color: #e17055 !important; }
+    .btn-green button { background-color: #00b894 !important; }
+    .btn-purple button { background-color: #6c5ce7 !important; }
+    .btn-red button { background-color: #ff7675 !important; }
+    
+    /* Botão de Aniversários: Amarelo com texto PRETO para ler melhor */
+    .btn-yellow button { 
+        background-color: #f1c40f !important; 
+        color: #000000 !important; 
+    }
 
     /* CARDS DE ANIVERSÁRIO */
     .card-niver {
-        width: 135px !important; height: 85px !important;
+        width: 140px !important; height: 90px !important;
         background: rgba(255, 215, 0, 0.15) !important;
         border: 2px solid #ffd700 !important;
         border-radius: 15px !important;
@@ -102,9 +112,68 @@ st.markdown("""
         text-align: center !important;
     }
     .niver-nome { font-size: 0.85em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; padding: 0 5px; }
-    .niver-data { font-size: 0.9em !important; font-weight: bold; color: #FFFFFF !important; }
+    .niver-data { font-size: 0.9em !important; font-weight: bold; color: #FFFFFF !important; margin-top: 5px; }
+    
+    [data-testid="column"] { padding: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
+
+# --- 5. LÓGICA DA PÁGINA INICIAL ---
+if st.session_state.pagina == "Início":
+    st.markdown("<h2 style='text-align: center; margin-bottom: 25px;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
+
+    # 1. ANIVERSARIANTES (Lógica Domingo a Segunda)
+    df_n = carregar_dados("Aniversariantes")
+    if not df_n.empty:
+        aniv_semana = []
+        for _, r in df_n.iterrows():
+            try:
+                # Ajuste de data: Domingo desta semana até Segunda da próxima
+                d_aniv = datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date()
+                if domingo_atual <= d_aniv <= segunda_proxima:
+                    aniv_semana.append(r)
+            except: continue
+        
+        if aniv_semana:
+            st.markdown("<p style='text-align:center; color:#ffd700; font-weight:bold; font-size:1.1em;'>🎊 ANIVERSÁRIOS DA SEMANA</p>", unsafe_allow_html=True)
+            # Exibe todos os aniversariantes em linha
+            cols_aniv = st.columns(len(aniv_semana) if len(aniv_semana) <= 4 else 4)
+            for idx, p in enumerate(aniv_semana):
+                with cols_aniv[idx % 4]:
+                    st.markdown(f"""
+                        <div class="card-niver">
+                            <div class="niver-nome">{p['nome']}</div>
+                            <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 2. MENU + LOGO (Aproximados e Legíveis)
+    c1, c2, c_logo = st.columns([1.5, 1.5, 2])
+    
+    with c1:
+        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
+        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
+        st.markdown('</div><div class="btn-green">', unsafe_allow_html=True)
+        st.button("👥 Grupos", on_click=navegar, args=("Departamentos",))
+        st.markdown('</div><div class="btn-yellow">', unsafe_allow_html=True)
+        st.button("🎂 Aniv.", on_click=navegar, args=("Aniversariantes",))
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c2:
+        st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
+        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
+        st.markdown('</div><div class="btn-purple">', unsafe_allow_html=True)
+        st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
+        st.markdown('</div><div class="btn-red">', unsafe_allow_html=True)
+        # LINHA CORRIGIDA ABAIXO:
+        st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c_logo:
+        if os.path.exists("logo igreja.png"):
+            st.image("logo igreja.png", width=200)
 
 # --- 5. LÓGICA DA PÁGINA INICIAL ---
 if st.session_state.pagina == "Início":
