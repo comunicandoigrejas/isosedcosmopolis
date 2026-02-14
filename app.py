@@ -126,7 +126,7 @@ if st.session_state.pagina == "Início":
         st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
         st.button("🗓️ Agenda", key="bt_ag", on_click=navegar, args=("Agenda",))
         st.markdown('</div><div class="btn-green">', unsafe_allow_html=True)
-        st.button("👥 Departamentos", key="bt_gr", on_click=navegar, args=("Grupos",))
+        st.button("👥 Grupos", key="bt_gr", on_click=navegar, args=("Grupos",))
         st.markdown('</div><div class="btn-yellow">', unsafe_allow_html=True)
         st.button("🎂 Aniversários", key="bt_an", on_click=navegar, args=("AnivGeral",))
         st.markdown('</div>', unsafe_allow_html=True)
@@ -168,7 +168,7 @@ elif st.session_state.pagina == "Escalas":
         if not df.empty:
             for _, r in df.iterrows(): st.success(f"📅 {r.get('data','')} - 👥 {r.get('dupla','')}")
 
-elif st.session_state.pagina == "Departamentos":
+elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("## 👥 Departamentos")
     df = carregar_dados("Agenda")
