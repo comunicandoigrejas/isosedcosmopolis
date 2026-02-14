@@ -229,6 +229,9 @@ elif st.session_state.pagina == "Leitura":
                 tel = st.text_input("WhatsApp:")
                 minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
                 nasc = st.date_input("Nascimento:")
+                min_value=datetime(1900, 1, 1), 
+                max_value=hoje_br,
+                format="DD/MM/YYYY"
                 sen = st.text_input("Senha:", type="password")
                 if st.form_submit_button("Finalizar"):
                     if n and sen:
