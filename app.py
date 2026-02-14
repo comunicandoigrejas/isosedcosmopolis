@@ -62,75 +62,89 @@ if 'usuario' not in st.session_state:
 def navegar(p): 
     st.session_state.pagina = p
 
-# --- 4. ESTILO CSS (Correção de Visibilidade e Cores) ---
+# --- 4. ESTILO CSS (Forçar Visibilidade Total) ---
 st.markdown("""
     <style>
-    /* Esconde elementos padrão do Streamlit */
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
-    
-    /* Fundo do App */
-    [data-testid="stAppViewContainer"] { 
-        background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); 
-        color: white; 
-    }
-    
-    .main-wrapper { max-width: 550px; margin: 0 auto; padding: 5px; }
+    [data-testid="stAppViewContainer"] { background: #1e1e2f !important; color: white !important; }
 
-    /* CONFIGURAÇÃO DOS BOTÕES */
+    /* Estilo Base dos Botões */
     div.stButton > button {
         width: 130px !important; 
         height: 55px !important; 
         border-radius: 12px !important;
-        font-size: 12px !important;
-        font-weight: 900 !important; /* Fonte bem grossa */
+        font-size: 11px !important;
+        font-weight: 900 !important;
         text-transform: uppercase !important;
-        color: #FFFFFF !important; /* FORÇA TEXTO BRANCO */
-        border: 1px solid rgba(255,255,255,0.3) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.4) !important;
-        margin-bottom: 10px !important;
+        color: white !important; /* TEXTO BRANCO FORÇADO */
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
         transition: 0.3s;
+        display: block !important;
     }
 
-    /* CORES DE FUNDO ESPECÍFICAS (Forçando a cor para não ficar branco) */
-    .btn-1 button { background-color: #0984e3 !important; } /* Azul */
-    .btn-2 button { background-color: #e17055 !important; } /* Laranja */
-    .btn-3 button { background-color: #00b894 !important; } /* Verde */
-    .btn-4 button { background-color: #6c5ce7 !important; } /* Roxo */
-    .btn-5 button { background-color: #fdcb6e !important; } /* Amarelo Escuro */
-    .btn-6 button { background-color: #ff7675 !important; } /* Vermelho/Rosa */
+    /* GATILHOS DE COR (Evita que fiquem brancos como na imagem 57cda9) */
+    div.cor-1 + div[data-testid="stButton"] button { background-color: #0984e3 !important; } /* Agenda */
+    div.cor-2 + div[data-testid="stButton"] button { background-color: #e17055 !important; } /* Escalas */
+    div.cor-3 + div[data-testid="stButton"] button { background-color: #00b894 !important; } /* Grupos */
+    div.cor-4 + div[data-testid="stButton"] button { background-color: #6c5ce7 !important; } /* Meditar */
+    div.cor-5 + div[data-testid="stButton"] button { background-color: #f1c40f !important; color: #000 !important; } /* Aniversários (Preto para ler no amarelo) */
+    div.cor-6 + div[data-testid="stButton"] button { background-color: #ff7675 !important; } /* Leitura */
 
-    /* Efeito ao passar o mouse */
-    div.stButton > button:hover {
-        transform: scale(1.05);
-        border: 1px solid white !important;
+    /* Efeito de Hover */
+    div.stButton > button:hover { transform: translateY(-2px); border-color: white !important; }
+
+    /* Cards de Aniversário Centralizados */
+    .card-niver {
+        width: 140px !important; height: 90px !important;
+        background: rgba(255, 215, 0, 0.1) !important;
+        border: 2px solid #ffd700 !important;
+        border-radius: 15px !important;
+        display: flex !important; flex-direction: column !important;
+        align-items: center !important; justify-content: center !important;
+        margin: 0 auto !important;
     }
-
-    /* CARDS DE ANIVERSÁRIO */
-    .card-niver { 
-        width: 130px !important;
-        height: 85px !important; 
-        background: rgba(255, 215, 0, 0.15) !important; 
-        border: 2px solid #ffd700 !important; 
-        border-radius: 12px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
-        margin-bottom: 10px !important;
-    }
-
-    .niver-titulo { font-size: 1.3em !important; font-weight: 800; color: #ffd700; text-align: center; margin-bottom: 15px; text-transform: uppercase; }
-    .niver-nome { font-size: 0.9em !important; font-weight: 900; color: #ffd700; text-transform: uppercase; line-height: 1.1; padding: 2px; }
-    .niver-data { font-size: 0.85em !important; font-weight: bold; color: #FFFFFF !important; margin-top: 4px; }
-
-    /* Alinhamentos laterais */
-    .btn-left div.stButton > button { margin-left: auto !important; margin-right: 5px !important; }
-    .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
-    
-    [data-testid="column"] { padding: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
+
+# --- 5. LÓGICA DA PÁGINA INICIAL ---
+if st.session_state.pagina == "Início":
+    st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
+
+    # 1. ANIVERSARIANTES (Aproximados no Centro)
+    df_n = carregar_dados("Aniversariantes")
+    # ... (mesma lógica de busca de antes) ...
+    
+    if aniv:
+        st.markdown("<p style='text-align:center; color:#ffd700; font-weight:bold;'>🎊 ANIVERSÁRIOS DA SEMANA</p>", unsafe_allow_html=True)
+        # Colunas estreitas para os cards não "fugirem" (corrige image_d918ca.png)
+        _, c_n1, c_n2, _ = st.columns([1, 2, 2, 1]) 
+        with c_n1:
+            st.markdown(f'<div class="card-niver"><div class="niver-nome">{aniv[0]["nome"]}</div><div class="niver-data">{int(aniv[0]["dia"]):02d}/{int(aniv[0]["mes"]):02d}</div></div>', unsafe_allow_html=True)
+        with c_n2:
+            if len(aniv) > 1:
+                st.markdown(f'<div class="card-niver"><div class="niver-nome">{aniv[1]["nome"]}</div><div class="niver-data">{int(aniv[1]["dia"]):02d}/{int(aniv[1]["mes"]):02d}</div></div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 2. MENU + LOGO (Aproximados)
+    c_btn1, c_btn2, c_logo = st.columns([1.5, 1.5, 2])
+
+    with c_btn1:
+        st.markdown('<div class="cor-1"></div>', unsafe_allow_html=True)
+        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
+        st.markdown('<div class="cor-3"></div>', unsafe_allow_html=True)
+        st.button("👥 Grupos", on_click=navegar, args=("Departamentos",))
+        st.markdown('<div class="cor-5"></div>', unsafe_allow_html=True)
+        st.button("🎂 Aniversários", on_click=navegar, args=("Aniversariantes",))
+
+    with c_btn2:
+        st.markdown('<div class="cor-2"></div>', unsafe_allow_html=True)
+        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
+        st.markdown('<div class="cor-4"></div>', unsafe_allow_html=True)
+        st.button("📖 Meditar", on_click=navegar, args=("Devocional",))
+        st.markdown('<div class="cor-6"></div>', unsafe_allow_html=True)
+        st.button("📜 Leitura", on_
 # --- 5. LÓGICA DE PÁGINAS ---
 
 if st.session_state.pagina == "Início":
