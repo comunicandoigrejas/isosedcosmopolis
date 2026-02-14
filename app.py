@@ -132,30 +132,4 @@ if st.session_state.pagina == "Início":
     with c_logo:
         if os.path.exists("logo igreja.png"):
             st.image("logo igreja.png", width=200)
-
-# PÁGINAS DE DESTINO
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
-    df = carregar_dados("Agenda")
-    if not df.empty: st.dataframe(df, use_container_width=True)
-
-elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Grupos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>👥 Grupos</h1>", unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Meditar":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📖 Meditar</h1>", unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
-
-elif st.session_state.pagina == "Aniversariantes":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🎂 Todos os Aniversariantes</h1>", unsafe_allow_html=True)
+t.markdown('</div>', unsafe_allow_html=True)
