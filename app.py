@@ -174,6 +174,44 @@ elif st.session_state.pagina == "Agenda":
     else:
         st.error("⚠️ Não foi possível carregar os dados da aba 'Agenda'. Verifique o nome da aba na planilha.")
 
+elif st.session_state.pagina == "Grupos":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gr")
+    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
+    
+    # 1. Carrega os dados da aba Agenda (onde estão os eventos dos grupos)
+    df = carregar_dados("Agenda")
+    
+    if not df.empty:
+        # Limpeza e conversão de data
+        df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        df = df.dropna(subset=['data'])
+        
+        # 2. Criar as abas para cada departamento
+        # Note: Usei "Irmãs" conforme aparece na sua planilha (imagem 59ba68)
+        tabs = st.tabs(["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"])
+        
+        # Lista de termos para busca
+        departamentos = ["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"]
+        
+        for i, depto in enumerate(departamentos):
+            with tabs[i]:
+                # Filtra a planilha procurando o nome do departamento na coluna 'evento'
+                filtro = df[df['evento'].str.contains(depto, case=False, na=False)].sort_values(by='data')
+                
+                if not filtro.empty:
+                    st.markdown(f"### Próximas datas: {depto}")
+                    for _, r in filtro.iterrows():
+                        dia = r['data'].strftime('%d/%m/%Y')
+                        st.markdown(f"""
+                            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid #00b894;">
+                                <b style="color: #00b894;">{dia}</b> — <span style="color: white;">{r['evento']}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info(f"Nenhuma data agendada para o departamento: {depto}")
+    else:
+        st.error("Não foi possível carregar os dados da Agenda para filtrar os grupos.")
+
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
