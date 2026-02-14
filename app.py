@@ -381,3 +381,68 @@ elif st.session_state.pagina == "Grupos":
 elif st.session_state.pagina == "AnivMês":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🎂 Aniversariantes do Mês</h1>", unsafe_allow_html=True)
+elif st.session_state.pagina == "P_Leitura":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_le")
+    st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
+
+    # 1. Sistema de Identificação (Verificação de Segurança)
+    if st.session_state.get('usuario') is None:
+        st.markdown("### Bem-vindo! Identifique-se para ver seu progresso.")
+        nome_input = st.text_input("Digite seu nome completo:", key="input_nome")
+        if st.button("Entrar no Plano", key="btn_login"):
+            if nome_input:
+                st.session_state.usuario = nome_input.strip().title()
+                st.rerun()
+            else:
+                st.warning("Por favor, digite seu nome.")
+    
+    else:
+        # Usuário já está logado
+        st.markdown(f"Olá, **{st.session_state.usuario}**! 👋")
+        if st.button("Sair / Trocar Usuário", key="btn_logout"):
+            st.session_state.usuario = None
+            st.rerun()
+
+        # 2. Carregar dados da aba Leitura
+        df_leitura = carregar_dados("Leitura")
+        
+        if not df_leitura.empty:
+            planos_disponiveis = df_leitura['plano'].unique()
+            plano_escolhido = st.selectbox("Selecione seu plano de leitura:", planos_disponiveis)
+            
+            # Recupera o progresso do usuário (ou começa no dia 1)
+            chave_progresso = f"progresso_{st.session_state.usuario}"
+            if chave_progresso not in st.session_state:
+                st.session_state[chave_progresso] = 1
+            
+            dia_parada = st.session_state[chave_progresso]
+            
+            # Filtra a leitura do dia
+            dados_plano = df_leitura[(df_leitura['plano'] == plano_escolhido) & 
+                                     (df_leitura['dia'].astype(str) == str(dia_parada))]
+
+            if not dados_plano.empty:
+                leitura = dados_plano.iloc[0]
+                st.markdown(f"### 📍 Hoje: Dia {dia_parada}")
+                
+                # Exibição organizada por colunas
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.info(f"**Antigo Testamento:**\n\n{leitura.get('antigo_testamento', '---')}")
+                    st.success(f"**Novo Testamento:**\n\n{leitura.get('novo_testamento', '---')}")
+                with col2:
+                    st.warning(f"**Salmos:**\n\n{leitura.get('salmos', '---')}")
+                    st.error(f"**Provérbios:**\n\n{leitura.get('proverbios', '---')}")
+
+                st.divider()
+                if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
+                    st.session_state[chave_progresso] = dia_parada + 1
+                    st.success("Progresso salvo! Bom descanso.")
+                    st.balloons()
+                    st.rerun()
+            else:
+                st.success("🎉 Parabéns! Você concluiu este plano de leitura!")
+                if st.button("Recomeçar Plano"):
+                    st.session_state[chave_progresso] = 1
+                    st.rerun()
+
