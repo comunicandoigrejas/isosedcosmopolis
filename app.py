@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
 import os
 import re
 from datetime import datetime, timedelta
@@ -138,6 +140,23 @@ elif st.session_state.pagina == "Agenda":
         # Converter a coluna 'data' para o formato de data real do Python
         df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
         df = df.dropna(subset=['data']) # Remove linhas sem data
+
+        def conectar_planilha():
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    # Puxa a chave dos Secrets do Streamlit Cloud
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+    client = gspread.authorize(creds)
+    return client.open_by_url(URL_PLANILHA)
+
+def salvar_novo_usuario(lista_dados):
+    try:
+        sh = conectar_planilha()
+        aba = sh.worksheet("Usuarios") # Certifique-se que o nome da aba é este
+        aba.append_row(lista_dados)
+        return True
+    except Exception as e:
+        st.error(f"Erro ao gravar na planilha: {e}")
+        return False
         
         # 2. Criar os botões dos meses em uma linha (Layout de abas)
         meses_lista = {
