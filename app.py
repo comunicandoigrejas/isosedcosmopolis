@@ -59,9 +59,12 @@ def registrar_leitura_log(nome, data):
         print(f"Erro: {e}")
         return False
 
-# --- 3. NAVEGAÇÃO ---
-if 'pagina' not in st.session_state: st.session_state.pagina = "Início"
-def navegar(p): st.session_state.pagina = p
+# --- 3. NAVEGAÇÃO E ESTADO (Adicione estas linhas) ---
+if 'pagina' not in st.session_state: 
+    st.session_state.pagina = "Início"
+
+if 'usuario' not in st.session_state: 
+    st.session_state.usuario = None
 
 # --- 4. ESTILO CSS ---
 st.markdown("""
@@ -206,52 +209,49 @@ elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.title("📜 Plano de Leitura Anual")
 
-    # 1. VERIFICAÇÃO DE LOGIN
+    # Verifica se o usuário está logado
     if st.session_state.usuario is None:
-        st.warning("⚠️ Você precisa entrar com seu nome para registrar o progresso.")
-        nome_login = st.text_input("Digite seu Nome Completo:")
-        if st.button("Acessar Plano"):
+        st.warning("⚠️ Identifique-se para marcar seu progresso.")
+        nome_login = st.text_input("Digite seu Nome Completo (Exatamente como na planilha):")
+        if st.button("Acessar meu Plano"):
             df_u = carregar_dados("Usuarios_Progresso")
-            user = df_u[df_u['nome'].str.lower() == nome_login.lower().strip()]
-            if not user.empty:
-                st.session_state.usuario = user.iloc[0].to_dict()
-                st.rerun()
-            else:
-                st.error("Nome não encontrado. Cadastre-se na secretaria.")
-    
+            if not df_u.empty:
+                # Busca o nome ignorando maiúsculas/minúsculas
+                user = df_u[df_u['nome'].str.lower() == nome_login.lower().strip()]
+                if not user.empty:
+                    st.session_state.usuario = user.iloc[0].to_dict()
+                    st.rerun()
+                else:
+                    st.error("Nome não encontrado na base de membros.")
     else:
-        # 2. USUÁRIO LOGADO - MOSTRAR LEITURA
-        st.write(f"📖 Olá, **{st.session_state.usuario['nome']}**! Veja sua leitura de hoje:")
+        # Layout da Leitura para o Usuário Logado
+        st.write(f"📖 Paz do Senhor, **{st.session_state.usuario['nome']}**!")
         
         df_l = carregar_dados("Leitura")
         if not df_l.empty:
             data_hoje = hoje_br.strftime('%d/%m/%Y')
-            hoje = df_l[df_l['dia'].astype(str).str.strip() == data_hoje]
+            leitura = df_l[df_l['dia'].astype(str).str.strip() == data_hoje]
 
-            if not hoje.empty:
-                item = hoje.iloc[0]
+            if not leitura.empty:
+                item = leitura.iloc[0]
+                st.subheader(f"📅 Leitura de Hoje ({data_hoje})")
                 
-                # Exibição do Plano
-                st.markdown(f"### 🗓️ {item.get('plano', 'Plano ISOSED')}")
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.info(f"📜 **A.T:** {item.get('antigo_testamento', '-')}")
-                    st.success(f"✝️ **N.T:** {item.get('novo_testamento', '-')}")
-                with c2:
-                    st.warning(f"🎵 **Salmos:** {item.get('salmos', '-')}")
-                    st.error(f"💡 **Provérbios:** {item.get('proverbios', '-')}")
+                # Exibição em Cards Simétricos
+                col_at, col_nt = st.columns(2)
+                with col_at:
+                    st.info(f"📜 **Antigo Testamento:**\n{item.get('antigo_testamento', '-')}")
+                    st.warning(f"🎵 **Salmos:**\n{item.get('salmos', '-')}")
+                with col_nt:
+                    st.success(f"✝️ **Novo Testamento:**\n{item.get('novo_testamento', '-')}")
+                    st.error(f"💡 **Provérbios:**\n{item.get('proverbios', '-')}")
 
                 st.markdown("---")
-
-                # 3. BOTÃO DE CONCLUIR (GRAVA NA PLANILHA)
-                if st.button("✅ CONCLUIR LEITURA DE HOJE"):
-                    # Aqui usamos a função de registro que você já tem no código
-                    sucesso = registrar_leitura_log(st.session_state.usuario['nome'], data_hoje)
-                    if sucesso:
+                if st.button("✅ CONCLUIR LEITURA"):
+                    # Aqui você usa a função registrar_leitura_log que enviei antes
+                    if registrar_leitura_log(st.session_state.usuario['nome'], data_hoje):
                         st.balloons()
-                        st.success("Progresso salvo com sucesso! Até amanhã!")
+                        st.success("Leitura registrada com sucesso! Deus te abençoe.")
                     else:
-                        st.error("Erro ao salvar. Verifique sua conexão.")
+                        st.error("Não foi possível salvar o progresso. Tente novamente.")
             else:
-                st.info("Nenhuma leitura agendada para hoje.")
+                st.warning("Plano de leitura não encontrado para a data de hoje.")
