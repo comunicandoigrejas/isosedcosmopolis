@@ -85,9 +85,13 @@ st.markdown("""
     .btn-right div.stButton > button { margin-right: auto !important; margin-left: 5px !important; }
     [data-testid="column"] { padding: 0 !important; }
     
-    .btn-1 button { background-color: #0984e3 !important; } .btn-2 button { background-color: #e17055 !important; }
-    .btn-3 button { background-color: #00b894 !important; } .btn-4 button { background-color: #6c5ce7 !important; }
-    .btn-5 button { background-color: #fdcb6e !important; } .btn-6 button { background-color: #ff7675 !important; }
+    /* CORES DE FUNDO ESPECÍFICAS (Forçando a cor para não ficar branco) */
+    .btn-1 button { background-color: #0984e3 !important; } /* Azul */
+    .btn-2 button { background-color: #e17055 !important; } /* Laranja */
+    .btn-3 button { background-color: #00b894 !important; } /* Verde */
+    .btn-4 button { background-color: #6c5ce7 !important; } /* Roxo */
+    .btn-5 button { background-color: #fdcb6e !important; } /* Amarelo Escuro */
+    .btn-6 button { background-color: #ff7675 !important; } /* Vermelho/Rosa */
     </style>
     """, unsafe_allow_html=True)
 
