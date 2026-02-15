@@ -202,76 +202,57 @@ elif st.session_state.pagina == "Meditar":
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="vol_le")
-    st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>📜 Planos de Leitura Bíblica</h1>", unsafe_allow_html=True)
     
     if st.session_state.usuario is None:
-        aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
-        
-        # CORREÇÃO AQUI: Removido o := que causava o SyntaxError
-        with aba_ac[0]:
-            l_nome = st.text_input("Nome completo:", key="l_n").strip().title()
-            l_senha = st.text_input("Senha:", type="password", key="l_s")
-            if st.button("Acessar", key="l_b"):
-                df_u = carregar_dados("Usuarios")
-                if not df_u.empty:
-                    match = df_u[(df_u['nome'] == l_nome) & (df_u['senha'].astype(str) == str(l_senha))]
-                    if not match.empty:
-                        st.session_state.usuario = l_nome
-                        st.rerun()
-                    else: 
-                        st.error("Nome ou senha incorretos.")
-                else:
-                    st.error("Base de usuários não encontrada.")
-
-        with aba_ac[1]:
-         with st.form("f_cad"):
-            n = st.text_input("Nome Completo:").strip().title()
-            tel = st.text_input("WhatsApp:")
-            # Verifique se esta linha abaixo termina com ])
-            minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
-            
-            # Calendário configurado para aceitar desde 1950
-            nasc = st.date_input(
-                "Data de Nascimento:", 
-                min_value=datetime(1950, 1, 1), 
-                max_value=hoje_br,
-                format="DD/MM/YYYY"
-            )
-            
-            sen = st.text_input("Crie uma Senha:", type="password")
-            
-            # Botão de finalizar
-            if st.form_submit_button("Finalizar Cadastro", use_container_width=True):
-                if n and sen:
-                    # Organiza os dados para a planilha
-                    dados_usuario = [n, tel, minis, str(nasc), sen, 1, "Plano Anual"]
-                    if salvar_novo_usuario(dados_usuario):
-                        st.success("Cadastro realizado com sucesso! Vá para a aba 'Entrar'.")
-                        st.balloons()
-                    else:
-                        st.error("Erro ao salvar na planilha. Verifique a conexão.")
-                else:
-                    st.warning("Por favor, preencha o Nome e a Senha.")
+        # (Mantenha aqui o seu código de Login/Cadastro que já funciona)
+        # ... 
     else:
         u = st.session_state.usuario
-        st.write(f"Olá, **{u}**!")
-        if st.button("Sair"): 
-            st.session_state.usuario = None
-            st.rerun()
+        st.write(f"Olá, **{u}**! Selecione seu plano abaixo:")
         
-        df_l = carregar_dados("Leitura")
-        dia_p = st.session_state.get(f"dia_{u}", 1)
-        l_hoje = df_l[df_l['dia'].astype(str) == str(dia_p)]
-        if not l_hoje.empty:
-            l = l_hoje.iloc[0]
-            st.markdown(f"#### 📍 Dia {dia_p}")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.info(f"**Antigo Testamento:**\n{l.get('antigo_testamento','-')}")
-                st.success(f"**Novo Testamento:**\n{l.get('novo_testamento','-')}")
-            with c2:
-                st.warning(f"**Salmos:**\n{l.get('salmos','-')}")
-                st.error(f"**Provérbios:**\n{l.get('proverbios','-')}")
-            if st.button("✅ Concluí!"):
-                st.session_state[f"dia_{u}"] = dia_p + 1
-                st.rerun()
+        # 1. Carregar dados da nova estrutura
+        df_leitura = carregar_dados("Leitura")
+        
+        if not df_leitura.empty:
+            # 2. Seletor de Planos (Mostra todos os planos criados na planilha)
+            lista_planos = df_leitura['plano'].unique()
+            plano_escolhido = st.selectbox("Escolha o Plano de Leitura:", lista_planos)
+            
+            # 3. Lógica de dia (Recupera onde o usuário parou)
+            dia_p = st.session_state.get(f"dia_{u}_{plano_escolhido}", 1)
+            
+            # 4. Filtra a leitura baseada no Plano e no Dia
+            l_hoje = df_leitura[(df_leitura['plano'] == plano_escolhido) & 
+                                (df_leitura['dia'].astype(str) == str(dia_p))]
+            
+            if not l_hoje.empty:
+                l = l_hoje.iloc[0]
+                st.markdown(f"### 📍 {plano_escolhido} - Dia {dia_p}")
+                
+                # Exibição da Referência em destaque
+                st.markdown(f"""
+                    <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
+                        <h4 style="margin:0; color:#00b894;">📖 Referência de Hoje:</h4>
+                        <p style="font-size: 1.5em; margin-top: 10px;">{l.get('referencia', '---')}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Exibição do Resumo
+                st.markdown("#### 💡 Resumo para Meditação")
+                st.info(l.get('resumo_para_meditacao', 'Medite na palavra do Senhor.'))
+                
+                st.divider()
+                
+                # Botão para avançar
+                if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
+                    st.session_state[f"dia_{u}_{plano_escolhido}"] = dia_p + 1
+                    st.balloons()
+                    st.rerun()
+            else:
+                st.success(f"🎉 Parabéns! Você completou o plano {plano_escolhido}!")
+                if st.button("Reiniciar este Plano"):
+                    st.session_state[f"dia_{u}_{plano_escolhido}"] = 1
+                    st.rerun()
+        else:
+            st.error("Nenhum plano de leitura encontrado na planilha.")
