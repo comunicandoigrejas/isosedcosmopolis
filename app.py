@@ -208,28 +208,62 @@ elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="vol_le")
     st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
     
+    # --- 1. VERIFICA SE O USUÁRIO ESTÁ LOGADO ---
     if st.session_state.usuario is None:
-        # ... (Mantenha seu código de Login/Cadastro aqui) ...
+        # TUDO AQUI DENTRO PRECISA DE 4 ESPAÇOS DE RECUO
+        aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
+        
+        with aba_ac[0]:
+            l_nome = st.text_input("Nome completo:", key="l_n").strip().title()
+            l_senha = st.text_input("Senha:", type="password", key="l_s")
+            if st.button("Acessar", key="l_b"):
+                df_u = carregar_dados("Usuarios")
+                if not df_u.empty:
+                    match = df_u[(df_u['nome'] == l_nome) & (df_u['senha'].astype(str) == str(l_senha))]
+                    if not match.empty:
+                        st.session_state.usuario = l_nome
+                        st.rerun()
+                    else:
+                        st.error("Nome ou senha incorretos.")
+                else:
+                    st.error("Base de usuários não encontrada.")
+
+        with aba_ac[1]:
+            with st.form("f_cad"):
+                n = st.text_input("Nome Completo:").strip().title()
+                tel = st.text_input("WhatsApp:")
+                minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
+                # Calendário ajustado para aceitar desde 1950
+                nasc = st.date_input("Nascimento:", min_value=datetime(1950, 1, 1), max_value=hoje_br)
+                sen = st.text_input("Senha:", type="password")
+                if st.form_submit_button("Finalizar"):
+                    if n and sen:
+                        if salvar_novo_usuario([n, tel, minis, str(nasc), sen, 1, "Plano Anual"]):
+                            st.success("Sucesso! Faça Login na aba ao lado.")
+                        else:
+                            st.error("Erro ao salvar na planilha.")
+                    else:
+                        st.warning("Preencha Nome e Senha.")
+    
+    # --- 2. SE O USUÁRIO JÁ ESTIVER LOGADO (CASO CONTRÁRIO) ---
     else:
+        # TUDO AQUI DENTRO TAMBÉM PRECISA DE 4 ESPAÇOS DE RECUO
         u = st.session_state.usuario
         df_l = carregar_dados("Leitura")
         
         if not df_l.empty:
             lista_planos = df_l['plano'].unique()
-            plano_sel = st.selectbox("Escolha o Plano:", lista_planos)
+            plano_sel = st.selectbox("Escolha seu Plano:", lista_planos)
             
-            # CHAVE ÚNICA: Garante que o progresso seja salvo por usuário E por plano
+            # Chave de progresso individual
             chave_dia = f"dia_{u}_{plano_sel}".replace(" ", "_")
             if chave_dia not in st.session_state:
                 st.session_state[chave_dia] = 1
             
             dia_p = st.session_state[chave_dia]
             
-            # Filtro do Plano
-            dados_plano = df_l[df_l['plano'] == plano_sel]
-            
-            # Filtro do Dia (Convertendo ambos para número inteiro para não haver erro de 1.0 vs 1)
-            # Usamos pd.to_numeric para garantir que a comparação funcione
+            # Filtro do Plano e do Dia (Garantindo que sejam números inteiros)
+            dados_plano = df_l[df_l['plano'] == plano_sel].copy()
             dados_plano['dia'] = pd.to_numeric(dados_plano['dia'], errors='coerce')
             l_hoje = dados_plano[dados_plano['dia'] == int(dia_p)]
             
@@ -251,17 +285,16 @@ elif st.session_state.pagina == "Leitura":
                     st.session_state[chave_dia] = int(dia_p) + 1
                     st.balloons()
                     st.rerun()
-            
             else:
-                # Verificação extra: Se o dia_p é 1 e está vazio, a planilha tem erro
-                if dia_p == 1:
-                    st.error(f"O Dia 1 não foi encontrado no plano '{plano_sel}'. Verifique se escreveu exatamente igual na planilha.")
-                else:
+                # Se não achou o dia mas o dia é maior que 1, então acabou
+                if dia_p > 1:
                     st.success(f"🎉 Você completou o plano {plano_sel}!")
-                    if st.button("Reiniciar Plano"):
+                    if st.button("Reiniciar este Plano"):
                         st.session_state[chave_dia] = 1
                         st.rerun()
-        
+                else:
+                    st.error(f"Erro: O Dia {dia_p} não foi encontrado no plano '{plano_sel}'. Verifique a planilha.")
+
         st.divider()
         if st.button("Sair da conta"):
             st.session_state.usuario = None
