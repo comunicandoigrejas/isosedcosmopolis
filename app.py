@@ -86,33 +86,33 @@ def atualizar_progresso_planilha(usuario, plano, novo_dia):
 # --- 3. SEU ESTILO CSS ORIGINAL ---
 st.markdown("""
     <style>
-    /* --- BARRA DE MESES HORIZONTAL NO MOBILE --- */
+   /* --- FORÇAR BARRA DE MESES HORIZONTAL NO MOBILE --- */
     @media (max-width: 768px) {
-        /* Alinha as colunas de meses em uma linha só e permite rolar para o lado */
-        [data-testid="stHorizontalBlock"]:has(button[key^="mes_"]), 
-        [data-testid="stHorizontalBlock"]:has(button[key^="an_"]),
-        [data-testid="stHorizontalBlock"]:has(button[key^="aniv_"]) {
+        /* 1. Alinha o container principal */
+        div[data-testid="stHorizontalBlock"]:has(button[key^="mes_"]),
+        div[data-testid="stHorizontalBlock"]:has(button[key^="an_"]),
+        div[data-testid="stHorizontalBlock"]:has(button[key^="aniv_"]) {
             display: flex !important;
             flex-direction: row !important;
             flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            padding-bottom: 10px !important;
-            gap: 5px !important;
+            overflow-x: auto !important; /* Ativa o deslizamento lateral */
+            gap: 10px !important;
+            padding-bottom: 15px !important;
         }
 
-        /* Ajusta o tamanho dos botões de meses para caberem na barra lateral */
-        [data-testid="stHorizontalBlock"]:has(button[key^="mes_"]) div[data-testid="column"],
-        [data-testid="stHorizontalBlock"]:has(button[key^="an_"]) div[data-testid="column"],
-        [data-testid="stHorizontalBlock"]:has(button[key^="aniv_"]) div[data-testid="column"] {
-            min-width: 60px !important; /* Largura menor para os meses caberem */
+        /* 2. IMPEDE QUE AS COLUNAS EMPILHEM (O segredo está aqui) */
+        div[data-testid="stHorizontalBlock"]:has(button[key^="mes_"]) > div[data-testid="column"],
+        div[data-testid="stHorizontalBlock"]:has(button[key^="an_"]) > div[data-testid="column"],
+        div[data-testid="stHorizontalBlock"]:has(button[key^="aniv_"]) > div[data-testid="column"] {
+            width: auto !important;
+            min-width: 85px !important; /* Largura mínima de cada botão de mês */
             flex: 0 0 auto !important;
         }
 
-        /* Ajusta o texto do botão de mês para ficar centralizado e menor no mobile */
-        [data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] {
-            width: 60px !important; /* Força o botão de mês a ser pequeno */
+        /* 3. Ajuste fino do botão para não ficar gigante */
+        div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] {
+            width: 80px !important;
             height: 45px !important;
-            padding: 0px !important;
         }
     }
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
