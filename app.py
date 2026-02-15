@@ -250,37 +250,49 @@ elif st.session_state.pagina == "Leitura":
             chave_dia = f"dia_{u}_{plano_escolhido}"
             dia_p = st.session_state.get(chave_dia, 1)
             
-            # 3. Filtro baseado na NOVA ESTRUTURA
-            # Espera colunas: plano, dia, referencia, resumo_para_meditacao
-            l_hoje = df_l[(df_l['plano'] == plano_escolhido) & (df_l['dia'].astype(str) == str(dia_p))]
-            
-            if not l_hoje.empty:
-                l = l_hoje.iloc[0]
-                st.markdown(f"### 📍 {plano_escolhido} - Dia {dia_p}")
-                
-                # Layout da Referência
-                st.markdown(f"""
-                    <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
-                        <h4 style="margin:0; color:#00b894;">📖 Referência de Hoje:</h4>
-                        <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # Layout do Resumo
-                st.markdown("#### 💡 Resumo para Meditação")
-                st.info(l.get('resumo_para_meditacao', 'Medite na palavra do Senhor.'))
-                
-                st.divider()
-                if st.button("✅ Concluí a leitura!", use_container_width=True):
-                    st.session_state[chave_dia] = dia_p + 1
-                    st.balloons()
-                    st.rerun()
+            # Filtramos todas as linhas DESTE plano para saber se ele tem conteúdo
+            dados_do_plano_total = df_l[df_l['plano'] == plano_escolhido]
+
+            if dados_do_plano_total.empty:
+                st.warning(f"O plano '{plano_escolhido}' foi criado, mas ainda não tem versículos cadastrados na planilha.")
             else:
-                st.success(f"🎉 Você completou o plano {plano_escolhido}!")
-                if st.button("Reiniciar Plano"):
-                    st.session_state[chave_dia] = 1
-                    st.rerun()
+                # 3. Agora buscamos o DIA específico dentro desse plano
+                l_hoje = dados_do_plano_total[dados_do_plano_total['dia'].astype(str) == str(dia_p)]
+                
+                if not l_hoje.empty:
+                    l = l_hoje.iloc[0]
+                    st.markdown(f"### 📍 {plano_escolhido} - Dia {dia_p}")
+                    
+                    # Layout da Referência (Mantendo seu padrão)
+                    st.markdown(f"""
+                        <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
+                            <h4 style="margin:0; color:#00b894;">📖 Referência de Hoje:</h4>
+                            <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Layout do Resumo
+                    st.markdown("#### 💡 Resumo para Meditação")
+                    st.info(l.get('resumo_para_meditacao', 'Medite na palavra do Senhor.'))
+                    
+                    st.divider()
+                    if st.button("✅ Concluí a leitura!", use_container_width=True):
+                        st.session_state[chave_dia] = dia_p + 1
+                        st.balloons()
+                        st.rerun()
+                
+                # Se o dia atual não existe, mas o dia anterior existia, aí sim completou
+                elif dia_p > 1:
+                    st.success(f"🎉 Parabéns! Você completou o plano {plano_escolhido}!")
+                    if st.button("Reiniciar Plano"):
+                        st.session_state[chave_dia] = 1
+                        st.rerun()
+                else:
+                    st.error(f"Erro: O Dia {dia_p} não foi encontrado no plano '{plano_escolhido}'. Verifique a coluna 'dia' na planilha.")
         
+        else:
+            st.error("A aba 'Leitura' está vazia ou não foi encontrada na planilha.")
+
         if st.button("Sair da conta", key="logout_btn"):
             st.session_state.usuario = None
             st.rerun()
