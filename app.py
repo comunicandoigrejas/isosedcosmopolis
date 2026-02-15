@@ -61,19 +61,23 @@ def atualizar_progresso_planilha(usuario, plano, novo_dia):
     try:
         sh = conectar_planilha()
         aba = sh.worksheet("Progresso")
+        # Lê os dados existentes para encontrar a linha certa
         dados = aba.get_all_records()
         df_p = pd.DataFrame(dados)
         
-        # Procura a linha do usuário para aquele plano específico
         if not df_p.empty:
+            # Normaliza nomes para busca
+            df_p.columns = [str(c).lower().strip() for c in df_p.columns]
             linha = df_p[(df_p['usuario'] == usuario) & (df_p['plano'] == plano)]
+            
             if not linha.empty:
-                idx = linha.index[0] + 2 # +2 porque o gspread começa em 1 e tem o cabeçalho
-                aba.update_cell(idx, 3, novo_dia) # Coluna 3 é o 'dia_atual'
+                # Atualiza a linha existente (Coluna 3 é 'dia_atual')
+                idx = linha.index[0] + 2 
+                aba.update_cell(idx, 3, int(novo_dia))
                 return True
         
-        # Se não encontrou, cria uma nova linha
-        aba.append_row([usuario, plano, novo_dia])
+        # Se não existir, cria uma linha nova
+        aba.append_row([usuario, plano, int(novo_dia)])
         return True
     except Exception as e:
         st.error(f"Erro ao salvar progresso: {e}")
@@ -230,11 +234,8 @@ elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="vol_le")
     st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
     
-    # --- 1. VERIFICA SE O USUÁRIO ESTÁ LOGADO ---
     if st.session_state.usuario is None:
-        # TUDO AQUI DENTRO PRECISA DE 4 ESPAÇOS DE RECUO
         aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
-        
         with aba_ac[0]:
             l_nome = st.text_input("Nome completo:", key="l_n").strip().title()
             l_senha = st.text_input("Senha:", type="password", key="l_s")
@@ -245,49 +246,39 @@ elif st.session_state.pagina == "Leitura":
                     if not match.empty:
                         st.session_state.usuario = l_nome
                         st.rerun()
-                    else:
-                        st.error("Nome ou senha incorretos.")
-                else:
-                    st.error("Base de usuários não encontrada.")
-
+                    else: st.error("Nome ou senha incorretos.")
         with aba_ac[1]:
             with st.form("f_cad"):
                 n = st.text_input("Nome Completo:").strip().title()
                 tel = st.text_input("WhatsApp:")
                 minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
-                # Calendário ajustado para aceitar desde 1950
                 nasc = st.date_input("Nascimento:", min_value=datetime(1950, 1, 1), max_value=hoje_br)
                 sen = st.text_input("Senha:", type="password")
                 if st.form_submit_button("Finalizar"):
                     if n and sen:
                         if salvar_novo_usuario([n, tel, minis, str(nasc), sen, 1, "Plano Anual"]):
-                            st.success("Sucesso! Faça Login na aba ao lado.")
-                        else:
-                            st.error("Erro ao salvar na planilha.")
-                    else:
-                        st.warning("Preencha Nome e Senha.")
-    
-    # --- 2. SE O USUÁRIO JÁ ESTIVER LOGADO (CASO CONTRÁRIO) ---
-else:
+                            st.success("Sucesso! Faça Login.")
+                        else: st.error("Erro ao salvar.")
+
+    else:
         u = st.session_state.usuario
         df_l = carregar_dados("Leitura")
-        df_progresso = carregar_dados("Progresso") # Carrega a nova aba de progresso
+        df_progresso = carregar_dados("Progresso") # Importante: Aba "Progresso" na planilha
 
         if not df_l.empty:
             lista_planos = df_l['plano'].unique()
-            plano_sel = st.selectbox("Escolha seu Plano:", lista_planos)
+            plano_sel = st.selectbox("Escolha seu Plano:", lista_planos, key="sel_plano")
             
-            # --- BUSCA O DIA REAL NA PLANILHA ---
+            # --- BUSCA O DIA GRAVADO NA PLANILHA ---
+            dia_p = 1
             if not df_progresso.empty:
+                # Normaliza colunas do progresso para evitar erro de busca
+                df_progresso.columns = [str(c).lower().strip() for c in df_progresso.columns]
                 prog_user = df_progresso[(df_progresso['usuario'] == u) & (df_progresso['plano'] == plano_sel)]
                 if not prog_user.empty:
                     dia_p = int(prog_user.iloc[0]['dia_atual'])
-                else:
-                    dia_p = 1
-            else:
-                dia_p = 1
 
-            # Filtro do Plano e Dia
+            # Filtro do Conteúdo
             dados_plano = df_l[df_l['plano'] == plano_sel].copy()
             dados_plano['dia'] = pd.to_numeric(dados_plano['dia'], errors='coerce')
             l_hoje = dados_plano[dados_plano['dia'] == dia_p]
@@ -296,31 +287,28 @@ else:
                 l = l_hoje.iloc[0]
                 st.markdown(f"### 📍 {plano_sel} - Dia {dia_p}")
                 
-                # Seu layout de Referência e Resumo...
-                st.info(f"📖 {l.get('referencia', '---')}")
-                st.write(l.get('resumo_para_meditacao', '---'))
+                # Layout Referência
+                st.markdown(f"""
+                    <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
+                        <h4 style="margin:0; color:#00b894;">📖 Referência:</h4>
+                        <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
+                    </div>
+                """, unsafe_allow_html=True)
                 
-                # --- BOTÃO CONCLUIR AGORA GRAVA NA PLANILHA ---
+                st.info(f"💡 **Meditação:** {l.get('resumo_para_meditacao', '---')}")
+                
+                # --- BOTÃO QUE GRAVA NA PLANILHA ---
                 if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
-                    sucesso = atualizar_progresso_planilha(u, plano_sel, dia_p + 1)
-                    if sucesso:
+                    # Chamamos a função de atualização (certifique-se que ela está no topo do código)
+                    if atualizar_progresso_planilha(u, plano_sel, dia_p + 1):
                         st.balloons()
-                        st.success("Progresso gravado na planilha!")
+                        st.success("Progresso salvo!")
                         st.rerun()
             else:
-                st.success("🎉 Plano concluído!")
-                if st.button("Reiniciar"):
+                st.success(f"🎉 Plano {plano_sel} concluído!")
+                if st.button("Reiniciar este Plano"):
                     atualizar_progresso_planilha(u, plano_sel, 1)
                     st.rerun()
-            else:
-                # Se não achou o dia mas o dia é maior que 1, então acabou
-                if dia_p > 1:
-                    st.success(f"🎉 Você completou o plano {plano_sel}!")
-                    if st.button("Reiniciar este Plano"):
-                        st.session_state[chave_dia] = 1
-                        st.rerun()
-                else:
-                    st.error(f"Erro: O Dia {dia_p} não foi encontrado no plano '{plano_sel}'. Verifique a planilha.")
 
         st.divider()
         if st.button("Sair da conta"):
