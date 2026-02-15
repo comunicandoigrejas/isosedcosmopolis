@@ -57,6 +57,28 @@ def salvar_novo_usuario(lista_dados):
         st.error(f"Erro ao gravar na planilha: {e}")
         return False
 
+def atualizar_progresso_planilha(usuario, plano, novo_dia):
+    try:
+        sh = conectar_planilha()
+        aba = sh.worksheet("Progresso")
+        dados = aba.get_all_records()
+        df_p = pd.DataFrame(dados)
+        
+        # Procura a linha do usuário para aquele plano específico
+        if not df_p.empty:
+            linha = df_p[(df_p['usuario'] == usuario) & (df_p['plano'] == plano)]
+            if not linha.empty:
+                idx = linha.index[0] + 2 # +2 porque o gspread começa em 1 e tem o cabeçalho
+                aba.update_cell(idx, 3, novo_dia) # Coluna 3 é o 'dia_atual'
+                return True
+        
+        # Se não encontrou, cria uma nova linha
+        aba.append_row([usuario, plano, novo_dia])
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar progresso: {e}")
+        return False
+
 # --- 3. SEU ESTILO CSS ORIGINAL ---
 st.markdown("""
     <style>
@@ -246,44 +268,49 @@ elif st.session_state.pagina == "Leitura":
                         st.warning("Preencha Nome e Senha.")
     
     # --- 2. SE O USUÁRIO JÁ ESTIVER LOGADO (CASO CONTRÁRIO) ---
-    else:
-        # TUDO AQUI DENTRO TAMBÉM PRECISA DE 4 ESPAÇOS DE RECUO
+else:
         u = st.session_state.usuario
         df_l = carregar_dados("Leitura")
-        
+        df_progresso = carregar_dados("Progresso") # Carrega a nova aba de progresso
+
         if not df_l.empty:
             lista_planos = df_l['plano'].unique()
             plano_sel = st.selectbox("Escolha seu Plano:", lista_planos)
             
-            # Chave de progresso individual
-            chave_dia = f"dia_{u}_{plano_sel}".replace(" ", "_")
-            if chave_dia not in st.session_state:
-                st.session_state[chave_dia] = 1
-            
-            dia_p = st.session_state[chave_dia]
-            
-            # Filtro do Plano e do Dia (Garantindo que sejam números inteiros)
+            # --- BUSCA O DIA REAL NA PLANILHA ---
+            if not df_progresso.empty:
+                prog_user = df_progresso[(df_progresso['usuario'] == u) & (df_progresso['plano'] == plano_sel)]
+                if not prog_user.empty:
+                    dia_p = int(prog_user.iloc[0]['dia_atual'])
+                else:
+                    dia_p = 1
+            else:
+                dia_p = 1
+
+            # Filtro do Plano e Dia
             dados_plano = df_l[df_l['plano'] == plano_sel].copy()
             dados_plano['dia'] = pd.to_numeric(dados_plano['dia'], errors='coerce')
-            l_hoje = dados_plano[dados_plano['dia'] == int(dia_p)]
+            l_hoje = dados_plano[dados_plano['dia'] == dia_p]
             
             if not l_hoje.empty:
                 l = l_hoje.iloc[0]
                 st.markdown(f"### 📍 {plano_sel} - Dia {dia_p}")
                 
-                st.markdown(f"""
-                    <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
-                        <h4 style="margin:0; color:#00b894;">📖 Referência:</h4>
-                        <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                # Seu layout de Referência e Resumo...
+                st.info(f"📖 {l.get('referencia', '---')}")
+                st.write(l.get('resumo_para_meditacao', '---'))
                 
-                st.markdown("#### 💡 Resumo para Meditação")
-                st.info(l.get('resumo_para_meditacao', 'Medite na palavra.'))
-                
-                if st.button("✅ Concluí a leitura!", use_container_width=True):
-                    st.session_state[chave_dia] = int(dia_p) + 1
-                    st.balloons()
+                # --- BOTÃO CONCLUIR AGORA GRAVA NA PLANILHA ---
+                if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
+                    sucesso = atualizar_progresso_planilha(u, plano_sel, dia_p + 1)
+                    if sucesso:
+                        st.balloons()
+                        st.success("Progresso gravado na planilha!")
+                        st.rerun()
+            else:
+                st.success("🎉 Plano concluído!")
+                if st.button("Reiniciar"):
+                    atualizar_progresso_planilha(u, plano_sel, 1)
                     st.rerun()
             else:
                 # Se não achou o dia mas o dia é maior que 1, então acabou
