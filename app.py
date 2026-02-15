@@ -202,57 +202,85 @@ elif st.session_state.pagina == "Meditar":
 
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="vol_le")
-    st.markdown("<h1>📜 Planos de Leitura Bíblica</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
     
+    # --- BLOCO DE ACESSO (Onde estava o erro) ---
     if st.session_state.usuario is None:
-        # (Mantenha aqui o seu código de Login/Cadastro que já funciona)
-        # ... 
+        aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
+        
+        with aba_ac[0]:
+            l_nome = st.text_input("Nome completo:", key="l_n").strip().title()
+            l_senha = st.text_input("Senha:", type="password", key="l_s")
+            if st.button("Acessar", key="l_b"):
+                df_u = carregar_dados("Usuarios")
+                if not df_u.empty:
+                    match = df_u[(df_u['nome'] == l_nome) & (df_u['senha'].astype(str) == str(l_senha))]
+                    if not match.empty:
+                        st.session_state.usuario = l_nome
+                        st.rerun()
+                    else: st.error("Nome ou senha incorretos.")
+                else: st.error("Base de usuários não encontrada.")
+
+        with aba_ac[1]:
+            with st.form("f_cad"):
+                n = st.text_input("Nome Completo:").strip().title()
+                tel = st.text_input("WhatsApp:")
+                minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
+                nasc = st.date_input("Nascimento:", min_value=datetime(1950, 1, 1), max_value=hoje_br)
+                sen = st.text_input("Senha:", type="password")
+                if st.form_submit_button("Finalizar"):
+                    if n and sen:
+                        if salvar_novo_usuario([n, tel, minis, str(nasc), sen, 1, "Plano Anual"]):
+                            st.success("Sucesso! Faça Login na aba ao lado.")
+                        else: st.error("Erro ao salvar.")
+    
+    # --- BLOCO DO PLANO (Usuário Logado) ---
     else:
         u = st.session_state.usuario
         st.write(f"Olá, **{u}**! Selecione seu plano abaixo:")
         
-        # 1. Carregar dados da nova estrutura
-        df_leitura = carregar_dados("Leitura")
+        df_l = carregar_dados("Leitura")
         
-        if not df_leitura.empty:
-            # 2. Seletor de Planos (Mostra todos os planos criados na planilha)
-            lista_planos = df_leitura['plano'].unique()
-            plano_escolhido = st.selectbox("Escolha o Plano de Leitura:", lista_planos)
+        if not df_l.empty:
+            # 1. Seletor de Planos
+            lista_planos = df_l['plano'].unique()
+            plano_escolhido = st.selectbox("Escolha o Plano:", lista_planos)
             
-            # 3. Lógica de dia (Recupera onde o usuário parou)
-            dia_p = st.session_state.get(f"dia_{u}_{plano_escolhido}", 1)
+            # 2. Lógica de dia individual por plano
+            chave_dia = f"dia_{u}_{plano_escolhido}"
+            dia_p = st.session_state.get(chave_dia, 1)
             
-            # 4. Filtra a leitura baseada no Plano e no Dia
-            l_hoje = df_leitura[(df_leitura['plano'] == plano_escolhido) & 
-                                (df_leitura['dia'].astype(str) == str(dia_p))]
+            # 3. Filtro baseado na NOVA ESTRUTURA
+            # Espera colunas: plano, dia, referencia, resumo_para_meditacao
+            l_hoje = df_l[(df_l['plano'] == plano_escolhido) & (df_l['dia'].astype(str) == str(dia_p))]
             
             if not l_hoje.empty:
                 l = l_hoje.iloc[0]
                 st.markdown(f"### 📍 {plano_escolhido} - Dia {dia_p}")
                 
-                # Exibição da Referência em destaque
+                # Layout da Referência
                 st.markdown(f"""
                     <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
                         <h4 style="margin:0; color:#00b894;">📖 Referência de Hoje:</h4>
-                        <p style="font-size: 1.5em; margin-top: 10px;">{l.get('referencia', '---')}</p>
+                        <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # Exibição do Resumo
+                # Layout do Resumo
                 st.markdown("#### 💡 Resumo para Meditação")
                 st.info(l.get('resumo_para_meditacao', 'Medite na palavra do Senhor.'))
                 
                 st.divider()
-                
-                # Botão para avançar
-                if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
-                    st.session_state[f"dia_{u}_{plano_escolhido}"] = dia_p + 1
+                if st.button("✅ Concluí a leitura!", use_container_width=True):
+                    st.session_state[chave_dia] = dia_p + 1
                     st.balloons()
                     st.rerun()
             else:
-                st.success(f"🎉 Parabéns! Você completou o plano {plano_escolhido}!")
-                if st.button("Reiniciar este Plano"):
-                    st.session_state[f"dia_{u}_{plano_escolhido}"] = 1
+                st.success(f"🎉 Você completou o plano {plano_escolhido}!")
+                if st.button("Reiniciar Plano"):
+                    st.session_state[chave_dia] = 1
                     st.rerun()
-        else:
-            st.error("Nenhum plano de leitura encontrado na planilha.")
+        
+        if st.button("Sair da conta", key="logout_btn"):
+            st.session_state.usuario = None
+            st.rerun()
