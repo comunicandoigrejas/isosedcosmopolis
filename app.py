@@ -32,7 +32,11 @@ def carregar_dados(aba):
             id_plan = match.group(1)
             url = f"https://docs.google.com/spreadsheets/d/{id_plan}/gviz/tq?tqx=out:csv&sheet={aba}"
             df = pd.read_csv(url)
-            df.columns = [str(c).lower().strip().replace('ê', 'e').replace('ã', 'a').replace('ç', 'c') for c in df.columns]
+            # Normalização dos cabeçalhos: minúsculo, sem acento e troca ESPAÇO por UNDERSCORE (_)
+            df.columns = [str(c).lower().strip().replace('ê', 'e').replace('ã', 'a').replace('ç', 'c').replace(' ', '_') for c in df.columns]
+            
+            # LIMPEZA DE DADOS: Remove espaços em branco de todas as células de texto
+            df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
             return df
         return pd.DataFrame()
     except: return pd.DataFrame()
@@ -204,95 +208,61 @@ elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="vol_le")
     st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
     
-    # --- BLOCO DE ACESSO (Onde estava o erro) ---
     if st.session_state.usuario is None:
-        aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
-        
-        with aba_ac[0]:
-            l_nome = st.text_input("Nome completo:", key="l_n").strip().title()
-            l_senha = st.text_input("Senha:", type="password", key="l_s")
-            if st.button("Acessar", key="l_b"):
-                df_u = carregar_dados("Usuarios")
-                if not df_u.empty:
-                    match = df_u[(df_u['nome'] == l_nome) & (df_u['senha'].astype(str) == str(l_senha))]
-                    if not match.empty:
-                        st.session_state.usuario = l_nome
-                        st.rerun()
-                    else: st.error("Nome ou senha incorretos.")
-                else: st.error("Base de usuários não encontrada.")
-
-        with aba_ac[1]:
-            with st.form("f_cad"):
-                n = st.text_input("Nome Completo:").strip().title()
-                tel = st.text_input("WhatsApp:")
-                minis = st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Crianças", "Visitante"])
-                nasc = st.date_input("Nascimento:", min_value=datetime(1950, 1, 1), max_value=hoje_br)
-                sen = st.text_input("Senha:", type="password")
-                if st.form_submit_button("Finalizar"):
-                    if n and sen:
-                        if salvar_novo_usuario([n, tel, minis, str(nasc), sen, 1, "Plano Anual"]):
-                            st.success("Sucesso! Faça Login na aba ao lado.")
-                        else: st.error("Erro ao salvar.")
-    
-    # --- BLOCO DO PLANO (Usuário Logado) ---
+        # ... (Mantenha seu código de Login/Cadastro aqui) ...
     else:
         u = st.session_state.usuario
-        st.write(f"Olá, **{u}**! Selecione seu plano abaixo:")
-        
         df_l = carregar_dados("Leitura")
         
         if not df_l.empty:
-            # 1. Seletor de Planos
             lista_planos = df_l['plano'].unique()
-            plano_escolhido = st.selectbox("Escolha o Plano:", lista_planos)
+            plano_sel = st.selectbox("Escolha o Plano:", lista_planos)
             
-            # 2. Lógica de dia individual por plano
-            chave_dia = f"dia_{u}_{plano_escolhido}"
-            dia_p = st.session_state.get(chave_dia, 1)
+            # CHAVE ÚNICA: Garante que o progresso seja salvo por usuário E por plano
+            chave_dia = f"dia_{u}_{plano_sel}".replace(" ", "_")
+            if chave_dia not in st.session_state:
+                st.session_state[chave_dia] = 1
             
-            # Filtramos todas as linhas DESTE plano para saber se ele tem conteúdo
-            dados_do_plano_total = df_l[df_l['plano'] == plano_escolhido]
-
-            if dados_do_plano_total.empty:
-                st.warning(f"O plano '{plano_escolhido}' foi criado, mas ainda não tem versículos cadastrados na planilha.")
+            dia_p = st.session_state[chave_dia]
+            
+            # Filtro do Plano
+            dados_plano = df_l[df_l['plano'] == plano_sel]
+            
+            # Filtro do Dia (Convertendo ambos para número inteiro para não haver erro de 1.0 vs 1)
+            # Usamos pd.to_numeric para garantir que a comparação funcione
+            dados_plano['dia'] = pd.to_numeric(dados_plano['dia'], errors='coerce')
+            l_hoje = dados_plano[dados_plano['dia'] == int(dia_p)]
+            
+            if not l_hoje.empty:
+                l = l_hoje.iloc[0]
+                st.markdown(f"### 📍 {plano_sel} - Dia {dia_p}")
+                
+                st.markdown(f"""
+                    <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
+                        <h4 style="margin:0; color:#00b894;">📖 Referência:</h4>
+                        <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("#### 💡 Resumo para Meditação")
+                st.info(l.get('resumo_para_meditacao', 'Medite na palavra.'))
+                
+                if st.button("✅ Concluí a leitura!", use_container_width=True):
+                    st.session_state[chave_dia] = int(dia_p) + 1
+                    st.balloons()
+                    st.rerun()
+            
             else:
-                # 3. Agora buscamos o DIA específico dentro desse plano
-                l_hoje = dados_do_plano_total[dados_do_plano_total['dia'].astype(str) == str(dia_p)]
-                
-                if not l_hoje.empty:
-                    l = l_hoje.iloc[0]
-                    st.markdown(f"### 📍 {plano_escolhido} - Dia {dia_p}")
-                    
-                    # Layout da Referência (Mantendo seu padrão)
-                    st.markdown(f"""
-                        <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
-                            <h4 style="margin:0; color:#00b894;">📖 Referência de Hoje:</h4>
-                            <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Layout do Resumo
-                    st.markdown("#### 💡 Resumo para Meditação")
-                    st.info(l.get('resumo_para_meditacao', 'Medite na palavra do Senhor.'))
-                    
-                    st.divider()
-                    if st.button("✅ Concluí a leitura!", use_container_width=True):
-                        st.session_state[chave_dia] = dia_p + 1
-                        st.balloons()
-                        st.rerun()
-                
-                # Se o dia atual não existe, mas o dia anterior existia, aí sim completou
-                elif dia_p > 1:
-                    st.success(f"🎉 Parabéns! Você completou o plano {plano_escolhido}!")
+                # Verificação extra: Se o dia_p é 1 e está vazio, a planilha tem erro
+                if dia_p == 1:
+                    st.error(f"O Dia 1 não foi encontrado no plano '{plano_sel}'. Verifique se escreveu exatamente igual na planilha.")
+                else:
+                    st.success(f"🎉 Você completou o plano {plano_sel}!")
                     if st.button("Reiniciar Plano"):
                         st.session_state[chave_dia] = 1
                         st.rerun()
-                else:
-                    st.error(f"Erro: O Dia {dia_p} não foi encontrado no plano '{plano_escolhido}'. Verifique a coluna 'dia' na planilha.")
         
-        else:
-            st.error("A aba 'Leitura' está vazia ou não foi encontrada na planilha.")
-
-        if st.button("Sair da conta", key="logout_btn"):
+        st.divider()
+        if st.button("Sair da conta"):
             st.session_state.usuario = None
             st.rerun()
