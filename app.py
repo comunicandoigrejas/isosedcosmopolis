@@ -86,39 +86,6 @@ def atualizar_progresso_planilha(usuario, plano, novo_dia):
 # --- 3. SEU ESTILO CSS ORIGINAL ---
 st.markdown("""
     <style>
-  /* --- BARRA DE MESES HORIZONTAL (Scroll Mobile) --- */
-    @media (max-width: 768px) {
-        /* Alvo: O bloco que contém os botões de meses */
-        div[data-testid="stHorizontalBlock"]:has(button[key*="mes_"]),
-        div[data-testid="stHorizontalBlock"]:has(button[key*="an_"]),
-        div[data-testid="stHorizontalBlock"]:has(button[key*="aniv_"]) {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important; /* Impede de empilhar */
-            overflow-x: auto !important; /* Ativa o scroll lateral */
-            overflow-y: hidden !important;
-            width: 100% !important;
-            padding: 10px 0px !important;
-            gap: 8px !important;
-        }
-
-        /* Alvo: As colunas individuais dentro desse bloco */
-        div[data-testid="stHorizontalBlock"]:has(button[key*="mes_"]) > div,
-        div[data-testid="stHorizontalBlock"]:has(button[key*="an_"]) > div,
-        div[data-testid="stHorizontalBlock"]:has(button[key*="aniv_"]) > div {
-            width: 80px !important; /* Define uma largura fixa para cada mês */
-            min-width: 80px !important;
-            max-width: 80px !important;
-            flex: 0 0 80px !important; /* Não deixa a coluna crescer nem diminuir */
-        }
-
-        /* Estilo do botão para caber no scroll */
-        div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] {
-            width: 80px !important;
-            height: 40px !important;
-            font-size: 11px !important;
-        }
-    }
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
     h1, h2, h3, h4, h5, h6, [data-testid="stMarkdownContainer"] p { color: #FFFFFF !important; font-weight: 800 !important; }
