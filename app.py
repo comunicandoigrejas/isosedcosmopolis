@@ -239,21 +239,80 @@ if st.session_state.pagina == "Início":
             st.image("logo igreja.png", use_container_width=True)
             st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
 
+elif st.session_state.pagina == "Agenda":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
+    
+    df = carregar_dados("Agenda")
+    
+    if not df.empty:
+        # Tenta converter a coluna 'data' com segurança
+        if 'data' in df.columns:
+            df['data_dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        
+        nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        abas_agenda = st.tabs(nomes_meses)
+        
+        for i, aba in enumerate(abas_agenda):
+            with aba:
+                mes_num = i + 1
+                # Filtra os eventos pelo mês da aba
+                if 'data_dt' in df.columns:
+                    evs = df[df['data_dt'].dt.month == mes_num].sort_values(by='data_dt')
+                else:
+                    evs = pd.DataFrame() # Caso a coluna data falhe
+
+                if not evs.empty:
+                    for _, r in evs.iterrows():
+                        # Mostra o evento (usa .get para não dar erro se a coluna mudar)
+                        dia_exibicao = r['data_dt'].strftime('%d/%m') if pd.notnull(r['data_dt']) else "S/D"
+                        evento_txt = r.get('evento', 'Evento sem nome')
+                        
+                        st.markdown(f"""
+                            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; 
+                                        border-left: 5px solid #0a3d62; margin-bottom: 8px;">
+                                <b style="color: #ffd700;">{dia_exibicao}</b> - {evento_txt}
+                            </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info(f"Nenhum evento programado para {nomes_meses[i]}.")
+    else:
+        st.error("Não foi possível carregar os dados da Agenda. Verifique o nome da aba na planilha.")
+
 elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>👥 Grupos e Departamentos</h1>", unsafe_allow_html=True)
-    df = carregar_dados("Agenda")
+    st.markdown("<h1>👥 Departamentos</h1>", unsafe_allow_html=True)
+    
+    df = carregar_dados("Agenda") # Os grupos usam a mesma base da agenda
+    
     if not df.empty:
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        deptos = ["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Tarde com Deus"]
-        abas = st.tabs(deptos)
-        for i, depto in enumerate(abas):
-            with depto:
-                f = df[df['evento'].str.contains(deptos[i], case=False, na=False)].sort_values(by='data')
-                if not f.empty:
-                    for _, r in f.iterrows():
-                        st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; margin-bottom:8px; border-left:5px solid #00b894;"><b style="color:#00b894;">{r["data"].strftime("%d/%m/%Y")}</b> — {r["evento"]}</div>', unsafe_allow_html=True)
-                else: st.info(f"Sem datas para {deptos[i]}.")
+        if 'data' in df.columns:
+            df['data_dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        
+        deptos = ["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Crianças"]
+        abas_deptos = st.tabs(deptos)
+        
+        for i, depto_nome in enumerate(deptos):
+            with abas_deptos[i]:
+                # Filtra eventos que contenham o nome do departamento (ex: procura "Jovens" em "Culto de Jovens")
+                if 'evento' in df.columns:
+                    filtro = df[df['evento'].str.contains(depto_nome, case=False, na=False)]
+                    if 'data_dt' in df.columns:
+                        filtro = filtro.sort_values(by='data_dt')
+                else:
+                    filtro = pd.DataFrame()
+
+                if not filtro.empty:
+                    for _, r in filtro.iterrows():
+                        dia_f = r['data_dt'].strftime('%d/%m/%Y') if pd.notnull(r['data_dt']) else "S/D"
+                        st.markdown(f"""
+                            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; 
+                                        border-left: 5px solid #00b894; margin-bottom: 8px;">
+                                <b style="color: #00b894;">{dia_f}</b> — {r.get('evento', '')}
+                            </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info(f"Nenhuma atividade encontrada para {depto_nome}.")
 
 elif st.session_state.pagina == "AnivMês":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
