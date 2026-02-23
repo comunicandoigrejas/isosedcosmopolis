@@ -160,7 +160,7 @@ if st.session_state.pagina == "Início":
             st.image("logo_igreja.png", use_container_width=True)
     else:
         # Se não encontrar o arquivo, ele avisa (isso ajuda a debugar)
-        st.info("💡 Dica: Suba o arquivo 'logo_igreja.png' para o GitHub para o logo aparecer aqui.")
+        st.info("💡 Dica: Suba o arquivo 'logo igreja.png' para o GitHub para o logo aparecer aqui.")
 
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
