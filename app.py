@@ -8,22 +8,22 @@ import re
 from datetime import datetime, timedelta
 import pytz
 import requests
+import urllib.parse # Nova biblioteca para limpar os links
 
 def buscar_texto_biblico(referencia):
-    """Busca o texto completo na API Bíblica (Versão Almeida)"""
     try:
-        # Limpa a referência para a URL (ex: "João 3:16" vira "joao+3:16")
-        ref_formatada = referencia.replace(" ", "+")
-        url = f"https://bible-api.com/{ref_formatada}?translation=almeida"
+        # Codifica a referência (Gênesis 1-2 vira G%C3%AAnesis+1-2)
+        ref_url = urllib.parse.quote(referencia)
+        url = f"https://bible-api.com/{ref_url}?translation=almeida"
         
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             dados = response.json()
             return dados.get('text', "Texto não encontrado.")
         else:
-            return "Não consegui carregar os versículos agora. Verifique a conexão."
-    except Exception:
-        return "Erro ao conectar com a base bíblica."
+            return f"API retornou erro {response.status_code}. Verifique se a referência '{referencia}' está correta."
+    except Exception as e:
+        return f"Erro de conexão: {e}"
 # --- 1. CONFIGURAÇÃO E MEMÓRIA (No Topo) ---
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
