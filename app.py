@@ -9,21 +9,43 @@ from datetime import datetime, timedelta
 import pytz
 import requests
 import urllib.parse # Nova biblioteca para limpar os links
+import re
+import urllib.parse
 
-def buscar_texto_biblico(referencia):
+def buscar_capitulos_divididos(referencia):
     try:
-        # Codifica a referência (Gênesis 1-2 vira G%C3%AAnesis+1-2)
-        ref_url = urllib.parse.quote(referencia)
-        url = f"https://bible-api.com/{ref_url}?translation=almeida"
+        # Tenta identificar o padrão "Livro X-Y" (Ex: Gênesis 4-7)
+        padrao = re.match(r"(.+?)\s+(\d+)-(\d+)", referencia)
         
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            dados = response.json()
-            return dados.get('text', "Texto não encontrado.")
+        if padrao:
+            livro = padrao.group(1)
+            inicio = int(padrao.group(2))
+            fim = int(padrao.group(3))
+            
+            textos = {}
+            for cap in range(inicio, fim + 1):
+                ref_cap = f"{livro} {cap}"
+                # Ajuste para livros com acentos que a API entende melhor sem
+                ref_limpa = ref_cap.replace("Gênesis", "Genesis").replace("Êxodo", "Exodus")
+                ref_url = urllib.parse.quote(ref_limpa)
+                url = f"https://bible-api.com/{ref_url}?translation=almeida"
+                
+                res = requests.get(url, timeout=10)
+                if res.status_code == 200:
+                    textos[f"Cap. {cap}"] = res.json().get('text', "Texto não encontrado.")
+            return textos
+        
         else:
-            return f"API retornou erro {response.status_code}. Verifique se a referência '{referencia}' está correta."
+            # Para capítulos únicos ou versículos específicos
+            ref_url = urllib.parse.quote(referencia)
+            url = f"https://bible-api.com/{ref_url}?translation=almeida"
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200:
+                return {"Leitura": res.json().get('text', "Texto não encontrado.")}
+            return {"Erro": f"API erro {res.status_code}"}
+            
     except Exception as e:
-        return f"Erro de conexão: {e}"
+        return {"Erro": str(e)}
 # --- 1. CONFIGURAÇÃO E MEMÓRIA (No Topo) ---
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
@@ -299,25 +321,42 @@ elif st.session_state.pagina == "Leitura":
             
             if not l_hoje.empty:
                 l = l_hoje.iloc[0]
-                ref_hoje = l.get('referencia', '---') # Pegamos a referência aqui
+                ref_hoje = l.get('referencia', '---')
                 
                 st.markdown(f"### 📍 {plano_sel} - Dia {dia_p}")
                 
-                # Layout Referência
+                # Layout Referência (Caixa de destaque)
                 st.markdown(f"""
                     <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
-                        <h4 style="margin:0; color:#00b894;">📖 Referência:</h4>
+                        <h4 style="margin:0; color:#00b894;">📖 Passagem de Hoje:</h4>
                         <p style="font-size: 1.4em; margin-top: 10px;">{ref_hoje}</p>
                     </div>
                 """, unsafe_allow_html=True)
 
-                # --- AQUI ENTRA O CÓDIGO NOVO DA BÍBLIA ---
-                with st.expander("✨ CLIQUE PARA LER O TEXTO COMPLETO"):
-                    with st.spinner('Buscando na Bíblia...'):
-                        texto_biblico = buscar_texto_biblico(ref_hoje)
-                        st.markdown(f'<div style="text-align: justify; color: white; line-height: 1.6;">{texto_biblico}</div>', unsafe_allow_html=True)
+                # --- NOVO SISTEMA DE LEITURA MULTI-CAPÍTULOS ---
+                with st.spinner('Abrindo a Bíblia...'):
+                    # Busca os textos (Função deve estar no topo do seu app.py)
+                    dicionario_textos = buscar_capitulos_divididos(ref_hoje)
                 
-                # Layout Meditação (Vem depois do texto bíblico)
+                if "Erro" not in dicionario_textos:
+                    # Cria abas para cada capítulo (ex: Cap 4, Cap 5...)
+                    nomes_abas_biblia = list(dicionario_textos.keys())
+                    abas_biblia = st.tabs(nomes_abas_biblia)
+                    
+                    for i, aba_cap in enumerate(abas_biblia):
+                        with aba_cap:
+                            texto_cap = dicionario_textos[nomes_abas_biblia[i]]
+                            st.markdown(f"""
+                                <div style="text-align: justify; color: white; line-height: 1.8; 
+                                background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; font-size: 1.1em;">
+                                    {texto_cap}
+                                </div>
+                            """, unsafe_allow_html=True)
+                else:
+                    st.error(f"Não conseguimos carregar os versículos: {dicionario_textos['Erro']}")
+                
+                # Layout Meditação
+                st.markdown("<br>", unsafe_allow_html=True)
                 st.info(f"💡 **Meditação:** {l.get('resumo_para_meditacao', '---')}")
                 
                 if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
@@ -332,6 +371,6 @@ elif st.session_state.pagina == "Leitura":
                     st.rerun()
 
         st.divider()
-        if st.button("Sair da conta"):
+        if st.button("Sair da conta", key="btn_logout_final"):
             st.session_state.usuario = None
             st.rerun()
