@@ -10,7 +10,29 @@ import requests
 import urllib.parse
 
 # --- 1. FUNÇÕES GLOBAIS ---
+def contabilizar_acesso():
+    """Lê o valor atual na planilha e soma +1 a cada nova sessão"""
+    if 'acesso_registrado' not in st.session_state:
+        try:
+            sh = conectar_planilha()
+            aba = sh.worksheet("Acessos")
+            valor_atual = int(aba.acell('A2').value)
+            novo_valor = valor_atual + 1
+            aba.update_cell(2, 1, novo_valor)
+            st.session_state.acesso_registrado = True
+            return novo_valor
+        except:
+            return "---"
+    else:
+        # Se já contou nesta sessão, apenas busca o valor da planilha sem somar
+        try:
+            sh = conectar_planilha()
+            aba = sh.worksheet("Acessos")
+            return aba.acell('A2').value
+        except: return "---"
 
+# Chame a função logo no início para carregar o número
+total_acessos = contabilizar_acesso()
 def buscar_capitulos_divididos(referencia):
     try:
         padrao = re.match(r"(.+?)\s+(\d+)-(\d+)", referencia)
