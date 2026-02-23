@@ -132,6 +132,39 @@ st.markdown("""
     button[data-testid="stBaseButton-secondary"] p { font-weight: 900 !important; text-transform: uppercase !important; font-size: 14px !important; }
     .card-niver { background: rgba(255,215,0,0.1); border: 2px solid #ffd700; border-radius: 15px; padding: 10px; text-align: center; }
     div[data-testid="stTabs"] { overflow-x: auto; white-space: nowrap; }
+    /* Rodapé Fixo das Redes Sociais */
+    .footer-social {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #0a3d62;
+        padding: 10px 0;
+        text-align: center;
+        border-top: 2px solid #3c6382;
+        z-index: 999;
+    }
+    .footer-social a {
+        color: white !important;
+        text-decoration: none;
+        margin: 0 15px;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    /* Cartão de Horários de Culto */
+    .culto-card {
+        background: rgba(10, 61, 98, 0.4);
+        border: 1px solid #3c6382;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 10px;
+    }
+    .culto-item {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 5px 0;
+    }
     </style>
     """, unsafe_allow_html=True)
 
