@@ -223,9 +223,10 @@ elif st.session_state.pagina == "Meditar":
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
+    
     if st.session_state.usuario is None:
-        a1, a2 = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
-        with a1:
+        aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
+        with aba_ac[0]:
             ln, ls = st.text_input("Nome:").strip().title(), st.text_input("Senha:", type="password")
             if st.button("Acessar"):
                 du = carregar_dados("Usuarios")
@@ -233,7 +234,7 @@ elif st.session_state.pagina == "Leitura":
                     st.session_state.usuario = ln
                     st.rerun()
                 else: st.error("Erro!")
-        with a2:
+        with aba_ac[1]:
             with st.form("f_c"):
                 n, tel, m, d, s = st.text_input("Nome:"), st.text_input("WhatsApp:"), st.selectbox("Ministério:", ["Louvor", "Irmãs", "Jovens", "Varões", "Mídia", "Visitante"]), st.date_input("Nascimento:", min_value=datetime(1950,1,1)), st.text_input("Senha:", type="password")
                 if st.form_submit_button("Ok") and n and s:
@@ -247,22 +248,54 @@ elif st.session_state.pagina == "Leitura":
                 df_p.columns = [str(c).lower().strip() for c in df_p.columns]
                 prog = df_p[(df_p['usuario']==u) & (df_p['plano']==p_sel)]
                 if not prog.empty: dia_p = int(prog.iloc[0]['dia_atual'])
+            
             l_hj = df_l[(df_l['plano']==p_sel) & (pd.to_numeric(df_l['dia'])==dia_p)]
+            
             if not l_hj.empty:
                 l = l_hj.iloc[0]
                 ref = l.get('referencia', '---')
                 st.markdown(f"### 📍 Dia {dia_p}")
+                
+                # Layout da Referência
                 st.markdown(f'<div style="background:rgba(10,61,98,0.4); padding:20px; border-radius:15px; border-left:5px solid #00b894; margin-bottom:20px;">{ref}</div>', unsafe_allow_html=True)
-                with st.spinner('Buscando...'):
+                
+                with st.spinner('Buscando versículos...'):
                     txts = buscar_capitulos_divididos(ref)
+                
                 if "Erro" not in txts:
                     abs_b = st.tabs(list(txts.keys()))
                     for i, ab_c in enumerate(abs_b):
-                        with ab_c: st.markdown(f'<div style="text-align:justify; line-height:1.6;">{txts[list(txts.keys())[i]]}</div>', unsafe_allow_html=True)
+                        with ab_c:
+                            # CORREÇÃO: white-space: pre-wrap para quebrar as linhas
+                            st.markdown(f"""
+                                <div style="
+                                    text-align: justify; 
+                                    line-height: 1.8; 
+                                    white-space: pre-wrap; 
+                                    background: rgba(255,255,255,0.03); 
+                                    padding: 15px; 
+                                    border-radius: 10px;
+                                    font-size: 1.1em;
+                                    color: white;
+                                ">
+                                    {txts[list(txts.keys())[i]]}
+                                </div>
+                            """, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                 st.info(f"💡 Meditação: {l.get('resumo_para_meditacao', '---')}")
-                if st.button("✅ Concluir"):
-                    if atualizar_progresso_planilha(u, p_sel, dia_p + 1): st.rerun()
+                
+                if st.button("✅ Concluir Leitura de Hoje", use_container_width=True):
+                    if atualizar_progresso_planilha(u, p_sel, dia_p + 1):
+                        st.balloons()
+                        st.rerun()
             else:
-                st.success("Concluído!")
-                if st.button("Reiniciar"): atualizar_progresso_planilha(u, p_sel, 1); st.rerun()
-        if st.button("Sair"): st.session_state.usuario = None; st.rerun()
+                st.success("🎉 Parabéns! Plano Concluído!")
+                if st.button("Reiniciar Plano"): 
+                    atualizar_progresso_planilha(u, p_sel, 1)
+                    st.rerun()
+        
+        st.divider()
+        if st.button("Sair da Conta"): 
+            st.session_state.usuario = None
+            st.rerun()
