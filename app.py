@@ -117,29 +117,50 @@ st.markdown("""
 
 if st.session_state.pagina == "Início":
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
+    
+    # --- 1. SEÇÃO DE ANIVERSARIANTES DA SEMANA ---
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
-        dom = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
-        seg = dom + timedelta(days=8)
-        aniv_f = [r for _, r in df_n.iterrows() if dom <= datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date() <= seg]
+        domingo_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
+        segunda_proxima = domingo_atual + timedelta(days=8)
+        
+        # Filtro corrigido para bater com os nomes das colunas normalizados
+        aniv_f = [r for _, r in df_n.iterrows() if domingo_atual <= datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date() <= segunda_proxima]
+        
         if aniv_f:
             st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
             cols = st.columns(len(aniv_f))
             for i, p in enumerate(aniv_f):
-                with cols[i]: st.markdown(f'<div class="card-niver"><div style="color:#ffd700; font-weight:900;">{p["nome"]}</div><div>{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
+                with cols[i]:
+                    st.markdown(f"""
+                        <div class="card-niver">
+                            <div class="niver-nome">{p['nome']}</div>
+                            <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
     
+    # --- 2. MENU PRINCIPAL (Grade 2x2 para Celular) ---
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
-        st.button("👥 Grupos", on_click=navegar, args=("Grupos",))
-        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",))
+        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True)
+        st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True)
+        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True)
     with c2:
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
-        st.button("📖 Meditar", on_click=navegar, args=("Meditar",))
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
-    
-    if os.path.exists("logo igreja.png"): st.markdown("<div style='text-align:center;'><img src='logo igreja.png' width='180'></div>", unsafe_allow_html=True)
+        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True)
+        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True)
+        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True)
+
+    # --- 3. O LOGO (Centralizado e Protegido) ---
+    st.markdown("<br>", unsafe_allow_html=True)
+    # Lembre-se de renomear o arquivo no seu GitHub para: logo_igreja.png
+    if os.path.exists("logo_igreja.png"):
+        col_esq, col_centro, col_dir = st.columns([1, 2, 1])
+        with col_centro:
+            st.image("logo_igreja.png", use_container_width=True)
+    else:
+        # Se não encontrar o arquivo, ele avisa (isso ajuda a debugar)
+        st.info("💡 Dica: Suba o arquivo 'logo_igreja.png' para o GitHub para o logo aparecer aqui.")
 
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
