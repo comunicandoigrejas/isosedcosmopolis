@@ -6,7 +6,23 @@ import os
 import re
 from datetime import datetime, timedelta
 import pytz
+import requests
 
+def buscar_texto_biblico(referencia):
+    """Busca o texto completo na API Bíblica (Versão Almeida)"""
+    try:
+        # Limpa a referência para a URL (ex: "João 3:16" vira "joao+3:16")
+        ref_formatada = referencia.replace(" ", "+")
+        url = f"https://bible-api.com/{ref_formatada}?translation=almeida"
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            dados = response.json()
+            return dados.get('text', "Texto não encontrado.")
+        else:
+            return "Não consegui carregar os versículos agora. Verifique a conexão."
+    except Exception:
+        return "Erro ao conectar com a base bíblica."
 # --- 1. CONFIGURAÇÃO E MEMÓRIA (No Topo) ---
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
@@ -263,43 +279,47 @@ elif st.session_state.pagina == "Leitura":
     else:
         u = st.session_state.usuario
         df_l = carregar_dados("Leitura")
-        df_progresso = carregar_dados("Progresso") # Importante: Aba "Progresso" na planilha
+        df_progresso = carregar_dados("Progresso")
 
         if not df_l.empty:
             lista_planos = df_l['plano'].unique()
             plano_sel = st.selectbox("Escolha seu Plano:", lista_planos, key="sel_plano")
             
-            # --- BUSCA O DIA GRAVADO NA PLANILHA ---
             dia_p = 1
             if not df_progresso.empty:
-                # Normaliza colunas do progresso para evitar erro de busca
                 df_progresso.columns = [str(c).lower().strip() for c in df_progresso.columns]
                 prog_user = df_progresso[(df_progresso['usuario'] == u) & (df_progresso['plano'] == plano_sel)]
                 if not prog_user.empty:
                     dia_p = int(prog_user.iloc[0]['dia_atual'])
 
-            # Filtro do Conteúdo
             dados_plano = df_l[df_l['plano'] == plano_sel].copy()
             dados_plano['dia'] = pd.to_numeric(dados_plano['dia'], errors='coerce')
             l_hoje = dados_plano[dados_plano['dia'] == dia_p]
             
             if not l_hoje.empty:
                 l = l_hoje.iloc[0]
+                ref_hoje = l.get('referencia', '---') # Pegamos a referência aqui
+                
                 st.markdown(f"### 📍 {plano_sel} - Dia {dia_p}")
                 
                 # Layout Referência
                 st.markdown(f"""
                     <div style="background: rgba(10, 61, 98, 0.4); padding: 20px; border-radius: 15px; border-left: 5px solid #00b894; margin-bottom: 20px;">
                         <h4 style="margin:0; color:#00b894;">📖 Referência:</h4>
-                        <p style="font-size: 1.4em; margin-top: 10px;">{l.get('referencia', '---')}</p>
+                        <p style="font-size: 1.4em; margin-top: 10px;">{ref_hoje}</p>
                     </div>
                 """, unsafe_allow_html=True)
+
+                # --- AQUI ENTRA O CÓDIGO NOVO DA BÍBLIA ---
+                with st.expander("✨ CLIQUE PARA LER O TEXTO COMPLETO"):
+                    with st.spinner('Buscando na Bíblia...'):
+                        texto_biblico = buscar_texto_biblico(ref_hoje)
+                        st.markdown(f'<div style="text-align: justify; color: white; line-height: 1.6;">{texto_biblico}</div>', unsafe_allow_html=True)
                 
+                # Layout Meditação (Vem depois do texto bíblico)
                 st.info(f"💡 **Meditação:** {l.get('resumo_para_meditacao', '---')}")
                 
-                # --- BOTÃO QUE GRAVA NA PLANILHA ---
                 if st.button("✅ Concluí a leitura de hoje!", use_container_width=True):
-                    # Chamamos a função de atualização (certifique-se que ela está no topo do código)
                     if atualizar_progresso_planilha(u, plano_sel, dia_p + 1):
                         st.balloons()
                         st.success("Progresso salvo!")
