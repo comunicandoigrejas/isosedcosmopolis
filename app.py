@@ -171,20 +171,55 @@ st.markdown("""
 # --- 5. ROTEADOR ---
 
 if st.session_state.pagina == "Início":
+    # 1. CONTADOR DE ACESSOS (Grava na Planilha)
+    if 'acesso_contado' not in st.session_state:
+        try:
+            sh_ac = conectar_planilha()
+            aba_ac = sh_ac.worksheet("Acessos")
+            total_atual = int(aba_ac.acell('A2').value or 0)
+            aba_ac.update_cell(2, 1, total_atual + 1)
+            st.session_state.acesso_contado = total_atual + 1
+        except: st.session_state.acesso_contado = "---"
+
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # Horários de Culto
+    # 2. HORÁRIOS DE CULTO
     st.markdown("""
-        <div class="culto-card">
-            <h4 style="margin:0; color:#ffd700; text-align:center;">🙏 Nossos Cultos</h4>
-            <div class="culto-item"><span>Segunda-feira</span> <b>Oração Ministerial</b></div>
-            <div class="culto-item"><span>Quarta-feira</span> <b>Culto de Ensino - 19h30</b></div>
-            <div class="culto-item"><span>Sexta-feira</span> <b>Culto de Libertação - 19h30</b></div>
-            <div class="culto-item"><span>Domingo</span> <b>Culto da Família - 18h00</b></div>
+        <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+            <h4 style="margin:0; color:#ffd700; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🙏 Nossos Cultos</h4>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Segunda-feira</span> <b>Oração Ministerial</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Quarta-feira</span> <b>Ensino - 19h30</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Sexta-feira</span> <b>Libertação - 19h30</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Domingo</span> <b>Família - 18h00</b></div>
         </div>
     """, unsafe_allow_html=True)
 
-    # Menu Principal 2x2
+    # 3. ANIVERSARIANTES DA SEMANA (Correção do Filtro)
+    df_n = carregar_dados("Aniversariantes")
+    if not df_n.empty:
+        # Pega de Domingo a Segunda da outra semana
+        dom_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
+        seg_prox = dom_atual + timedelta(days=8)
+        
+        aniv_f = []
+        for _, r in df_n.iterrows():
+            try:
+                # Normaliza para garantir que 'dia' e 'mes' sejam números
+                d, m = int(r.get('dia', 0)), int(r.get('mes', 0))
+                data_aniv = datetime(hoje_br.year, m, d).date()
+                if dom_atual <= data_aniv <= seg_prox:
+                    aniv_f.append(r)
+            except: continue
+
+        if aniv_f:
+            st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
+            # No mobile, usamos colunas menores
+            cols = st.columns(len(aniv_f))
+            for i, p in enumerate(aniv_f):
+                with cols[i]:
+                    st.markdown(f'<div class="card-niver"><div class="niver-nome">{p["nome"]}</div><div class="niver-data">{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
+
+    # 4. MENU PRINCIPAL (Grade 2x2)
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
@@ -196,27 +231,13 @@ if st.session_state.pagina == "Início":
         st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True)
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True)
 
-    # Logo e Contador
+    # 5. LOGO E CONTADOR
     st.markdown("<br>", unsafe_allow_html=True)
     if os.path.exists("logo igreja.png"):
-        col_esq, col_centro, col_dir = st.columns([1, 2, 1])
-        with col_centro:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
             st.image("logo igreja.png", use_container_width=True)
-            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.7;'>Total de acessos: {total_acessos}</p>", unsafe_allow_html=True)
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
-    df = carregar_dados("Agenda")
-    if not df.empty:
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        abas = st.tabs(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-        for i, aba in enumerate(abas):
-            with aba:
-                evs = df[df['data'].dt.month == (i+1)].sort_values(by='data')
-                if not evs.empty:
-                    for _, r in evs.iterrows():
-                        st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; border-left:5px solid #0a3d62;"><b style="color:#ffd700;">{r["data"].strftime("%d/%m")}</b> - {r["evento"]}</div>', unsafe_allow_html=True)
-                else: st.info("Sem eventos.")
+            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
 
 elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
