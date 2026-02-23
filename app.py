@@ -71,7 +71,7 @@ def navegar(p):
     st.session_state.pagina = p
 
 # --- 3. CONEXÃO PLANILHA ---
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit"
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing"
 
 def carregar_dados(aba):
     try:
