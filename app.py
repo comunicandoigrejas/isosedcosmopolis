@@ -154,10 +154,10 @@ if st.session_state.pagina == "Início":
     # --- 3. O LOGO (Centralizado e Protegido) ---
     st.markdown("<br>", unsafe_allow_html=True)
     # Lembre-se de renomear o arquivo no seu GitHub para: logo_igreja.png
-    if os.path.exists("logo_igreja.png"):
+    if os.path.exists("logo igreja.png"):
         col_esq, col_centro, col_dir = st.columns([1, 2, 1])
         with col_centro:
-            st.image("logo_igreja.png", use_container_width=True)
+            st.image("logo igreja.png", use_container_width=True)
     else:
         # Se não encontrar o arquivo, ele avisa (isso ajuda a debugar)
         st.info("💡 Dica: Suba o arquivo 'logo igreja.png' para o GitHub para o logo aparecer aqui.")
