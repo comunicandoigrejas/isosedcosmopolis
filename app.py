@@ -173,28 +173,18 @@ st.markdown("""
 if st.session_state.pagina == "Início":
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # --- 1. SEÇÃO DE ANIVERSARIANTES DA SEMANA ---
-    df_n = carregar_dados("Aniversariantes")
-    if not df_n.empty:
-        domingo_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
-        segunda_proxima = domingo_atual + timedelta(days=8)
-        
-        # Filtro corrigido para bater com os nomes das colunas normalizados
-        aniv_f = [r for _, r in df_n.iterrows() if domingo_atual <= datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date() <= segunda_proxima]
-        
-        if aniv_f:
-            st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
-            cols = st.columns(len(aniv_f))
-            for i, p in enumerate(aniv_f):
-                with cols[i]:
-                    st.markdown(f"""
-                        <div class="card-niver">
-                            <div class="niver-nome">{p['nome']}</div>
-                            <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-    
-    # --- 2. MENU PRINCIPAL (Grade 2x2 para Celular) ---
+    # Horários de Culto
+    st.markdown("""
+        <div class="culto-card">
+            <h4 style="margin:0; color:#ffd700; text-align:center;">🙏 Nossos Cultos</h4>
+            <div class="culto-item"><span>Segunda-feira</span> <b>Oração Ministerial</b></div>
+            <div class="culto-item"><span>Quarta-feira</span> <b>Culto de Ensino - 19h30</b></div>
+            <div class="culto-item"><span>Sexta-feira</span> <b>Culto de Libertação - 19h30</b></div>
+            <div class="culto-item"><span>Domingo</span> <b>Culto da Família - 18h00</b></div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Menu Principal 2x2
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
@@ -206,17 +196,13 @@ if st.session_state.pagina == "Início":
         st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True)
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True)
 
-    # --- 3. O LOGO (Centralizado e Protegido) ---
+    # Logo e Contador
     st.markdown("<br>", unsafe_allow_html=True)
-    # Lembre-se de renomear o arquivo no seu GitHub para: logo_igreja.png
     if os.path.exists("logo igreja.png"):
         col_esq, col_centro, col_dir = st.columns([1, 2, 1])
         with col_centro:
             st.image("logo igreja.png", use_container_width=True)
-    else:
-        # Se não encontrar o arquivo, ele avisa (isso ajuda a debugar)
-        st.info("💡 Dica: Suba o arquivo 'logo igreja.png' para o GitHub para o logo aparecer aqui.")
-
+            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.7;'>Total de acessos: {total_acessos}</p>", unsafe_allow_html=True)
 elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
@@ -375,3 +361,10 @@ elif st.session_state.pagina == "Leitura":
         if st.button("Sair da Conta"): 
             st.session_state.usuario = None
             st.rerun()
+            # Redes Sociais Fixas no Rodapé de todas as páginas
+st.markdown(f"""
+    <div class="footer-social">
+        <a href="https://www.instagram.com/isosedcosmopolissp/" target="_blank">📸 Instagram</a>
+        <a href="https://www.facebook.com/isosedcosmopolissp/" target="_blank">🔵 Facebook</a>
+    </div>
+    <br><br><br> """, unsafe_allow_html=True)
