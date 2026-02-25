@@ -95,7 +95,8 @@ if st.session_state.pagina == "Início":
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.image("logo igreja.png", use_container_width=True)
-            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)elif st.session_state.pagina == "Agenda":
+            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
+    elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     
