@@ -133,45 +133,37 @@ if st.session_state.pagina == "Início":
         with col_centro:
             st.image("logo igreja.png", use_container_width=True)
             st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
-    elif st.session_state.pagina == "Agenda":
-        st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-        st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
+elif st.session_state.pagina == "Agenda":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="btn_voltar_agenda")
+    st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     
-    df = carregar_dados("Agenda")
+    df_ag_aba = carregar_dados("Agenda")
     
-    if not df.empty:
-        # Tenta converter a coluna 'data' com segurança
-        if 'data' in df.columns:
-            df['data_dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+    if not df_ag_aba.empty:
+        # Tenta converter a data de forma segura
+        df_ag_aba['data_dt'] = pd.to_datetime(df_ag_aba['data'], dayfirst=True, errors='coerce')
         
-        nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-        abas_agenda = st.tabs(nomes_meses)
+        meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        abas_meses = st.tabs(meses_nomes)
         
-        for i, aba in enumerate(abas_agenda):
-            with aba:
+        for i, aba_mes in enumerate(abas_meses):
+            with aba_mes:
                 mes_num = i + 1
-                # Filtra os eventos pelo mês da aba
-                if 'data_dt' in df.columns:
-                    evs = df[df['data_dt'].dt.month == mes_num].sort_values(by='data_dt')
-                else:
-                    evs = pd.DataFrame() # Caso a coluna data falhe
-
-                if not evs.empty:
-                    for _, r in evs.iterrows():
-                        # Mostra o evento (usa .get para não dar erro se a coluna mudar)
-                        dia_exibicao = r['data_dt'].strftime('%d/%m') if pd.notnull(r['data_dt']) else "S/D"
-                        evento_txt = r.get('evento', 'Evento sem nome')
-                        
+                eventos_mes = df_ag_aba[df_ag_aba['data_dt'].dt.month == mes_num].sort_values(by='data_dt')
+                
+                if not eventos_mes.empty:
+                    for _, row in eventos_mes.iterrows():
+                        dia_exib = row['data_dt'].strftime('%d/%m') if pd.notnull(row['data_dt']) else "S/D"
                         st.markdown(f"""
                             <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; 
                                         border-left: 5px solid #0a3d62; margin-bottom: 8px;">
-                                <b style="color: #ffd700;">{dia_exibicao}</b> - {evento_txt}
+                                <b style="color: #ffd700;">{dia_exib}</b> - {row.get('evento', 'Evento')}
                             </div>
                         """, unsafe_allow_html=True)
                 else:
-                    st.info(f"Nenhum evento programado para {nomes_meses[i]}.")
+                    st.info(f"Sem eventos em {meses_nomes[i]}.")
     else:
-        st.error("Não foi possível carregar os dados da Agenda. Verifique o nome da aba na planilha.")
+        st.warning("Não foi possível carregar a Agenda. Verifique a aba na planilha.")
 
 elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
