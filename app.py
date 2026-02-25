@@ -9,16 +9,48 @@ import pytz
 import requests
 import urllib.parse
 
-st.set_page_config(page_title="ISOSED", layout="wide")
+# --- 1. CONFIGURAÇÃO E DATA ---
+fuso_br = pytz.timezone('America/Sao_Paulo')
+agora_br = datetime.now(fuso_br)
+hoje_br = agora_br.date()
 
+st.set_page_config(page_title="ISOSED Cosmópolis", page_icon="⛪", layout="wide")
+
+# Inicializa a memória do App (Resolve o AttributeError)
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "Início"
+if 'usuario' not in st.session_state:
+    st.session_state.usuario = None
 
-# --- 1. FUNÇÕES GLOBAIS ---
-def contabilizar_acesso():
-    """Lê o valor atual na planilha e soma +1 a cada nova sessão"""
+def navegar(p):
+    st.session_state.pagina = p
+
+# --- 2. FUNÇÕES DE BANCO DE DADOS (Devem vir ANTES do uso) ---
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit"
+
+def carregar_dados(aba):
+    try:
+        match = re.search(r"/d/([a-zA-Z0-9-_]+)", URL_PLANILHA)
+        if match:
+            id_p = match.group(1)
+            url = f"https://docs.google.com/spreadsheets/d/{id_p}/gviz/tq?tqx=out:csv&sheet={aba}"
+            df = pd.read_csv(url)
+            df.columns = [str(c).lower().strip().replace('ê', 'e').replace('ã', 'a').replace('ç', 'c').replace(' ', '_') for c in df.columns]
+            df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+            return df
+        return pd.DataFrame()
+    except: return pd.DataFrame()
+
+def conectar_planilha():
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+    client = gspread.authorize(creds)
+    return client.open_by_url(URL_PLANILHA)
+
+# --- 3. ROTEADOR DE PÁGINAS ---
+
 if st.session_state.pagina == "Início":
-    # 1. CONTADOR DE ACESSOS
+    # Contador de Acessos
     if 'acesso_contado' not in st.session_state:
         try:
             sh_ac = conectar_planilha()
@@ -30,18 +62,24 @@ if st.session_state.pagina == "Início":
 
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # --- NOVIDADE: BUSCA DA PRÓXIMA SANTA CEIA ---
+    # Busca da Próxima Santa Ceia
     df_ag = carregar_dados("Agenda")
     prox_ceia_str = None
     if not df_ag.empty:
-        # Tenta converter a coluna data
         df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
-        # Filtra eventos que contenham "Ceia" e que sejam de hoje em diante
         ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
         proximas = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
-        
         if not proximas.empty:
             prox_ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
+
+    if prox_ceia_str:
+        st.markdown(f"""
+            <div style="background: linear-gradient(90deg, #b33939, #822727); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; border: 2px solid #ff5252;">
+                <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {prox_ceia_str} 🍷</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # Aqui você continua com os Horários de Culto, Menu de Botões e Logo...
 
     # 2. HORÁRIOS DE CULTO E SANTA CEIA
     # Adicionei a Santa Ceia em destaque logo acima dos horários
