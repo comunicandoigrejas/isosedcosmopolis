@@ -9,6 +9,11 @@ import pytz
 import requests
 import urllib.parse
 
+st.set_page_config(page_title="ISOSED", layout="wide")
+
+if 'pagina' not in st.session_state:
+    st.session_state.pagina = "Início"
+
 # --- 1. FUNÇÕES GLOBAIS ---
 def contabilizar_acesso():
     """Lê o valor atual na planilha e soma +1 a cada nova sessão"""
