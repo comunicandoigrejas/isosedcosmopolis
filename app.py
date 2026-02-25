@@ -31,12 +31,12 @@ if st.session_state.pagina == "Início":
     if not df_ag.empty:
         # Tenta converter a coluna data
         df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
-        # Filtra eventos que contenham "Ceia" e que sejam de hoje em diante
-        ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
-        proximas = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
+        # Filtra eventos que contenham "Santa" e que sejam de hoje em diante
+        ceias = df_ag[df_ag['evento'].str.contains("Santa", case=False, na=False)]
+        proximas = Santa_Ceia[Santa['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
         
         if not proximas.empty:
-            prox_ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
+            prox_Santa_Ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
 
     # 2. HORÁRIOS DE CULTO E SANTA CEIA
     # Adicionei a Santa Ceia em destaque logo acima dos horários
