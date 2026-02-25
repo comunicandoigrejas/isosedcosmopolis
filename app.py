@@ -64,13 +64,34 @@ if st.session_state.pagina == "Início":
     
     # 2. QUADRO: NOSSOS CULTOS
     st.markdown("""
-        <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-            <h4 style="margin:0; color:#ffd700; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🙏 Nossos Cultos</h4>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Segunda-feira</span> <b>Oração Ministerial</b></div>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Quarta-feira</span> <b>Ensino - 19h30</b></div>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Sexta-feira</span> <b>Libertação - 19h30</b></div>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Domingo</span> <b>Família - 18h00</b></div>
-        </div>
+    <style>
+    #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
+    [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
+    h1, h2, h3, h4, h5, h6, p { color: #FFFFFF !important; font-weight: 800 !important; }
+    
+    /* Botões do Menu */
+    button[data-testid="stBaseButton-secondary"] {
+        width: 100% !important; height: 60px !important;
+        background-color: #0a3d62 !important; border-radius: 12px !important;
+        border: 2px solid #3c6382 !important;
+    }
+    button[data-testid="stBaseButton-secondary"] p { font-weight: 900 !important; text-transform: uppercase !important; font-size: 14px !important; }
+
+    /* --- OS QUADROS AMARELOS (Aniversariantes) --- */
+    .card-niver {
+        background: rgba(255, 215, 0, 0.1) !important; 
+        border: 2px solid #ffd700 !important;
+        border-radius: 15px !important; 
+        padding: 10px !important;
+        text-align: center !important;
+        margin-bottom: 10px !important;
+    }
+    .niver-nome { font-size: 0.85em !important; font-weight: 900; color: #ffd700 !important; text-transform: uppercase; }
+    .niver-data { font-size: 1em !important; font-weight: bold; color: white !important; }
+    
+    /* Rodapé e Abas */
+    div[data-testid="stTabs"] { overflow-x: auto; white-space: nowrap; }
+    </style>
     """, unsafe_allow_html=True)
 
     # 3. BUSCA E EXIBIÇÃO DA SANTA CEIA (Abaixo dos Cultos)
