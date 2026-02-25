@@ -58,76 +58,49 @@ if st.session_state.pagina == "Início":
             total_atual = int(aba_ac.acell('A2').value or 0)
             aba_ac.update_cell(2, 1, total_atual + 1)
             st.session_state.acesso_contado = total_atual + 1
-        except: st.session_state.acesso_contado = "---"
+        except: 
+            st.session_state.acesso_contado = "---"
 
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # 2. QUADRO: NOSSOS CULTOS
+    # --- 2. QUADRO: NOSSOS CULTOS (O que tinha sumido) ---
     st.markdown("""
-    <style>
-    #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
-    [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
-    h1, h2, h3, h4, h5, h6, p { color: #FFFFFF !important; font-weight: 800 !important; }
-    
-    /* Botões do Menu */
-    button[data-testid="stBaseButton-secondary"] {
-        width: 100% !important; height: 60px !important;
-        background-color: #0a3d62 !important; border-radius: 12px !important;
-        border: 2px solid #3c6382 !important;
-    }
-    button[data-testid="stBaseButton-secondary"] p { font-weight: 900 !important; text-transform: uppercase !important; font-size: 14px !important; }
-
-    /* --- OS QUADROS AMARELOS (Aniversariantes) --- */
-    .card-niver {
-        background: rgba(255, 215, 0, 0.1) !important; 
-        border: 2px solid #ffd700 !important;
-        border-radius: 15px !important; 
-        padding: 10px !important;
-        text-align: center !important;
-        margin-bottom: 10px !important;
-    }
-    .niver-nome { font-size: 0.85em !important; font-weight: 900; color: #ffd700 !important; text-transform: uppercase; }
-    .niver-data { font-size: 1em !important; font-weight: bold; color: white !important; }
-    
-    /* Rodapé e Abas */
-    div[data-testid="stTabs"] { overflow-x: auto; white-space: nowrap; }
-    </style>
+        <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+            <h4 style="margin:0; color:#ffd700; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🙏 Nossos Cultos</h4>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Segunda-feira</span> <b>Oração Ministerial</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Quarta-feira</span> <b>Ensino - 19h30</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Sexta-feira</span> <b>Libertação - 19h30</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Domingo</span> <b>Família - 18h00</b></div>
+        </div>
     """, unsafe_allow_html=True)
 
-    # 3. BUSCA E EXIBIÇÃO DA SANTA CEIA (Abaixo dos Cultos)
+    # --- 3. PRÓXIMA SANTA CEIA (Abaixo dos cultos) ---
     df_ag = carregar_dados("Agenda")
     if not df_ag.empty:
         df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
         ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
-        proximas = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
+        prox = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
         
-        if not proximas.empty:
-            prox_ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
+        if not prox.empty:
+            p_ceia = prox.iloc[0]['data_dt'].strftime('%d/%m/%Y')
             st.markdown(f"""
                 <div style="background: linear-gradient(90deg, #b33939, #822727); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 25px; border: 2px solid #ff5252;">
-                    <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {prox_ceia_str} 🍷</h3>
+                    <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {p_ceia} 🍷</h3>
                 </div>
             """, unsafe_allow_html=True)
 
-    # 4. ANIVERSARIANTES DA SEMANA (Com os quadros amarelos)
+    # --- 4. ANIVERSARIANTES DA SEMANA (Com quadro amarelo) ---
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
-        dom_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
-        seg_prox = dom_atual + timedelta(days=8)
-        aniv_f = []
-        for _, r in df_n.iterrows():
-            try:
-                d, m = int(r.get('dia', 0)), int(r.get('mes', 0))
-                data_aniv = datetime(hoje_br.year, m, d).date()
-                if dom_atual <= data_aniv <= seg_prox: aniv_f.append(r)
-            except: continue
-
+        dom = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
+        seg = dom + timedelta(days=8)
+        aniv_f = [r for _, r in df_n.iterrows() if dom <= datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date() <= seg]
+        
         if aniv_f:
             st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
             cols = st.columns(len(aniv_f))
             for i, p in enumerate(aniv_f):
                 with cols[i]:
-                    # Corrigido: Agora usa a classe card-niver que definimos no CSS
                     st.markdown(f"""
                         <div class="card-niver">
                             <div class="niver-nome">{p['nome']}</div>
@@ -135,19 +108,19 @@ if st.session_state.pagina == "Início":
                         </div>
                     """, unsafe_allow_html=True)
 
-    # 5. MENU PRINCIPAL
+    # --- 5. MENU PRINCIPAL (Grade 2x2) ---
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True)
-        st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True)
-        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True)
+        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True, key="btn_age")
+        st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True, key="btn_gru")
+        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True, key="btn_aniv")
     with c2:
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True)
-        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True)
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True)
+        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True, key="btn_esc")
+        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True, key="btn_med")
+        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True, key="btn_lei")
 
-    # 6. LOGO E CONTADOR
+    # --- 6. LOGO E CONTADOR ---
     st.markdown("<br>", unsafe_allow_html=True)
     if os.path.exists("logo igreja.png"):
         col_esq, col_centro, col_dir = st.columns([1, 2, 1])
