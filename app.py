@@ -50,7 +50,7 @@ def conectar_planilha():
 # --- 3. ROTEADOR DE PÁGINAS ---
 
 if st.session_state.pagina == "Início":
-    # Contador de Acessos
+    # 1. CONTADOR DE ACESSOS
     if 'acesso_contado' not in st.session_state:
         try:
             sh_ac = conectar_planilha()
@@ -62,34 +62,7 @@ if st.session_state.pagina == "Início":
 
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # Busca da Próxima Santa Ceia
-    df_ag = carregar_dados("Agenda")
-    prox_ceia_str = None
-    if not df_ag.empty:
-        df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
-        ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
-        proximas = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
-        if not proximas.empty:
-            prox_ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
-
-    if prox_ceia_str:
-        st.markdown(f"""
-            <div style="background: linear-gradient(90deg, #b33939, #822727); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; border: 2px solid #ff5252;">
-                <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {prox_ceia_str} 🍷</h3>
-            </div>
-        """, unsafe_allow_html=True)
-
-    # Aqui você continua com os Horários de Culto, Menu de Botões e Logo...
-
-    # 2. HORÁRIOS DE CULTO E SANTA CEIA
-    # Adicionei a Santa Ceia em destaque logo acima dos horários
-    if prox_ceia_str:
-        st.markdown(f"""
-            <div style="background: linear-gradient(90deg, #b33939, #822727); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; border: 2px solid #ff5252;">
-                <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {prox_ceia_str} 🍷</h3>
-            </div>
-        """, unsafe_allow_html=True)
-
+    # 2. QUADRO: NOSSOS CULTOS
     st.markdown("""
         <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
             <h4 style="margin:0; color:#ffd700; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🙏 Nossos Cultos</h4>
@@ -100,7 +73,22 @@ if st.session_state.pagina == "Início":
         </div>
     """, unsafe_allow_html=True)
 
-    # 3. ANIVERSARIANTES DA SEMANA
+    # 3. BUSCA E EXIBIÇÃO DA SANTA CEIA (Abaixo dos Cultos)
+    df_ag = carregar_dados("Agenda")
+    if not df_ag.empty:
+        df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
+        ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
+        proximas = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
+        
+        if not proximas.empty:
+            prox_ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
+            st.markdown(f"""
+                <div style="background: linear-gradient(90deg, #b33939, #822727); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 25px; border: 2px solid #ff5252;">
+                    <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {prox_ceia_str} 🍷</h3>
+                </div>
+            """, unsafe_allow_html=True)
+
+    # 4. ANIVERSARIANTES DA SEMANA (Com os quadros amarelos)
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         dom_atual = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
@@ -118,9 +106,15 @@ if st.session_state.pagina == "Início":
             cols = st.columns(len(aniv_f))
             for i, p in enumerate(aniv_f):
                 with cols[i]:
-                    st.markdown(f'<div class="card-niver"><div class="niver-nome">{p["nome"]}</div><div class="niver-data">{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
+                    # Corrigido: Agora usa a classe card-niver que definimos no CSS
+                    st.markdown(f"""
+                        <div class="card-niver">
+                            <div class="niver-nome">{p['nome']}</div>
+                            <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-    # 4. MENU PRINCIPAL
+    # 5. MENU PRINCIPAL
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
@@ -132,11 +126,11 @@ if st.session_state.pagina == "Início":
         st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True)
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True)
 
-    # 5. LOGO E CONTADOR
+    # 6. LOGO E CONTADOR
     st.markdown("<br>", unsafe_allow_html=True)
     if os.path.exists("logo igreja.png"):
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
+        col_esq, col_centro, col_dir = st.columns([1, 2, 1])
+        with col_centro:
             st.image("logo igreja.png", use_container_width=True)
             st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
     elif st.session_state.pagina == "Agenda":
