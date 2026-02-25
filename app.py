@@ -31,9 +31,9 @@ if st.session_state.pagina == "Início":
     if not df_ag.empty:
         # Tenta converter a coluna data
         df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
-        # Filtra eventos que contenham "Santa" e que sejam de hoje em diante
+        # Filtra eventos que contenham "Ceia" e que sejam de hoje em diante
         ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
-        proximas = ceias[ceia['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
+        proximas = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
         
         if not proximas.empty:
             prox_ceia_str = proximas.iloc[0]['data_dt'].strftime('%d/%m/%Y')
@@ -95,8 +95,7 @@ if st.session_state.pagina == "Início":
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.image("logo igreja.png", use_container_width=True)
-            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
-elif st.session_state.pagina == "Agenda":
+            st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)elif st.session_state.pagina == "Agenda":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     
