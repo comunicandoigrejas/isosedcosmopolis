@@ -47,14 +47,14 @@ def conectar_planilha():
     client = gspread.authorize(creds)
     return client.open_by_url(URL_PLANILHA)
 
-# --- 1. ESTILO (Onde ficam as cores e o quadro amarelo) ---
+# --- 1. ESTILO CSS (Coloque apenas UMA vez no topo) ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, [data-testid="stHeader"], [data-testid="stSidebar"] { visibility: hidden; display: none; }
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
     h1, h2, h3, h4, h5, h6, p, span { color: #FFFFFF !important; font-weight: 700 !important; }
 
-    /* Estilo dos Quadros Amarelos */
+    /* Quadros Amarelos dos Aniversariantes */
     .card-niver {
         background: rgba(255, 215, 0, 0.1) !important; 
         border: 2px solid #ffd700 !important;
@@ -62,20 +62,21 @@ st.markdown("""
         padding: 12px !important;
         text-align: center !important;
         margin-bottom: 15px !important;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     }
     .niver-nome { font-size: 0.9em !important; font-weight: 900 !important; color: #ffd700 !important; text-transform: uppercase; }
     .niver-data { font-size: 1.1em !important; font-weight: bold !important; color: white !important; }
     
+    /* Botões */
     button[data-testid="stBaseButton-secondary"] {
         width: 100% !important; background-color: #0a3d62 !important; border: 2px solid #3c6382 !important; border-radius: 12px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. PÁGINA DE INÍCIO (Onde ficam os textos) ---
+# --- 2. ROTEADOR DE PÁGINAS (Garanta que só exista UM de cada) ---
+
 if st.session_state.pagina == "Início":
-    # Contador
+    # Lógica do Contador
     if 'acesso_contado' not in st.session_state:
         try:
             sh_ac = conectar_planilha()
@@ -87,18 +88,18 @@ if st.session_state.pagina == "Início":
 
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # QUADRO 1: NOSSOS CULTOS
+    # QUADRO: NOSSOS CULTOS
     st.markdown("""
         <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
             <h4 style="margin:0; color:#ffd700; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🙏 Nossos Cultos</h4>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Segunda-feira</span> <b>Oração Ministerial 19h30</b></div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Segunda-feira</span> <b>Oração Ministerial</b></div>
             <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Quarta-feira</span> <b>Ensino - 19h30</b></div>
             <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Sexta-feira</span> <b>Libertação - 19h30</b></div>
             <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Domingo</span> <b>Família - 18h00</b></div>
         </div>
     """, unsafe_allow_html=True)
 
-    # QUADRO 2: PRÓXIMA SANTA CEIA (Busca na Agenda)
+    # QUADRO: PRÓXIMA SANTA CEIA (Busca na Agenda)
     df_ag = carregar_dados("Agenda")
     if not df_ag.empty:
         df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
@@ -112,7 +113,7 @@ if st.session_state.pagina == "Início":
                 </div>
             """, unsafe_allow_html=True)
 
-    # QUADRO 3: ANIVERSARIANTES (Agora com o amarelo ativado pelo CSS acima)
+    # QUADRO: ANIVERSARIANTES (Com quadro amarelo)
     df_n = carregar_dados("Aniversariantes")
     if not df_n.empty:
         dom = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
@@ -125,129 +126,43 @@ if st.session_state.pagina == "Início":
                 with cols[i]:
                     st.markdown(f'<div class="card-niver"><div class="niver-nome">{p["nome"]}</div><div class="niver-data">{int(p["dia"]):02d}/{int(p["mes"]):02d}</div></div>', unsafe_allow_html=True)
 
-    # MENU E LOGO
+    # MENU DE BOTÕES
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True)
-        st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True)
-        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True)
+        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True, key="btn_agenda")
+        st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True, key="btn_grupos")
+        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True, key="btn_aniversarios")
     with c2:
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True)
-        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True)
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True)
+        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True, key="btn_escalas")
+        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True, key="btn_meditar")
+        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True, key="btn_leitura")
 
-# --- 3. ROTEADOR DE PÁGINAS ---
-
-if st.session_state.pagina == "Início":
-    # 1. CONTADOR DE ACESSOS
-    if 'acesso_contado' not in st.session_state:
-        try:
-            sh_ac = conectar_planilha()
-            aba_ac = sh_ac.worksheet("Acessos")
-            total_atual = int(aba_ac.acell('A2').value or 0)
-            aba_ac.update_cell(2, 1, total_atual + 1)
-            st.session_state.acesso_contado = total_atual + 1
-        except: 
-            st.session_state.acesso_contado = "---"
-
-    st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
-    
-    # --- 2. QUADRO: NOSSOS CULTOS (O que tinha sumido) ---
-    st.markdown("""
-        <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-            <h4 style="margin:0; color:#ffd700; text-align:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">🙏 Nossos Cultos</h4>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Segunda-feira</span> <b>Oração Ministerial 19h30</b></div>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Quarta-feira</span> <b>Ensino - 19h30</b></div>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Sexta-feira</span> <b>Libertação - 19h30</b></div>
-            <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>Domingo</span> <b>Família - 18h00</b></div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # --- 3. PRÓXIMA SANTA CEIA (Abaixo dos cultos) ---
-    df_ag = carregar_dados("Agenda")
-    if not df_ag.empty:
-        df_ag['data_dt'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
-        ceias = df_ag[df_ag['evento'].str.contains("Ceia", case=False, na=False)]
-        prox = ceias[ceias['data_dt'].dt.date >= hoje_br].sort_values(by='data_dt')
-        
-        if not prox.empty:
-            p_ceia = prox.iloc[0]['data_dt'].strftime('%d/%m/%Y')
-            st.markdown(f"""
-                <div style="background: linear-gradient(90deg, #b33939, #822727); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 25px; border: 2px solid #ff5252;">
-                    <h3 style="margin:0; color: white !important;">🍞 PRÓXIMA SANTA CEIA: {p_ceia} 🍷</h3>
-                </div>
-            """, unsafe_allow_html=True)
-
-    # --- 4. ANIVERSARIANTES DA SEMANA (Com quadro amarelo) ---
-    df_n = carregar_dados("Aniversariantes")
-    if not df_n.empty:
-        dom = hoje_br - timedelta(days=(hoje_br.weekday() + 1) % 7)
-        seg = dom + timedelta(days=8)
-        aniv_f = [r for _, r in df_n.iterrows() if dom <= datetime(hoje_br.year, int(r['mes']), int(r['dia'])).date() <= seg]
-        
-        if aniv_f:
-            st.markdown("<h3 style='text-align: center;'>🎊 Aniversários da Semana</h3>", unsafe_allow_html=True)
-            cols = st.columns(len(aniv_f))
-            for i, p in enumerate(aniv_f):
-                with cols[i]:
-                    st.markdown(f"""
-                        <div class="card-niver">
-                            <div class="niver-nome">{p['nome']}</div>
-                            <div class="niver-data">{int(p['dia']):02d}/{int(p['mes']):02d}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
-    # --- 5. MENU PRINCIPAL (Grade 2x2) ---
-    st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True, key="btn_age")
-        st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True, key="btn_gru")
-        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True, key="btn_aniv")
-    with c2:
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True, key="btn_esc")
-        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True, key="btn_med")
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True, key="btn_lei")
-
-    # --- 6. LOGO E CONTADOR ---
-    st.markdown("<br>", unsafe_allow_html=True)
+    # LOGO E CONTADOR
     if os.path.exists("logo igreja.png"):
+        st.markdown("<br>", unsafe_allow_html=True)
         col_esq, col_centro, col_dir = st.columns([1, 2, 1])
         with col_centro:
             st.image("logo igreja.png", use_container_width=True)
             st.markdown(f"<p style='text-align:center; font-size:0.8em; opacity:0.6;'>Acessos totais: {st.session_state.acesso_contado}</p>", unsafe_allow_html=True)
+
+# --- 3. ABA AGENDA (Alinhada corretamente para abrir) ---
 elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="btn_voltar_agenda")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="btn_voltar_ag")
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     
-    df_ag_aba = carregar_dados("Agenda")
-    
-    if not df_ag_aba.empty:
-        # Tenta converter a data de forma segura
-        df_ag_aba['data_dt'] = pd.to_datetime(df_ag_aba['data'], dayfirst=True, errors='coerce')
-        
-        meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-        abas_meses = st.tabs(meses_nomes)
-        
-        for i, aba_mes in enumerate(abas_meses):
-            with aba_mes:
-                mes_num = i + 1
-                eventos_mes = df_ag_aba[df_ag_aba['data_dt'].dt.month == mes_num].sort_values(by='data_dt')
-                
-                if not eventos_mes.empty:
-                    for _, row in eventos_mes.iterrows():
-                        dia_exib = row['data_dt'].strftime('%d/%m') if pd.notnull(row['data_dt']) else "S/D"
-                        st.markdown(f"""
-                            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; 
-                                        border-left: 5px solid #0a3d62; margin-bottom: 8px;">
-                                <b style="color: #ffd700;">{dia_exib}</b> - {row.get('evento', 'Evento')}
-                            </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.info(f"Sem eventos em {meses_nomes[i]}.")
-    else:
-        st.warning("Não foi possível carregar a Agenda. Verifique a aba na planilha.")
+    df_ag_view = carregar_dados("Agenda")
+    if not df_ag_view.empty:
+        df_ag_view['data_dt'] = pd.to_datetime(df_ag_view['data'], dayfirst=True, errors='coerce')
+        meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        abas = st.tabs(meses)
+        for i, aba in enumerate(abas):
+            with aba:
+                evs = df_ag_view[df_ag_view['data_dt'].dt.month == (i+1)].sort_values(by='data_dt')
+                if not evs.empty:
+                    for _, r in evs.iterrows():
+                        st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; border-left:5px solid #0a3d62;"><b style="color:#ffd700;">{r["data_dt"].strftime("%d/%m")}</b> - {r.get("evento", "")}</div>', unsafe_allow_html=True)
+                else: st.info("Sem eventos programados.")
 
 elif st.session_state.pagina == "Grupos":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
