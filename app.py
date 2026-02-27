@@ -9,6 +9,37 @@ import requests
 import calendar
 
 # --- 1. CONFIGURAÇÕES E ESTILO ---
+# =========================================================
+# 1. COLOQUE ESTA FUNÇÃO NO INÍCIO (DEPOIS DOS IMPORTS)
+# =========================================================
+
+def obter_datas_culto(ano, mes):
+    # Este é o "Tradutor" que você pediu
+    dias_pt = {
+        0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira",
+        3: "Quinta-feira", 4: "Sexta-feira", 5: "Sábado", 6: "Domingo"
+    }
+    
+    cal = calendar.Calendar()
+    # Pega todos os dias do mês
+    dias_mes = [d for sem in cal.monthdatescalendar(ano, mes) for d in sem if d.month == mes]
+    
+    # Filtra Quartas, Sextas e Domingos
+    datas = [d for d in dias_mes if d.weekday() in [2, 4, 6]]
+    
+    # Adiciona o último Sábado do mês
+    sabados = [d for d in dias_mes if d.weekday() == 5]
+    if sabados:
+        datas.append(max(sabados))
+    
+    lista_final = []
+    for d in sorted(datas):
+        lista_final.append({
+            "data": d.strftime('%d/%m/%Y'),
+            "dia_pt": dias_pt[d.weekday()], # Aqui acontece a tradução
+            "is_domingo": d.weekday() == 6
+        })
+    return lista_final
 st.set_page_config(page_title="ISOSED Cosmópolis", layout="wide", page_icon="⛪")
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
