@@ -150,118 +150,62 @@ if st.session_state.pagina == "Início":
 
 # --- 3. ABA AGENDA (Alinhada corretamente para abrir) ---
 elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="btn_voltar_ag")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_ag")
     st.markdown("<h1>🗓️ Agenda ISOSED</h1>", unsafe_allow_html=True)
     
     df_ag_view = carregar_dados("Agenda")
     if not df_ag_view.empty:
         df_ag_view['data_dt'] = pd.to_datetime(df_ag_view['data'], dayfirst=True, errors='coerce')
         meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-        abas = st.tabs(meses)
-        for i, aba in enumerate(abas):
+        abas_mes = st.tabs(meses)
+        for i, aba in enumerate(abas_mes):
             with aba:
                 evs = df_ag_view[df_ag_view['data_dt'].dt.month == (i+1)].sort_values(by='data_dt')
                 if not evs.empty:
                     for _, r in evs.iterrows():
                         st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; border-left:5px solid #0a3d62;"><b style="color:#ffd700;">{r["data_dt"].strftime("%d/%m")}</b> - {r.get("evento", "")}</div>', unsafe_allow_html=True)
-                else: st.info("Sem eventos programados.")
-
-elif st.session_state.pagina == "Grupos":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>👥 Departamentos</h1>", unsafe_allow_html=True)
-    
-    df = carregar_dados("Agenda") # Os grupos usam a mesma base da agenda
-    
-    if not df.empty:
-        if 'data' in df.columns:
-            df['data_dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        
-        deptos = ["Jovens", "Varões", "Irmãs", "Louvor", "Missões", "Crianças"]
-        abas_deptos = st.tabs(deptos)
-        
-        for i, depto_nome in enumerate(deptos):
-            with abas_deptos[i]:
-                # Filtra eventos que contenham o nome do departamento (ex: procura "Jovens" em "Culto de Jovens")
-                if 'evento' in df.columns:
-                    filtro = df[df['evento'].str.contains(depto_nome, case=False, na=False)]
-                    if 'data_dt' in df.columns:
-                        filtro = filtro.sort_values(by='data_dt')
                 else:
-                    filtro = pd.DataFrame()
+                    st.info("Sem eventos programados para este mês.")
 
-                if not filtro.empty:
-                    for _, r in filtro.iterrows():
-                        dia_f = r['data_dt'].strftime('%d/%m/%Y') if pd.notnull(r['data_dt']) else "S/D"
-                        st.markdown(f"""
-                            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; 
-                                        border-left: 5px solid #00b894; margin-bottom: 8px;">
-                                <b style="color: #00b894;">{dia_f}</b> — {r.get('evento', '')}
-                            </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.info(f"Nenhuma atividade encontrada para {depto_nome}.")
-
-elif st.session_state.pagina == "AnivMês":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>🎂 Aniversariantes</h1>", unsafe_allow_html=True)
-    df = carregar_dados("Aniversariantes")
-    if not df.empty:
-        abas = st.tabs(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-        for i, aba in enumerate(abas):
-            with aba:
-                l = df[pd.to_numeric(df['mes'], errors='coerce') == (i+1)].sort_values(by='dia')
-                for _, r in l.iterrows():
-                    st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:5px; border-left:5px solid #f1c40f;"><b style="color:#f1c40f;">Dia {int(r["dia"]):02d}</b> - {r["nome"]}</div>', unsafe_allow_html=True)
-
+# --- 4. ABA ESCALAS (O que a Igreja vê) ---
 elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("## 📢 Escalas da Semana")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_esc")
+    st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
     
-    # Lendo o que o Líder salvou na planilha
     df_esc = carregar_dados("Escalas")
     if not df_esc.empty:
         df_esc['dt'] = pd.to_datetime(df_esc['Data'], dayfirst=True, errors='coerce')
-        # Mostra escalas futuras
+        # Mostra apenas escalas de hoje em diante
         proximas = df_esc[df_esc['dt'].dt.date >= hoje_br].sort_values(by='dt')
-        for _, r in proximas.iterrows():
-            st.markdown(f"""
-                <div class="card-escala">
-                    <b style="color: #ffd700;">{r['Data']} - {r['Evento']}</b><br>
-                    👤 {r['Responsável']} ({r['Departamento']})<br>
-                    ⏰ Chegada: {r['Horário']}
-                </div>
-            """, unsafe_allow_html=True)
+        
+        if not proximas.empty:
+            for _, r in proximas.iterrows():
+                st.markdown(f"""
+                    <div style="background: rgba(255, 215, 0, 0.1); border: 2px solid #ffd700; border-radius: 15px; padding: 15px; margin-bottom: 15px;">
+                        <span style="color: #ffd700; font-weight: bold;">{r['Data']} - {r['Dia']}</span><br>
+                        <span style="font-size: 1.2em; font-weight: 900;">{r['Evento']}</span><br>
+                        <hr style="margin: 8px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
+                        👤 <b>{r['Responsável']}</b><br>
+                        📍 {r['Departamento']} | ⏰ {r['Horário']}
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Nenhuma escala futura encontrada.")
+    else:
+        st.warning("A planilha de escalas está vazia ou ainda não foi criada.")
 
-elif st.session_state.pagina == "Meditar":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📖 Meditar</h1>", unsafe_allow_html=True)
-    d_sel = st.date_input("Escolha a data:", value=hoje_br, format="DD/MM/YYYY")
-    df = carregar_dados("Devocional")
-    if not df.empty:
-        hj = df[df["data"].astype(str).str.strip() == d_sel.strftime('%d/%m/%Y')]
-        if not hj.empty:
-            d = hj.iloc[0]
-            st.markdown(f"**Tema:** {d.get('tema', '')}")
-            st.markdown(f"### {d.get('titulo', '')}")
-            st.success(f"📖 **Versículo:** {d.get('versiculo', '')}")
-            st.write(d.get('texto', ''))
-            st.subheader("🎯 Aplicação")
-            st.write(d.get('aplicacao', ''))
-            st.subheader("💪 Desafio")
-            st.write(d.get('desafio', ''))
-        else: st.warning("Sem devocional para hoje.")
-
+# --- 5. ABA LEITURA ---
 elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_lei")
+    st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
+    st.info("Acompanhe aqui o plano de leitura para 2026.")
+    # Adicione aqui o seu conteúdo específico de leitura (links, tabelas, etc.)
 
-    # --- PÁGINA DE GESTÃO (ADICIONE AO FINAL DO ARQUIVO) ---
+# --- 6. ABA GESTÃO (Painel do Líder - Acesso com Senha) ---
 elif st.session_state.pagina == "Gestao":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-   
-    st.markdown("<h2 style='text-align: center;'>⚙️ Gestão de Escalas ISOSED</h2>", unsafe_allow_html=True)
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_gest")
+    st.markdown("<h1>⚙️ Painel de Gestão (Líderes)</h1>", unsafe_allow_html=True)
 
-    # 1. CONTROLE DE ACESSO
     if "admin_ok" not in st.session_state:
         st.session_state.admin_ok = False
 
@@ -269,83 +213,79 @@ elif st.session_state.pagina == "Gestao":
         with st.form("login_admin"):
             senha = st.text_input("Senha de Líder:", type="password")
             if st.form_submit_button("Acessar Painel"):
-                if senha == "ISOSED2026": # Mude sua senha aqui!
+                if senha == "ISOSED2026": # Mude sua senha aqui
                     st.session_state.admin_ok = True
                     st.rerun()
-                else: st.error("Senha incorreta!")
+                else:
+                    st.error("Senha incorreta!")
     else:
-        st.success("Bem-vindo ao Painel de Controle, Líder!")
+        st.success("Bem-vindo! Use as abas abaixo para gerar as escalas.")
         
-        # 2. SELEÇÃO DO MÊS
-        c1, c2 = st.columns(2)
-        with c1:
-            mes_sel = st.selectbox("Mês da Escala:", list(range(1, 13)), index=hoje_br.month - 1)
-        with c2:
-            ano_sel = st.number_input("Ano:", min_value=2025, max_value=2030, value=2026)
+        col1, col2 = st.columns(2)
+        with col1: mes_sel = st.selectbox("Mês:", list(range(1, 13)), index=hoje_br.month - 1)
+        with col2: ano_sel = st.number_input("Ano:", value=2026)
 
-        # 3. ABAS POR DEPARTAMENTO
-        aba_rec, aba_foto, aba_ops = st.tabs(["🤝 Recepção", "📸 Fotógrafos", "🔊 Operadores"])
+        tab_rec, tab_foto, tab_ops = st.tabs(["🤝 Recepção", "📸 Fotógrafos", "🔊 Operadores"])
 
         import calendar
         cal = calendar.Calendar()
-        dias_mes = [d for semana in cal.monthdatescalendar(ano_sel, mes_sel) for d in semana if d.month == mes_sel]
-        ultimo_sabado = max([d for d in dias_mes if d.weekday() == 5])
-        datas_culto = [d for d in dias_mes if d.weekday() in [2, 4, 6] or d == ultimo_sabado]
-        datas_culto.sort()
+        dias_mes = [d for sem in cal.monthdatescalendar(ano_sel, mes_sel) for d in sem if d.month == mes_sel]
+        ultimo_sab = max([d for d in dias_mes if d.weekday() == 5])
+        datas_alvo = [d for d in dias_mes if d.weekday() in [2, 4, 6] or d == ultimo_sab]
+        datas_alvo.sort()
 
-        # --- ABA: RECEPÇÃO ---
-        with aba_rec:
-            if st.button("🤖 Gerar Escala: RECEPÇÃO"):
+        # --- Lógica Recepção ---
+        with tab_rec:
+            if st.button("🤖 Gerar Escala Recepção"):
                 equipe = ["Ailton", "Márcia", "Simone", "Ceia", "Elisabete", "Felipe", "Rita"]
                 res, idx = [], 0
-                for data in datas_culto:
+                for d in datas_alvo:
                     p1, p2 = equipe[idx % 7], equipe[(idx + 1) % 7]
-                    h = "14h30" if data == ultimo_sabado else ("17h30" if data.weekday()==6 else "19h00")
-                    res.append({"Data": data.strftime('%d/%m/%Y'), "Dia": data.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Recepção", "Responsável": f"{p1} e {p2}"})
+                    h = "14h30" if d == ultimo_sab else ("17h30" if d.weekday()==6 else "19h00")
+                    res.append({"Data": d.strftime('%d/%m/%Y'), "Dia": d.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Recepção", "Responsável": f"{p1} e {p2}"})
                     idx += 2
                 st.session_state.temp_escala = pd.DataFrame(res)
 
-        # --- ABA: FOTÓGRAFOS ---
-        with aba_foto:
-            if st.button("🤖 Gerar Escala: FOTÓGRAFOS"):
+        # --- Lógica Fotógrafos ---
+        with tab_foto:
+            if st.button("🤖 Gerar Escala Fotógrafos"):
                 equipe = ["Tiago", "Grazi"]
                 res = []
-                for i, data in enumerate(datas_culto):
-                    h = "14h30" if data == ultimo_sabado else ("17h30" if data.weekday()==6 else "19h00")
-                    res.append({"Data": data.strftime('%d/%m/%Y'), "Dia": data.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Fotografia", "Responsável": equipe[i % 2]})
+                for i, d in enumerate(datas_alvo):
+                    h = "14h30" if d == ultimo_sab else ("17h30" if d.weekday()==6 else "19h00")
+                    res.append({"Data": d.strftime('%d/%m/%Y'), "Dia": d.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Fotografia", "Responsável": equipe[i % 2]})
                 st.session_state.temp_escala = pd.DataFrame(res)
 
-        # --- ABA: OPERADORES ---
-        with aba_ops:
-            if st.button("🤖 Gerar Escala: OPERADORES"):
-                pool_geral, pool_dom = ["Lucas", "Samuel", "Nicholas"], ["Júnior", "Lucas", "Samuel", "Nicholas"]
-                res, idx_g, idx_d = [], 0, 0
-                for data in datas_culto:
-                    if data.weekday() == 6:
-                        op, idx_d = pool_dom[idx_d % 4], idx_d + 1
-                    else:
-                        op, idx_g = pool_geral[idx_g % 3], idx_g + 1
-                    h = "14h30" if data == ultimo_sabado else ("17h30" if data.weekday()==6 else "19h00")
-                    res.append({"Data": data.strftime('%d/%m/%Y'), "Dia": data.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Mídia (Som)", "Responsável": op})
+        # --- Lógica Operadores ---
+        with tab_ops:
+            if st.button("🤖 Gerar Escala Operadores"):
+                p_geral, p_dom = ["Lucas", "Samuel", "Nicholas"], ["Júnior", "Lucas", "Samuel", "Nicholas"]
+                res, ig, idom = [], 0, 0
+                for d in datas_alvo:
+                    op = p_dom[idom % 4] if d.weekday()==6 else p_geral[ig % 3]
+                    if d.weekday()==6: idom +=1
+                    else: ig += 1
+                    h = "14h30" if d == ultimo_sab else ("17h30" if d.weekday()==6 else "19h00")
+                    res.append({"Data": d.strftime('%d/%m/%Y'), "Dia": d.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Mídia (Som)", "Responsável": op})
                 st.session_state.temp_escala = pd.DataFrame(res)
 
-        # --- 4. EXIBIR E GRAVAR ---
+        # ÁREA DE SALVAMENTO
         if "temp_escala" in st.session_state:
             st.divider()
-            st.dataframe(st.session_state.temp_escala, use_container_width=True)
-            if st.button("✅ Gravar Tudo na Planilha"):
+            st.table(st.session_state.temp_escala)
+            if st.button("✅ Gravar na Planilha Google"):
                 try:
                     sh = conectar_planilha()
                     aba = sh.worksheet("Escalas")
                     for r in st.session_state.temp_escala.values.tolist():
                         aba.append_row(r)
-                    st.success("Escala gravada com sucesso!")
+                    st.success("Gravado com sucesso!")
                     del st.session_state.temp_escala
-                except: st.error("Erro ao salvar. Verifique a aba 'Escalas' na planilha.")
+                except: st.error("Erro ao salvar.")
 
-        # --- 5. LIMPEZA (Mês Anterior) ---
+        # BOTÃO DE LIMPEZA
         st.divider()
-        if st.button("🗑️ Limpar Escalas do Mês Anterior"):
+        if st.button("🗑️ Limpar Mês Anterior (Aba Escalas)"):
             try:
                 sh = conectar_planilha()
                 aba = sh.worksheet("Escalas")
@@ -353,12 +293,11 @@ elif st.session_state.pagina == "Gestao":
                 if dados:
                     df_l = pd.DataFrame(dados)
                     df_l['dt'] = pd.to_datetime(df_l['Data'], dayfirst=True, errors='coerce')
-                    # Filtra para apagar o que for do mês anterior ao atual
                     mes_ant = (hoje_br.replace(day=1) - timedelta(days=1)).month
                     df_f = df_l[df_l['dt'].dt.month != mes_ant].drop(columns=['dt'])
                     aba.clear()
                     aba.update([df_f.columns.values.tolist()] + df_f.values.tolist())
-                    st.success("Mês anterior limpo!")
+                    st.success("Limpeza concluída!")
             except: st.error("Erro na limpeza.")
 
         if st.button("Sair do Painel"):
