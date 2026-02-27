@@ -28,15 +28,12 @@ def conectar_planilha():
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
         client = gspread.authorize(creds)
         
-        # TROQUE ABAIXO PELO NOME QUE APARECE LÁ NO TOPO DA SUA PLANILHA
-        nome_real = "COLOQUE_AQUI_O_NOME_DA_SUA_PLANILHA" 
+        # --- COLE O ID DA SUA PLANILHA ENTRE AS ASPAS ABAIXO ---
+        id_da_planilha = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing" 
         
-        return client.open(nome_real)
-    except gspread.exceptions.SpreadsheetNotFound:
-        st.error("❌ Erro: O Google não encontrou nenhuma planilha com esse nome. Verifique se o nome está idêntico.")
-        return None
+        return client.open_by_key(id_da_planilha) # Conexão direta pelo ID
     except Exception as e:
-        st.error(f"❌ Erro de Permissão ou Conexão: {e}")
+        st.error(f"Erro de Conexão pelo ID: {e}")
         return None
 # --- 3. ESTILO VISUAL (CSS) ---
 st.markdown("""
