@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
+from datetime import datetime, timedelta
 import pytz
 import gspread
 from google.oauth2.service_account import Credentials
@@ -36,13 +36,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. FUNÇÕES DE CONEXÃO E BÍBLIA ---
+# --- 2. CONEXÃO E LIMPEZA (ANTI-ERRO) ---
 def conectar_planilha():
     try:
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-        ID_PLANILHA = "1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0"
-        return gspread.authorize(creds).open_by_key(ID_PLANILHA)
+        # --- COLE SEU ID AQUI ---
+        return gspread.authorize(creds).open_by_key("1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0")
     except Exception as e:
         st.error(f"Erro de conexão: {e}")
         return None
@@ -53,47 +53,34 @@ def carregar_dados(aba_nome):
         try:
             aba = sh.worksheet(aba_nome)
             df = pd.DataFrame(aba.get_all_records())
-            df.columns = df.columns.str.strip()
+            # Limpeza mestre: Remove espaços e deixa tudo minúsculo para busca interna
+            df.columns = df.columns.str.strip().str.lower()
             return df
         except: return pd.DataFrame()
     return pd.DataFrame()
+
+def atualizar_contador():
+    try:
+        sh = conectar_planilha()
+        aba = sh.worksheet("Acessos")
+        valor = int(aba.acell('A2').value or 0) + 1
+        aba.update_acell('A2', valor)
+        return valor
+    except: return "---"
 
 def buscar_versiculo(ref):
     try:
         r = requests.get(f"https://bible-api.com/{ref}?translation=almeida")
         return r.json()['text'] if r.status_code == 200 else "Referência não encontrada."
-    except: return "Bíblia indisponível."
-
-# --- 3. LÓGICA DE USUÁRIO (LOGIN/CADASTRO) ---
-def gerenciar_acesso(dados_user, acao="login"):
-    sh = conectar_planilha()
-    if not sh: return False, "Erro de conexão"
-    
-    aba_user = sh.worksheet("Usuarios")
-    aba_prog = sh.worksheet("Progresso")
-    
-    if acao == "cadastro":
-        # nome, telefone, ministerio, nascimento, senha, dia_atual, plano_escolhido
-        aba_user.append_row(list(dados_user.values()))
-        # usuario (telefone), plano, dia_atual
-        aba_prog.append_row([dados_user['telefone'], dados_user['plano_escolhido'], 1])
-        return True, "Cadastro realizado com sucesso!"
-    
-    else: # LOGIN
-        df_u = pd.DataFrame(aba_user.get_all_records())
-        user = df_u[(df_u['telefone'].astype(str) == str(dados_user['telefone'])) & 
-                    (df_u['senha'].astype(str) == str(dados_user['senha']))]
-        if not user.empty:
-            return True, user.iloc[0].to_dict()
-        return False, "Telefone ou senha incorretos."
+    except: return "Bíblia offline."
 
 # =========================================================
-# --- PÁGINA: INÍCIO ---
+# --- 3. PÁGINA: INÍCIO ---
 # =========================================================
 if st.session_state.pagina == "Início":
     st.markdown("<h3>⛪ ISOSED COSMÓPOLIS</h3>", unsafe_allow_html=True)
     
-    # 🍇 Santa Ceia Dinâmica
+    # --- SANTA CEIA DINÂMICA ---
     df_ag = carregar_dados("Agenda")
     prox_ceia = "A definir"
     if not df_ag.empty:
@@ -104,17 +91,19 @@ if st.session_state.pagina == "Início":
 
     st.markdown(f'<div class="card-isosed" style="text-align:center;">🍇 PRÓXIMA SANTA CEIA<br><b style="font-size:1.3em;">{prox_ceia} às 18h00</b></div>', unsafe_allow_html=True)
 
-    # 🎂 Próximos 5 Aniversariantes
+    # --- PRÓXIMOS 5 ANIVERSARIANTES ---
     df_nv = carregar_dados("Aniversariantes")
     if not df_nv.empty:
-        col_m = next((c for c in df_nv.columns if 'mes' in c.lower() or 'mês' in c.lower()), "Mes")
-        col_d = next((c for c in df_nv.columns if 'dia' in c.lower()), "Dia")
-        niver_f = df_nv[(df_nv[col_m].astype(int) == hoje_br.month) & (df_nv[col_d].astype(int) >= hoje_br.day)].sort_values(col_d).head(5)
+        # Pega do dia atual até o fim do mês
+        niver_f = df_nv[(df_nv['mes'].astype(int) == hoje_br.month) & (df_nv['dia'].astype(int) >= hoje_br.day)].sort_values('dia').head(5)
         if not niver_f.empty:
-            list_n = " | ".join([f"{r['Nome']} ({r[col_d]})" for _, r in niver_f.iterrows()])
-            st.markdown(f"<p style='text-align:center; font-size:0.8em;'>🎂 <b>Próximos:</b> {list_n}</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; margin-bottom:5px;'>🎂 <b>Próximos Aniversariantes</b></p>", unsafe_allow_html=True)
+            # Como limpamos as colunas, usamos 'nome' e 'dia' minúsculos
+            list_n = " | ".join([f"{r['nome']} ({r['dia']})" for _, r in niver_f.iterrows()])
+            st.markdown(f"<div style='text-align:center; font-size:0.8em; opacity:0.8;'>{list_n}</div>", unsafe_allow_html=True)
 
-    # Menu
+    # --- MENU PRINCIPAL ---
+    st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
         st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), key="m1")
@@ -125,79 +114,143 @@ if st.session_state.pagina == "Início":
         st.button("📖 Devocional", on_click=navegar, args=("Devocional",), key="m5")
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), key="m6")
 
-    # Rodapé
-    st.markdown("<hr style='opacity:0.1;'>", unsafe_allow_html=True)
-    if os.path.exists("logo igreja.png"): st.image("logo igreja.png", width=120)
-    st.markdown("<div style='text-align:center;'><a href='#' style='color:#ffd700;'>Instagram</a> | <a href='#' style='color:#ffd700;'>YouTube</a></div>", unsafe_allow_html=True)
+    # --- RODAPÉ: LOGO, REDES E CONTADOR ---
+    st.markdown("<br><hr style='opacity:0.1;'>", unsafe_allow_html=True)
+    fl1, fl2, fl3 = st.columns([1, 1.2, 1])
+    with fl2:
+        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", use_container_width=True)
+    
+    st.markdown("""
+        <div style="text-align:center; margin:10px 0;">
+            <a href="https://instagram.com/isosedcosmopolis" target="_blank" style="color:#ffd700; text-decoration:none; margin:0 10px;">📸 Instagram</a>
+            <a href="https://youtube.com/@isosedcosmopolis" target="_blank" style="color:#ffd700; text-decoration:none; margin:0 10px;">🎥 YouTube</a>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if 'visitas' not in st.session_state: st.session_state.visitas = atualizar_contador()
+    st.markdown(f"<p style='text-align:center; opacity:0.4; font-size:0.7em;'>Visitante nº: {st.session_state.visitas} | ISOSED 2026</p>", unsafe_allow_html=True)
 
 # =========================================================
-# --- PÁGINA: LEITURA (COM CADASTRO E PROGRESSO) ---
+# --- PÁGINA: LEITURA (LOGIN E PROGRESSO) ---
 # =========================================================
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     
     if st.session_state.user is None:
-        st.markdown("<h2>📖 Plano de Leitura</h2>", unsafe_allow_html=True)
-        t1, t2 = st.tabs(["Entrar", "Criar Conta"])
+        st.markdown("<h2>🔑 Acesse seu Plano</h2>", unsafe_allow_html=True)
+        t1, t2 = st.tabs(["Fazer Login", "Criar Conta"])
         
         with t1:
-            with st.form("login"):
+            with st.form("login_form"):
                 f_tel = st.text_input("WhatsApp (com DDD):")
                 f_sen = st.text_input("Senha:", type="password")
-                if st.form_submit_button("Acessar meu Plano"):
-                    ok, res = gerenciar_acesso({"telefone": f_tel, "senha": f_sen}, "login")
-                    if ok:
-                        st.session_state.user = res
+                if st.form_submit_button("Entrar"):
+                    df_u = carregar_dados("Usuarios")
+                    u_find = df_u[(df_u['telefone'].astype(str) == str(f_tel)) & (df_u['senha'].astype(str) == str(f_sen))]
+                    if not u_find.empty:
+                        st.session_state.user = u_find.iloc[0].to_dict()
                         st.rerun()
-                    else: st.error(res)
+                    else: st.error("Dados incorretos.")
         
         with t2:
-            with st.form("cadastro"):
-                c_nom = st.text_input("Nome Completo:")
+            with st.form("cad_form"):
+                st.write("Novo por aqui? Cadastre-se!")
+                c_nom = st.text_input("Nome:")
                 c_tel = st.text_input("WhatsApp:")
-                c_min = st.selectbox("Ministério:", ["Membro", "Mídia", "Recepção", "Louvor", "Infantil", "Liderança"])
-                c_nas = st.text_input("Data Nascimento (DD/MM):")
                 c_sen = st.text_input("Crie uma Senha:", type="password")
-                c_pla = st.selectbox("Escolha seu Plano:", ["Anual 2026", "Novo Testamento", "Casais"])
-                if st.form_submit_button("Cadastrar e Iniciar"):
-                    new_u = {"nome": c_nom, "telefone": c_tel, "ministerio": c_min, "nascimento": c_nas, "senha": c_sen, "dia_atual": 1, "plano_escolhido": c_pla}
-                    ok, msg = gerenciar_acesso(new_u, "cadastro")
-                    if ok: st.success(msg)
-                    else: st.error(msg)
-    
+                c_min = st.text_input("Ministério:")
+                c_nas = st.text_input("Nascimento (DD/MM):")
+                if st.form_submit_button("Começar Plano"):
+                    sh = conectar_planilha()
+                    aba_u = sh.worksheet("Usuarios")
+                    aba_p = sh.worksheet("Progresso")
+                    # nome, telefone, ministerio, nascimento, senha, dia_atual, plano_escolhido
+                    aba_u.append_row([c_nom, c_tel, c_min, c_nas, c_sen, 1, "Anual 2026"])
+                    aba_p.append_row([c_tel, "Anual 2026", 1])
+                    st.success("Conta criada! Agora faça o login.")
+
     else:
-        # Usuário Logado - Mostrar Progresso
+        # Logado: Mostra o dia da leitura baseado na aba Progresso
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
-        # Busca o dia_atual do usuário na aba Progresso
-        user_p = df_p[df_p['usuario'].astype(str) == str(u['telefone'])]
-        dia_hoje = user_p.iloc[0]['dia_atual'] if not user_p.empty else 1
+        p_row = df_p[df_p['usuario'].astype(str) == str(u['telefone'])]
+        dia_atual = p_row.iloc[0]['dia_atual'] if not p_row.empty else 1
         
-        st.markdown(f"### Olá, {u['nome']}! ✨")
-        st.markdown(f"<div class='card-isosed'>📅 Você está no <b>Dia {dia_hoje}</b> do plano <b>{u['plano_escolhido']}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"### Olá, {u['nome']}! 📖")
+        st.markdown(f"<div class='card-isosed'>Você está no <b>Dia {dia_atual}</b> do seu plano.</div>", unsafe_allow_html=True)
         
-        # Busca a leitura correspondente ao dia
         df_lei = carregar_dados("Leitura")
-        leitura_dia = df_lei[df_lei['Dia'].astype(int) == int(dia_hoje)]
+        # Filtra pelo dia exato do progresso do usuário
+        l_hoje = df_lei[df_lei['dia'].astype(str) == str(dia_atual)]
         
-        if not leitura_dia.empty:
-            l = leitura_dia.iloc[0]
-            st.info(f"📍 Referência: {l['Referência']}")
-            st.markdown(f'<div class="texto-biblico">{buscar_versiculo(l["Referência"])}</div>', unsafe_allow_html=True)
-            st.write(f"**Meditação:** {l['Resumo para meditação']}")
+        if not l_hoje.empty:
+            l = l_hoje.iloc[0]
+            st.info(f"📍 Referência: {l['referência']}")
+            st.markdown(f'<div class="texto-biblico">{buscar_versiculo(l["referência"])}</div>', unsafe_allow_html=True)
+            st.write(f"**Meditação:** {l['resumo para meditação']}")
             
-            if st.button("✅ Marcar como Lido e Avançar"):
+            if st.button("✅ Concluir Leitura e Avançar"):
                 sh = conectar_planilha()
                 aba_p = sh.worksheet("Progresso")
-                # Encontra a linha do usuário (busca por telefone)
-                celula = aba_p.find(str(u['telefone']))
-                novo_dia = int(dia_hoje) + 1
-                aba_p.update_cell(celula.row, 3, novo_dia) # Coluna 3 é dia_atual
-                st.success("Parabéns! Progresso salvo.")
+                cell = aba_p.find(str(u['telefone']))
+                aba_p.update_cell(cell.row, 3, int(dia_atual) + 1)
+                st.success("Progresso salvo! Até amanhã!")
                 st.rerun()
-        
+        else:
+            st.warning("Plano concluído ou conteúdo não cadastrado para este dia.")
+
         if st.button("Sair da Conta"):
             st.session_state.user = None
             st.rerun()
 
-# (Repetir lógica de ELIF para Agenda, Aniv, Escalas e Devocional conforme versões anteriores)
+# --- 4. PÁGINAS MENSAIS (AGENDA E ANIV) ---
+elif st.session_state.pagina == "Agenda":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h2>🗓️ Agenda ISOSED</h2>", unsafe_allow_html=True)
+    df = carregar_dados("Agenda")
+    abas = st.tabs([calendar.month_name[i].capitalize()[:3] for i in range(1,13)])
+    if not df.empty:
+        df['dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        for i, aba in enumerate(abas):
+            with aba:
+                mes_df = df[df['dt'].dt.month == (i+1)].sort_values('dt')
+                if not mes_df.empty:
+                    for _, r in mes_df.iterrows(): st.write(f"**{r['dt'].strftime('%d/%m')}** - {r['evento']}")
+                else: st.info("Sem eventos.")
+
+elif st.session_state.pagina == "Aniv":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h2>🎂 Todos os Aniversariantes</h2>", unsafe_allow_html=True)
+    df = carregar_dados("Aniversariantes")
+    abas = st.tabs([calendar.month_name[i].capitalize()[:3] for i in range(1,13)])
+    if not df.empty:
+        for i, aba in enumerate(abas):
+            with aba:
+                mes_df = df[df['mes'].astype(int) == (i+1)].sort_values('dia')
+                if not mes_df.empty:
+                    for _, r in mes_df.iterrows(): st.write(f"🎁 **Dia {r['dia']}** - {r['nome']}")
+                else: st.info("Sem aniversariantes.")
+
+# --- 5. DEVOCIONAL ---
+elif st.session_state.pagina == "Devocional":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h2>📖 Devocional</h2>", unsafe_allow_html=True)
+    df = carregar_dados("Devocional")
+    if not df.empty:
+        item = df.iloc[-1]
+        st.markdown(f"### {item['titulo']}")
+        st.success(f"📖 Versículo: {item['versiculo']}")
+        st.write(item['texto'])
+        with st.expander("🎯 Aplicação & Desafio"):
+            st.write(f"**Aplicação:** {item['aplicacao']}")
+            st.write(f"**Desafio:** {item['desafio']}")
+
+# --- 6. ESCALAS ---
+elif st.session_state.pagina == "Escalas":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h2>📢 Escalas de Serviço</h2>", unsafe_allow_html=True)
+    df = carregar_dados("Escalas")
+    if not df.empty:
+        df['dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        for _, r in df[df['dt'].dt.date >= hoje_br].sort_values('dt').iterrows():
+            st.markdown(f'<div class="card-isosed"><b>{r["data"]}</b> - {r["evento"]}<br>👤 {r["responsável"]} ({r["departamento"]})</div>', unsafe_allow_html=True)
