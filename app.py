@@ -128,7 +128,7 @@ if st.session_state.pagina == "Início":
 
     # MENU DE BOTÕES
     st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(2)
     with c1:
         st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), use_container_width=True, key="btn_agenda")
         st.button("👥 Grupos", on_click=navegar, args=("Grupos",), use_container_width=True, key="btn_grupos")
