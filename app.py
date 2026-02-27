@@ -24,7 +24,10 @@ def navegar(p): st.session_state.pagina = p
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background-color: #1a1a2e !important; }
-    
+
+    [data-baseweb="popover"] li {
+    color: black !important;
+}    
     /* Texto Geral em Branco */
     p, span, div, label, .stMarkdown { color: white !important; }
     h1, h2, h3, b, strong { color: #ffd700 !important; text-align: center; }
