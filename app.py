@@ -30,7 +30,7 @@ def conectar_planilha():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
     client = gspread.authorize(creds)
-    return client.open("NOME_DA_SUA_PLANILHA") # <--- AJUSTE O NOME AQUI
+    return client.open("https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing") # <--- AJUSTE O NOME AQUI
 
 def carregar_dados(aba_nome):
     try:
