@@ -35,7 +35,7 @@ def conectar_planilha():
         
         # --- AQUI ESTÁ O SEGREDO: COLE O ID CORRETO ABAIXO ---
         # Ex: 1BxiMVs0XRA5nSMfB6Y6n6vCCvN-01A2B3C4D5E6F7G8H
-        ID_DA_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0" 
+        ID_DA_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0 
         
         return client.open_by_key(ID_DA_PLANILHA)
     except Exception as e:
