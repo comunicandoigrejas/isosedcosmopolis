@@ -20,61 +20,56 @@ if 'admin_ok' not in st.session_state: st.session_state.admin_ok = False
 
 def navegar(p): st.session_state.pagina = p
 
-# CSS PARA FORÇAR BRANCO E FORMATAR CARDS
+# CSS TOTAL - FORÇANDO BRANCO E BOTÕES AZUIS
 st.markdown("""
     <style>
-    /* Fundo e Texto Global */
-    [data-testid="stAppViewContainer"], .main, .stApp {
-        background-color: #1a1a2e !important;
-        color: white !important;
+    /* Fundo Global */
+    [data-testid="stAppViewContainer"] { background-color: #1a1a2e !important; }
+    
+    /* Texto Geral em Branco */
+    p, span, div, label, .stMarkdown { color: white !important; }
+    h1, h2, h3, b, strong { color: #ffd700 !important; text-align: center; }
+
+    /* PADRONIZAÇÃO DE TODOS OS BOTÕES (Azul com Fonte Branca) */
+    div.stButton > button, div.stFormSubmitButton > button {
+        width: 100% !important;
+        background-color: #0f3460 !important; 
+        color: white !important; 
+        border: 2px solid #ffd700 !important; /* Borda amarela para destaque */
+        border-radius: 10px !important;
+        font-weight: bold !important;
+        height: 3.5em !important;
+        transition: 0.3s;
     }
     
-    /* Forçar Branco em todas as fontes */
-    p, span, div, label, h1, h2, h3, .stMarkdown {
-        color: white !important;
-    }
-    
-    /* Títulos em Amarelo para destaque */
-    h1, h2, h3, b, strong {
-        color: #ffd700 !important;
-        text-align: center;
+    /* Efeito ao passar o mouse */
+    div.stButton > button:hover, div.stFormSubmitButton > button:hover {
+        background-color: #ffd700 !important;
+        color: #1a1a2e !important;
     }
 
-    /* Cards de Escala Menores */
+    /* Cards */
     .card-isosed {
         background: rgba(255, 215, 0, 0.05) !important; 
         border: 1px solid #ffd700 !important;
-        border-radius: 8px; padding: 10px; margin-bottom: 8px;
-        color: white !important;
+        border-radius: 8px; padding: 12px; margin-bottom: 10px;
     }
-    
-    /* Cards de Aniversário (Página Inicial) */
     .card-aniv {
         background: rgba(255, 215, 0, 0.2) !important;
         border: 1px solid #ffd700 !important;
-        border-radius: 10px; padding: 8px; margin-bottom: 5px;
-        text-align: center; font-weight: bold; color: white !important;
-    }
-
-    /* Botões */
-    .stButton>button {
-        width: 100% !important; background-color: #0f3460 !important; 
-        color: white !important; border-radius: 10px !important;
-        font-weight: bold; border: 1px solid #ffd700; height: 3.5em;
+        border-radius: 10px; padding: 10px; margin-bottom: 6px;
+        text-align: center; color: white !important; font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. FUNÇÕES DE CONEXÃO E DADOS ---
+# --- 2. FUNÇÕES DE APOIO ---
 def conectar_planilha():
     try:
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-        client = gspread.authorize(creds)
-        return client.open_by_key("1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0")
-    except Exception as e:
-        st.error(f"Erro de Conexão: {e}")
-        return None
+        return gspread.authorize(creds).open_by_key("1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0")
+    except: return None
 
 def carregar_dados(aba_nome):
     sh = conectar_planilha()
@@ -87,12 +82,6 @@ def carregar_dados(aba_nome):
         except: return pd.DataFrame()
     return pd.DataFrame()
 
-def buscar_versiculo(ref):
-    try:
-        r = requests.get(f"https://bible-api.com/{ref}?translation=almeida")
-        return r.json()['text'] if r.status_code == 200 else "Referência não encontrada."
-    except: return "Bíblia offline."
-
 def obter_datas_culto_pt(ano, mes):
     dias_pt = {0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira", 3: "Quinta-feira", 4: "Sexta-feira", 5: "Sábado", 6: "Domingo"}
     cal = calendar.Calendar()
@@ -103,27 +92,25 @@ def obter_datas_culto_pt(ano, mes):
     return [{"data": d.strftime('%d/%m/%Y'), "dia_pt": dias_pt[d.weekday()], "is_domingo": d.weekday() == 6} for d in sorted(datas)]
 
 # =========================================================
-# --- ROTEADOR DE PÁGINAS (ESTRUTURA INDEPENDENTE) ---
+# --- ROTEADOR ---
 # =========================================================
 
-# 1. PÁGINA INICIAL
 if st.session_state.pagina == "Início":
-    # LOGO
-    c_l1, c_l2, c_l3 = st.columns([1, 1.2, 1])
-    with c_l2:
-        if os.path.exists("logo igreja.png"):
-            st.image("logo igreja.png", use_container_width=True)
+    # Logo
+    c1, c2, c3 = st.columns([1, 1.2, 1])
+    with c2:
+        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", use_container_width=True)
     
     st.markdown("<h1>ISOSED COSMÓPOLIS</h1>", unsafe_allow_html=True)
     
-    # Próxima Santa Ceia
+    # Santa Ceia
     df_ag = carregar_dados("Agenda")
-    prox_ceia = "A definir"
+    prox = "A definir"
     if not df_ag.empty:
         df_ag['dt_p'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
         ceia = df_ag[df_ag['evento'].str.contains("Santa Ceia", case=False, na=False)].sort_values('dt_p')
-        if not ceia.empty: prox_ceia = ceia.iloc[0]['data']
-    st.markdown(f'<div class="card-isosed" style="text-align:center;">🍇 PRÓXIMA SANTA CEIA<br><b style="font-size:1.3em;">{prox_ceia} às 18h00</b></div>', unsafe_allow_html=True)
+        if not ceia.empty: prox = ceia.iloc[0]['data']
+    st.markdown(f'<div class="card-isosed" style="text-align:center;">🍇 PRÓXIMA SANTA CEIA<br><b style="font-size:1.3em;">{prox} às 18h00</b></div>', unsafe_allow_html=True)
 
     # Aniversariantes
     st.markdown("<h3>🎂 PRÓXIMOS ANIVERSARIANTES</h3>", unsafe_allow_html=True)
@@ -134,19 +121,18 @@ if st.session_state.pagina == "Início":
         for _, r in n_f.iterrows():
             st.markdown(f'<div class="card-aniv">🎂 {r["nome"]} - Dia {r["dia"]}</div>', unsafe_allow_html=True)
 
-    # Botões
+    # Botões de Navegação (Agora todos Azuis)
     st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
+    col_a, col_b = st.columns(2)
+    with col_a:
         st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
         st.button("🎂 Aniversários", on_click=navegar, args=("Aniv",))
         st.button("⚙️ Gestão", on_click=navegar, args=("Gestao",))
-    with c2:
+    with col_b:
         st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
         st.button("📖 Devocional", on_click=navegar, args=("Devocional",))
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
 
-# 2. ESCALAS
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h2>📢 Escalas de Serviço</h2>", unsafe_allow_html=True)
@@ -155,42 +141,16 @@ elif st.session_state.pagina == "Escalas":
         df['dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
         prox = df[df['dt'].dt.date >= hoje_br].sort_values('dt')
         t1, t2, t3 = st.tabs(["📸 Foto", "🔊 Som/Mídia", "🤝 Recepção"])
-        
         with t1:
             f = prox[prox['departamento'].str.contains("Foto", case=False, na=False)]
             for _, r in f.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
         with t2:
-            o = prox[prox['departamento'].str.contains("Mídia|Som|Operador", case=False, na=False)]
+            o = prox[prox['departamento'].str.contains("Mídia|Som", case=False, na=False)]
             for _, r in o.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
         with t3:
             rec = prox[prox['departamento'].str.contains("Recepção", case=False, na=False)]
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
-    else: st.info("Escalas não encontradas.")
 
-# 3. AGENDA E ANIVERSÁRIOS
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    df = carregar_dados("Agenda")
-    abas = st.tabs(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-    if not df.empty:
-        df['dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        for i, aba in enumerate(abas):
-            with aba:
-                m_df = df[df['dt'].dt.month == (i+1)].sort_values('dt')
-                for _, r in m_df.iterrows(): st.write(f"**{r['dt'].strftime('%d/%m')}** - {r['evento']}")
-
-elif st.session_state.pagina == "Aniv":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    df = carregar_dados("Aniversariantes")
-    abas = st.tabs(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-    if not df.empty:
-        c_m = next((c for c in df.columns if 'mes' in c or 'mês' in c), 'mes')
-        for i, aba in enumerate(abas):
-            with aba:
-                m_df = df[df[c_m].astype(int) == (i+1)].sort_values('dia')
-                for _, r in m_df.iterrows(): st.write(f"🎁 Dia {r['dia']} - {r['nome']}")
-
-# 4. GESTÃO
 elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     if not st.session_state.admin_ok:
@@ -199,36 +159,13 @@ elif st.session_state.pagina == "Gestao":
             if st.form_submit_button("Liberar"):
                 if pw == "ISOSED2026": st.session_state.admin_ok = True; st.rerun()
     else:
-        st.success("Painel do Líder Ativado")
         m = st.selectbox("Mês:", list(range(1,13)), index=hoje_br.month-1)
-        tp = st.selectbox("Tipo:", ["Fotografia", "Recepção", "Som/Mídia"])
-        if st.button("Gerar Escala agora"):
+        tp = st.selectbox("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
+        if st.form_submit_button(f"Gerar {tp}"): # Agora este botão também será azul
             datas = obter_datas_culto_pt(2026, m)
             sh = conectar_planilha()
             aba = sh.worksheet("Escalas")
             for d in datas:
                 h = "18:00" if d['is_domingo'] else "19:30"
                 aba.append_row([d['data'], d['dia_pt'], h, "Culto", tp, "A definir"])
-            st.success("Datas geradas na planilha!")
-
-# 5. DEVOCIONAL
-elif st.session_state.pagina == "Devocional":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    df = carregar_dados("Devocional")
-    if not df.empty:
-        i = df.iloc[-1]
-        st.markdown(f"### {i['titulo']}")
-        st.write(i['texto'])
-
-# 6. LEITURA
-elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    if st.session_state.user is None:
-        with st.form("login"):
-            tel = st.text_input("WhatsApp:"); sen = st.text_input("Senha:", type="password")
-            if st.form_submit_button("Entrar"):
-                df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['telefone'].astype(str) == str(tel)) & (df_u['senha'].astype(str) == str(sen))]
-                if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
-    else:
-        st.write(f"Olá, {st.session_state.user['nome']}! Bem-vindo ao plano.")
+            st.success("Escala enviada para a planilha!")
