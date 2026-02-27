@@ -8,56 +8,59 @@ from datetime import datetime, timedelta
 import pytz
 import requests
 import urllib.parse
-# --- 1. CONFIGURAÇÕES INICIAIS ---
+
+# --- 1. CONFIGURAÇÕES E MEMÓRIA ---
 st.set_page_config(page_title="ISOSED Cosmópolis", layout="wide", page_icon="⛪")
 
-# Fuso Horário e Datas
 fuso_br = pytz.timezone('America/Sao_Paulo')
 hoje_br = datetime.now(fuso_br).date()
 
-# Memória de Navegação
-if 'pagina' not in st.session_state:
-    st.session_state.pagina = "Início"
-if 'admin_ok' not in st.session_state:
-    st.session_state.admin_ok = False
+if 'pagina' not in st.session_state: st.session_state.pagina = "Início"
+if 'admin_ok' not in st.session_state: st.session_state.admin_ok = False
 
 def navegar(p):
     st.session_state.pagina = p
 
-# --- 2. CONEXÃO COM GOOGLE SHEETS ---
+# --- 2. CONEXÃO COM O GOOGLE SHEETS ---
 def conectar_planilha():
-    # Aqui usa os segredos que você já configurou no Streamlit Cloud
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-    client = gspread.authorize(creds)
-    return client.open("https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing") # <--- AJUSTE O NOME AQUI
+    try:
+        scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+        client = gspread.authorize(creds)
+        # --- COLOQUE O NOME EXATO DA SUA PLANILHA ABAIXO ---
+        return client.open("ISOSED Cosmópolis") 
+    except Exception as e:
+        st.error(f"Erro de Conexão: {e}")
+        return None
 
 def carregar_dados(aba_nome):
+    sh = conectar_planilha()
+    if sh:
+        try:
+            aba = sh.worksheet(aba_nome)
+            return pd.DataFrame(aba.get_all_records())
+        except: return pd.DataFrame()
+    return pd.DataFrame()
+
+def atualizar_contador():
     try:
         sh = conectar_planilha()
-        aba = sh.worksheet(aba_nome)
-        dados = aba.get_all_records()
-        return pd.DataFrame(dados)
-    except:
-        return pd.DataFrame()
+        aba = sh.worksheet("Acessos")
+        valor = int(aba.acell('A2').value or 0) + 1
+        aba.update_acell('A2', valor)
+        return valor
+    except: return "---"
 
 # --- 3. ESTILO VISUAL (CSS) ---
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background-color: #1e1e2f !important; }
     h1, h2, h3, h4, h5, h6, p, span { color: #FFFFFF !important; font-weight: 700 !important; }
-    
-    /* Quadro Amarelo (Aniversariantes e Escalas) */
-    .card-destaque {
+    .card-isosed {
         background: rgba(255, 215, 0, 0.1) !important; 
         border: 2px solid #ffd700 !important;
-        border-radius: 15px !important; 
-        padding: 15px !important;
-        margin-bottom: 15px !important;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        border-radius: 15px !important; padding: 15px !important; margin-bottom: 15px !important;
     }
-    
-    /* Botões do Menu */
     button[data-testid="stBaseButton-secondary"] {
         width: 100% !important; background-color: #0a3d62 !important; 
         border: 2px solid #3c6382 !important; border-radius: 12px !important;
@@ -73,86 +76,87 @@ st.markdown("""
 if st.session_state.pagina == "Início":
     st.markdown("<h2 style='text-align: center;'>ISOSED COSMÓPOLIS</h2>", unsafe_allow_html=True)
     
-    # Quadro de Cultos
     st.markdown("""
-        <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-            <h4 style="margin:0; color:#ffd700; text-align:center;">🙏 Nossos Cultos</h4>
-            <p style="text-align:center; margin:5px 0;">Quarta e Sexta: 19h30 | Domingo: 18h00</p>
+        <div style="background: rgba(10, 61, 98, 0.4); border: 1px solid #3c6382; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+            <h4 style="margin:0; color:#ffd700;">🙏 Nossos Cultos</h4>
+            <p style="margin:5px 0;">Segunda: Oração | Quarta e Sexta: 19h30 | Domingo: 18h00</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Menu de Botões
     c1, c2 = st.columns(2)
     with c1:
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), key="btn_age")
-        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), key="btn_aniv")
-        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), key="btn_gst")
+        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",), key="b1")
+        st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), key="b2")
+        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), key="b3")
     with c2:
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), key="btn_esc")
-        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), key="btn_med")
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), key="btn_lei")
+        st.button("📢 Escalas", on_click=navegar, args=("Escalas",), key="b4")
+        st.button("📖 Meditar", on_click=navegar, args=("Meditar",), key="b5")
+        st.button("📜 Leitura", on_click=navegar, args=("Leitura",), key="b6")
+
+    # --- RODAPÉ: LOGO, REDES E CONTADOR ---
+    st.markdown("<br><hr style='opacity:0.2;'>", unsafe_allow_html=True)
+    f1, f2, f3 = st.columns([1, 2, 1])
+    with f2:
+        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", use_container_width=True)
+        st.markdown("""
+            <div style="text-align: center; margin: 15px 0;">
+                <a href="#" style="text-decoration:none; color:#ffd700; margin:0 10px;">📸 Instagram</a>
+                <a href="#" style="text-decoration:none; color:#ffd700; margin:0 10px;">🎥 YouTube</a>
+            </div>
+        """, unsafe_allow_html=True)
+        if 'visitas' not in st.session_state: st.session_state.visitas = atualizar_contador()
+        st.markdown(f"<p style='text-align:center; opacity:0.5; font-size:0.8em;'>Visitante nº: {st.session_state.visitas}</p>", unsafe_allow_html=True)
 
 # --- PÁGINA: AGENDA ---
 elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_age")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v1")
     st.markdown("<h1>🗓️ Agenda de Eventos</h1>", unsafe_allow_html=True)
-    # Conteúdo da Agenda...
+    # Conteúdo da agenda aqui...
 
-# --- PÁGINA: ESCALAS (O que os membros vêem) ---
+# --- PÁGINA: ESCALAS (Visão Membros) ---
 elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_esc")
-    st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
-    
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v2")
+    st.markdown("<h1>📢 Escalas Publicadas</h1>", unsafe_allow_html=True)
     df_e = carregar_dados("Escalas")
     if not df_e.empty:
         df_e['dt'] = pd.to_datetime(df_e['Data'], dayfirst=True, errors='coerce')
-        prox = df_e[df_e['dt'].dt.date >= hoje_br].sort_values(by='dt')
-        for _, r in prox.iterrows():
-            st.markdown(f"""
-                <div class="card-destaque">
-                    <b style="color:#ffd700;">{r['Data']} - {r['Evento']}</b><br>
-                    👤 {r['Responsável']} | 📍 {r['Departamento']}<br>
-                    ⏰ Chegada: {r['Horário']}
-                </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("Nenhuma escala publicada.")
+        for _, r in df_e[df_e['dt'].dt.date >= hoje_br].sort_values('dt').iterrows():
+            st.markdown(f'<div class="card-isosed"><b style="color:#ffd700;">{r["Data"]} - {r["Evento"]}</b><br>'
+                        f'👤 {r["Responsável"]} | 📍 {r["Departamento"]} | ⏰ {r["Horário"]}</div>', unsafe_allow_html=True)
+    else: st.info("Nenhuma escala disponível.")
 
 # --- PÁGINA: LEITURA ---
 elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei")
-    st.markdown("<h1>📜 Plano de Leitura Bíblica</h1>", unsafe_allow_html=True)
-    st.write("Acompanhe aqui o seu progresso diário.")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v3")
+    st.markdown("<h1>📜 Plano de Leitura</h1>", unsafe_allow_html=True)
+    st.write("Acompanhe o plano de leitura bíblica anual.")
 
-# --- PÁGINA: GESTÃO (Onde a IA gera as escalas) ---
+# --- PÁGINA: GESTÃO (Painel do Líder) ---
 elif st.session_state.pagina == "Gestao":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_gst")
-    st.markdown("<h1>⚙️ Painel de Gestão</h1>", unsafe_allow_html=True)
-
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v4")
     if not st.session_state.admin_ok:
         with st.form("login"):
             senha = st.text_input("Senha de Líder:", type="password")
-            if st.form_submit_button("Acessar"):
-                if senha == "ISOSED2026":
+            if st.form_submit_button("Entrar"):
+                if senha == "ISOSED2026": 
                     st.session_state.admin_ok = True
                     st.rerun()
                 else: st.error("Senha incorreta!")
     else:
-        st.success("Bem-vindo, Líder!")
-        col_m, col_a = st.columns(2)
-        with col_m: mes_s = st.selectbox("Mês:", list(range(1,13)), index=hoje_br.month-1)
-        with col_a: ano_s = st.number_input("Ano:", value=2026)
+        st.success("Painel de Controle Ativo")
+        m_col, a_col = st.columns(2)
+        mes_s = m_col.selectbox("Mês:", list(range(1,13)), index=hoje_br.month-1)
+        ano_s = a_col.number_input("Ano:", value=2026)
 
-        t_rec, t_foto, t_ops = st.tabs(["🤝 Recepção", "📸 Fotógrafos", "🔊 Operadores"])
-
+        t1, t2, t3 = st.tabs(["🤝 Recepção", "📸 Fotógrafos", "🔊 Som"])
+        
         import calendar
         cal = calendar.Calendar()
         dias = [d for sem in cal.monthdatescalendar(ano_s, mes_s) for d in sem if d.month == mes_s]
         u_sab = max([d for d in dias if d.weekday() == 5])
-        datas_alvo = [d for d in dias if d.weekday() in [2, 4, 6] or d == u_sab]
-        datas_alvo.sort()
+        datas_alvo = sorted([d for d in dias if d.weekday() in [2, 4, 6] or d == u_sab])
 
-        with t_rec:
+        with t1:
             if st.button("🤖 Gerar Recepção"):
                 eq = ["Ailton", "Márcia", "Simone", "Ceia", "Elisabete", "Felipe", "Rita"]
                 res, idx = [], 0
@@ -163,7 +167,7 @@ elif st.session_state.pagina == "Gestao":
                     idx += 2
                 st.session_state.temp_escala = pd.DataFrame(res)
 
-        with t_foto:
+        with t2:
             if st.button("🤖 Gerar Fotógrafos"):
                 eq = ["Tiago", "Grazi"]
                 res = []
@@ -172,8 +176,8 @@ elif st.session_state.pagina == "Gestao":
                     res.append({"Data": d.strftime('%d/%m/%Y'), "Dia": d.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Fotografia", "Responsável": eq[i % 2]})
                 st.session_state.temp_escala = pd.DataFrame(res)
 
-        with t_ops:
-            if st.button("🤖 Gerar Operadores"):
+        with t3:
+            if st.button("🤖 Gerar Som"):
                 p_g, p_d = ["Lucas", "Samuel", "Nicholas"], ["Júnior", "Lucas", "Samuel", "Nicholas"]
                 res, ig, idom = [], 0, 0
                 for d in datas_alvo:
@@ -185,20 +189,14 @@ elif st.session_state.pagina == "Gestao":
                 st.session_state.temp_escala = pd.DataFrame(res)
 
         if "temp_escala" in st.session_state:
-            st.divider()
             st.dataframe(st.session_state.temp_escala, use_container_width=True)
             if st.button("✅ Gravar na Planilha"):
                 sh = conectar_planilha()
-                aba = sh.worksheet("Escalas")
-                for r in st.session_state.temp_escala.values.tolist():
-                    aba.append_row(r)
-                st.success("Salvo com sucesso!")
-                del st.session_state.temp_escala
-
-        st.divider()
-        if st.button("🗑️ Limpar Mês Anterior"):
-            # Lógica de limpeza da planilha aqui...
-            pass
+                if sh:
+                    aba = sh.worksheet("Escalas")
+                    for r in st.session_state.temp_escala.values.tolist(): aba.append_row(r)
+                    st.success("Salvo!")
+                    del st.session_state.temp_escala
 
         if st.button("Sair"):
             st.session_state.admin_ok = False
