@@ -33,13 +33,15 @@ def conectar_planilha():
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
         client = gspread.authorize(creds)
         
-        # --- AQUI ESTÁ O SEGREDO: COLE O ID CORRETO ABAIXO ---
-        # Ex: 1BxiMVs0XRA5nSMfB6Y6n6vCCvN-01A2B3C4D5E6F7G8H
-        ID_DA_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0" 
+        # Cole o ID aqui novamente com cuidado
+        id_teste = "1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0"
         
-        return client.open_by_key(ID_DA_PLANILHA)
+        return client.open_by_key(id_teste)
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error("❌ O ID da planilha não foi encontrado. Verifique se copiou apenas o código da URL.")
+        return None
     except Exception as e:
-        st.error(f"Erro Crítico de Conexão: {e}")
+        st.error(f"❌ Erro de Acesso: {e}")
         return None
 
 def carregar_dados(aba_nome):
