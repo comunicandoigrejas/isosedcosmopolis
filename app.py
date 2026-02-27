@@ -27,30 +27,17 @@ def conectar_planilha():
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
         client = gspread.authorize(creds)
-        # --- COLOQUE O NOME EXATO DA SUA PLANILHA ABAIXO ---
-        return client.open("ISOSED Cosmópolis") 
-    except Exception as e:
-        st.error(f"Erro de Conexão: {e}")
+        
+        # TROQUE ABAIXO PELO NOME QUE APARECE LÁ NO TOPO DA SUA PLANILHA
+        nome_real = "COLOQUE_AQUI_O_NOME_DA_SUA_PLANILHA" 
+        
+        return client.open(nome_real)
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error("❌ Erro: O Google não encontrou nenhuma planilha com esse nome. Verifique se o nome está idêntico.")
         return None
-
-def carregar_dados(aba_nome):
-    sh = conectar_planilha()
-    if sh:
-        try:
-            aba = sh.worksheet(aba_nome)
-            return pd.DataFrame(aba.get_all_records())
-        except: return pd.DataFrame()
-    return pd.DataFrame()
-
-def atualizar_contador():
-    try:
-        sh = conectar_planilha()
-        aba = sh.worksheet("Acessos")
-        valor = int(aba.acell('A2').value or 0) + 1
-        aba.update_acell('A2', valor)
-        return valor
-    except: return "---"
-
+    except Exception as e:
+        st.error(f"❌ Erro de Permissão ou Conexão: {e}")
+        return None
 # --- 3. ESTILO VISUAL (CSS) ---
 st.markdown("""
     <style>
