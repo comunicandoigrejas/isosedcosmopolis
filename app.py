@@ -155,6 +155,29 @@ elif st.session_state.pagina == "Gestao":
                         resp = eq[i % 2]
                         hor = "18:00" if d['is_domingo'] else "19:30"
                         aba.append_row([d['data'], d['dia_pt'], hor, "Culto", "Fotografia", resp])
+
+                # --- LÓGICA PARA SOM/MÍDIA (REGRA DO JÚNIOR) ---
+                elif tp == "Som/Mídia":
+                    pg = ["Lucas", "Samuel", "Nicholas"]
+                    pdom = ["Júnior", "Lucas", "Samuel", "Nicholas"]
+                    ig, idom = 0, 0 # Contadores para os rodízios
+                    
+                    for d in datas_culto:
+                        hor = "18:00" if d['is_domingo'] else "19:30"
+                        
+                        if d['is_domingo']:
+                            # Rodízio de domingo inclui o Júnior
+                            resp = pdom[idom % 4]
+                            idom += 1
+                        else:
+                            # Rodízio de semana/sábado (Lucas, Samuel, Nicholas)
+                            resp = pg[ig % 3]
+                            ig += 1
+                        
+                        # Salva na aba Escalas: Data | Dia (PT) | Horário | Evento | Setor | Nome
+                        aba.append_row([d['data'], d['dia_pt'], hor, "Culto", "Mídia", resp])
+                    
+                    st.success(f"✅ Escala de {tp} gerada com sucesso!")
                 
                 elif tp == "Recepção":
                     eq = ["Ailton", "Márcia", "Simone", "Ceia", "Elisabete", "Felipe", "Rita"]
