@@ -36,7 +36,7 @@ def conectar_planilha():
         client = gspread.authorize(creds)
         
         # --- INSIRA O ID DA SUA PLANILHA ABAIXO ---
-        ID_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0/edit?usp=sharing" 
+        ID_PLANILHA = "https://docs.google.com/spreadsheets/d/1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0" 
         
         return client.open_by_key(ID_PLANILHA)
     except Exception as e:
