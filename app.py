@@ -256,8 +256,11 @@ elif st.session_state.pagina == "Leitura":
     st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
 
     # --- PÁGINA DE GESTÃO (ADICIONE AO FINAL DO ARQUIVO) ---
-elif st.session_state.pagina == "Gestao":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+NameError: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
+Traceback:
+File "/mount/src/isosedcosmopolis/app.py", line 140, in <module>
+    with c3:
+         ^^
     st.markdown("<h2 style='text-align: center;'>⚙️ Gestão de Escalas ISOSED</h2>", unsafe_allow_html=True)
 
     # 1. CONTROLE DE ACESSO
