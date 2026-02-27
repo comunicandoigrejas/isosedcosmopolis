@@ -181,25 +181,97 @@ elif st.session_state.pagina == "Leitura":
                 aba.update_cell(cell.row, 3, dia_atual + 1)
                 st.rerun()
 
-# --- GAVETA 5: GESTÃO (CRIAÇÃO DE ESCALAS) ---
+# --- FUNÇÕES DE APOIO PARA GERAÇÃO ---
+def obter_datas_culto(ano, mes):
+    cal = calendar.Calendar()
+    dias_mes = [d for sem in cal.monthdatescalendar(ano, mes) for d in sem if d.month == mes]
+    
+    # Filtra Quartas (2), Sextas (4), Domingos (6)
+    datas = [d for d in dias_mes if d.weekday() in [2, 4, 6]]
+    
+    # Encontra o último sábado do mês
+    sabados = [d for d in dias_mes if d.weekday() == 5]
+    if sabados:
+        datas.append(max(sabados))
+    
+    return sorted(datas)
+
+# =========================================================
+# --- PÁGINA: GESTÃO (COM GERADOR REAL) ---
+# =========================================================
 elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    
     if not st.session_state.admin_ok:
-        with st.form("adm"):
+        with st.form("adm_login"):
             pw = st.text_input("Senha Master:", type="password")
-            if st.form_submit_button("Liberar"):
-                if pw == "ISOSED2026": st.session_state.admin_ok = True; st.rerun()
+            if st.form_submit_button("Liberar Painel"):
+                if pw == "ISOSED2026": 
+                    st.session_state.admin_ok = True
+                    st.rerun()
+                else: st.error("Senha Incorreta!")
     else:
-        st.markdown("<h2>⚙️ Painel do Líder</h2>", unsafe_allow_html=True)
-        tab_view, tab_gen = st.tabs(["📊 Ver Dados", "🤖 Gerar Escalas"])
-        with tab_view:
-            st.write("Membros Cadastrados:")
-            st.dataframe(carregar_dados("Usuarios"))
-        with tab_gen:
-            mes_g = st.selectbox("Mês para Gerar:", list(range(1,13)), index=hoje_br.month -1)
-            setor = st.selectbox("Setor:", ["Recepção", "Fotografia", "Mídia"])
-            if st.button(f"Gerar Escala {setor}"):
-                st.warning("Função de geração automática em processamento. Verifique a planilha 'Escalas'.")
+        st.markdown("<h2>⚙️ Painel de Gestão ISOSED</h2>", unsafe_allow_html=True)
+        t_view, t_gen = st.tabs(["📊 Estatísticas", "🤖 Gerar Novas Escalas"])
+        
+        with t_view:
+            df_u = carregar_dados("Usuarios")
+            st.metric("Membros Cadastrados", len(df_u))
+            st.dataframe(df_u, use_container_width=True)
+            
+        with t_gen:
+            st.write("Selecione o período para criar o rodízio:")
+            c1, c2 = st.columns(2)
+            mes_sel = c1.selectbox("Mês:", list(range(1,13)), index=hoje_br.month - 1)
+            ano_sel = c2.number_input("Ano:", value=2026)
+            
+            tipo_escala = st.radio("Qual escala deseja gerar?", ["🤝 Recepção", "📸 Fotografia", "🔊 Som/Mídia"])
+            
+            if st.button(f"Gerar e Salvar Escala de {tipo_escala}"):
+                with st.spinner("Calculando rodízio..."):
+                    datas = obter_datas_culto(ano_sel, mes_sel)
+                    sh = conectar_planilha()
+                    aba_e = sh.worksheet("Escalas")
+                    novas_linhas = []
+                    
+                    # --- LÓGICA DE RECEPÇÃO (Duplas) ---
+                    if "Recepção" in tipo_escala:
+                        equipe = ["Ailton", "Márcia", "Simone", "Ceia", "Elisabete", "Felipe", "Rita"]
+                        idx = 0
+                        for d in datas:
+                            p1, p2 = equipe[idx % 7], equipe[(idx + 1) % 7]
+                            h = "18h00" if d.weekday()==6 else "19h30"
+                            novas_linhas.append([d.strftime('%d/%m/%Y'), calendar.day_name[d.weekday()], h, "Culto", "Recepção", f"{p1} e {p2}"])
+                            idx += 2
+                    
+                    # --- LÓGICA DE FOTOGRAFIA ---
+                    elif "Fotografia" in tipo_escala:
+                        equipe = ["Tiago", "Grazi"]
+                        for i, d in enumerate(datas):
+                            h = "18h00" if d.weekday()==6 else "19h30"
+                            novas_linhas.append([d.strftime('%d/%m/%Y'), calendar.day_name[d.weekday()], h, "Culto", "Fotografia", equipe[i % 2]])
+                    
+                    # --- LÓGICA DE SOM/MÍDIA (Regra do Júnior) ---
+                    elif "Som" in tipo_escala:
+                        pg = ["Lucas", "Samuel", "Nicholas"]
+                        pdom = ["Júnior", "Lucas", "Samuel", "Nicholas"]
+                        ig, idom = 0, 0
+                        for d in datas:
+                            h = "18h00" if d.weekday()==6 else "19h30"
+                            op = pdom[idom % 4] if d.weekday()==6 else pg[ig % 3]
+                            novas_linhas.append([d.strftime('%d/%m/%Y'), calendar.day_name[d.weekday()], h, "Culto", "Mídia", op])
+                            if d.weekday()==6: idom += 1
+                            else: ig += 1
+                    
+                    # Salva tudo de uma vez para ser mais rápido
+                    if novas_linhas:
+                        for linha in novas_linhas:
+                            aba_e.append_row(linha)
+                        st.success(f"✅ Escala de {tipo_escala} para o mês {mes_sel} gerada com sucesso!")
+                    else:
+                        st.error("Erro ao gerar datas.")
+
+# (Lembre-se de manter o restante do código com as abas Início, Leitura, etc.)
 
 # --- GAVETAS RESTANTES (ESCALAS E DEVOCIONAL) ---
 elif st.session_state.pagina == "Escalas":
