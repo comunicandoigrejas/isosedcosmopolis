@@ -207,7 +207,6 @@ elif st.session_state.pagina == "Escalas":
                 for _, r in f.iterrows():
                     st.markdown(f'<div class="card-isosed"><b>{r["data"]}</b> - {r["responsável"]}</div>', unsafe_allow_html=True)
 
-# --- 6. GESTÃO ---
 elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     if not st.session_state.admin_ok:
@@ -218,18 +217,54 @@ elif st.session_state.pagina == "Gestao":
     else:
         st.markdown("<h2>⚙️ Painel do Líder</h2>", unsafe_allow_html=True)
         t_v, t_g = st.tabs(["📊 Ver Membros", "🤖 Gerar Escalas"])
+        
         with t_v: st.dataframe(carregar_dados("Usuarios"))
+        
         with t_g:
             m = st.selectbox("Mês:", list(range(1,13)), index=hoje_br.month-1)
-            tp = st.selectbox("Tipo:", ["Recepção", "Fotografia", "Som"])
-            if st.button("Gerar Agora"):
-                datas = obter_datas_culto(2026, m)
-                sh = conectar_planilha()
-                aba = sh.worksheet("Escalas")
-                for d in datas:
-                    aba.append_row([d.strftime('%d/%m/%Y'), "", "19:30", "Culto", tp, "A definir"])
-                st.success("Gerado na planilha!")
-
+            tp = st.selectbox("Tipo de Escala:", ["Fotografia", "Recepção", "Som/Mídia"])
+            
+            if st.button(f"Gerar Escala de {tp} agora"):
+                with st.spinner("Gravando na planilha..."):
+                    datas_culto = obter_datas_culto(2026, m)
+                    sh = conectar_planilha()
+                    aba = sh.worksheet("Escalas")
+                    
+                    # --- LÓGICA ESPECÍFICA PARA FOTOGRAFIA ---
+                    if tp == "Fotografia":
+                        equipe = ["Tiago", "Grazi"]
+                        for i, d in enumerate(datas_culto):
+                            # Alterna entre Tiago e Grazi
+                            responsavel = equipe[i % len(equipe)]
+                            # Horário: Domingo 18h, outros 19h30
+                            horario = "18:00" if d['dia_pt'] == "Domingo" else "19:30"
+                            
+                            aba.append_row([d['data'], d['dia_pt'], horario, "Culto", "Fotografia", responsavel])
+                    
+                    # --- LÓGICA PARA RECEPÇÃO (DUPLAS) ---
+                    elif tp == "Recepção":
+                        equipe = ["Ailton", "Márcia", "Simone", "Ceia", "Elisabete", "Felipe", "Rita"]
+                        idx = 0
+                        for d in datas_culto:
+                            responsavel = f"{equipe[idx % 7]} e {equipe[(idx+1) % 7]}"
+                            horario = "18:00" if d['dia_pt'] == "Domingo" else "19:30"
+                            aba.append_row([d['data'], d['dia_pt'], horario, "Culto", "Recepção", responsavel])
+                            idx += 2
+                    
+                    # --- LÓGICA PARA SOM (REGRA DO JÚNIOR) ---
+                    else:
+                        pg = ["Lucas", "Samuel", "Nicholas"]
+                        pdom = ["Júnior", "Lucas", "Samuel", "Nicholas"]
+                        ig, idom = 0, 0
+                        for d in datas_culto:
+                            horario = "18:00" if d['dia_pt'] == "Domingo" else "19:30"
+                            if d['dia_pt'] == "Domingo":
+                                resp = pdom[idom % 4]; idom += 1
+                            else:
+                                resp = pg[ig % 3]; ig += 1
+                            aba.append_row([d['data'], d['dia_pt'], horario, "Culto", "Mídia", resp])
+                            
+                    st.success(f"✅ Escala de {tp} para o mês {m} enviada com sucesso!")
 # --- 7. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
