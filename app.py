@@ -135,9 +135,10 @@ if st.session_state.pagina == "Início":
         st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True, key="btn_aniversarios")
     with c2:
         st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True, key="btn_escalas")
-        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), use_container_width=True, key="btn_gestao_lider")
         st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True, key="btn_meditar")
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True, key="btn_leitura")
+    with c3:
+        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), use_container_width=True, key="btn_gestao_lider")
 
     # LOGO E CONTADOR
     if os.path.exists("logo igreja.png"):
@@ -214,20 +215,22 @@ elif st.session_state.pagina == "AnivMês":
 
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h1>📢 Escalas de Serviço</h1>", unsafe_allow_html=True)
-    t1, t2 = st.tabs(["📷 Mídia", "🤝 Recepção"])
-    with t1:
-        df_m = carregar_dados("Midia")
-        if not df_m.empty:
-            for _, r in df_m.iterrows():
-                with st.expander(f"📅 {r.get('data','')} - {r.get('culto','')}"):
-                    st.write(f"**Operador:** {r.get('op','')} | **Foto:** {r.get('foto','')} | **Chegada:** {r.get('chegada','')}")
-    with t2:
-        df_r = carregar_dados("Recepcao")
-        if not df_r.empty:
-            for _, r in df_r.iterrows():
-                with st.expander(f"📅 {r.get('data','')} ({r.get('dia','')})"):
-                    st.write(f"**Dupla:** {r.get('dupla','')} | **Chegada:** {r.get('chegada','')}")
+    st.markdown("## 📢 Escalas da Semana")
+    
+    # Lendo o que o Líder salvou na planilha
+    df_esc = carregar_dados("Escalas")
+    if not df_esc.empty:
+        df_esc['dt'] = pd.to_datetime(df_esc['Data'], dayfirst=True, errors='coerce')
+        # Mostra escalas futuras
+        proximas = df_esc[df_esc['dt'].dt.date >= hoje_br].sort_values(by='dt')
+        for _, r in proximas.iterrows():
+            st.markdown(f"""
+                <div class="card-escala">
+                    <b style="color: #ffd700;">{r['Data']} - {r['Evento']}</b><br>
+                    👤 {r['Responsável']} ({r['Departamento']})<br>
+                    ⏰ Chegada: {r['Horário']}
+                </div>
+            """, unsafe_allow_html=True)
 
 elif st.session_state.pagina == "Meditar":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
