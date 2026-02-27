@@ -104,6 +104,45 @@ if st.session_state.pagina == "Início":
         st.button("📖 Devocional", on_click=navegar, args=("Devocional",))
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
 
+# --- PÁGINA: AGENDA ---
+elif st.session_state.pagina == "Agenda":
+    # Botão de Voltar centralizado e grande para o polegar
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_agenda")
+    
+    st.markdown("<h2>🗓️ Agenda ISOSED 2026</h2>", unsafe_allow_html=True)
+    
+    # Carrega os dados da aba "Agenda"
+    df_agenda = carregar_dados("Agenda")
+    
+    # Cria as 12 abas dos meses
+    nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    abas = st.tabs(nomes_meses)
+    
+    if not df_agenda.empty:
+        # 1. Garante que a coluna 'data' seja tratada como data real
+        df_agenda['data_dt'] = pd.to_datetime(df_agenda['data'], dayfirst=True, errors='coerce')
+        
+        # 2. Loop para preencher cada aba de mês
+        for i, aba in enumerate(abas):
+            with aba:
+                # Filtra os eventos pelo número do mês (i+1)
+                mes_atual = i + 1
+                eventos_mes = df_agenda[df_agenda['data_dt'].dt.month == mes_atual].sort_values('data_dt')
+                
+                if not eventos_mes.empty:
+                    for _, linha in eventos_mes.iterrows():
+                        # Exibe cada evento em um card compacto
+                        st.markdown(f"""
+                            <div class="card-isosed">
+                                <b style="color:#ffd700; font-size:1.1em;">{linha['data']}</b><br>
+                                <span style="color:white;">{linha['evento']}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info(f"Nenhum evento cadastrado para {calendar.month_name[mes_atual]}.")
+    else:
+        st.warning("⚠️ Nenhuma informação encontrada na aba 'Agenda' da planilha.")
+
 # --- 2. GESTÃO (COM GERADOR DE ESCALAS) ---
 elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
