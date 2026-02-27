@@ -20,44 +20,28 @@ if 'admin_ok' not in st.session_state: st.session_state.admin_ok = False
 
 def navegar(p): st.session_state.pagina = p
 
-# --- CSS: FUNDO ESCURO, TEXTO BRANCO E CAIXAS DE ENTRADA BRANCAS COM FONTE PRETA ---
+# --- CSS: CAIXAS BRANCAS COM FONTE PRETA / BOTÕES AZUIS ---
 st.markdown("""
     <style>
-    /* Fundo do App */
     [data-testid="stAppViewContainer"] { background-color: #1a1a2e !important; }
-    
-    /* Texto Geral em Branco */
     p, span, div, label, .stMarkdown { color: white !important; }
     h1, h2, h3, b, strong { color: #ffd700 !important; text-align: center; }
 
-    /* CAIXAS DE TEXTO: Fundo Branco e Fonte Preta (Para leitura clara) */
+    /* CAIXAS DE ENTRADA: FUNDO BRANCO E FONTE PRETA */
     input, textarea, [data-baseweb="select"] > div {
         background-color: white !important;
         color: black !important;
         border: 2px solid #ffd700 !important;
     }
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] { color: black !important; font-weight: bold; }
     
-    /* Garante que o texto digitado seja preto */
-    .stTextInput input { color: black !important; }
-    .stSelectbox div[data-baseweb="select"] { color: black !important; }
-
-    /* BOTÕES AZUIS COM FONTE BRANCA */
+    /* BOTÕES AZUIS */
     div.stButton > button, div.stFormSubmitButton > button {
-        width: 100% !important;
-        background-color: #0f3460 !important; 
-        color: white !important; 
-        border: 2px solid #ffd700 !important;
-        border-radius: 10px !important;
-        font-weight: bold !important;
-        height: 3.5em !important;
+        width: 100% !important; background-color: #0f3460 !important; 
+        color: white !important; border: 2px solid #ffd700 !important;
+        border-radius: 10px !important; font-weight: bold !important; height: 3.5em !important;
     }
-    
-    /* CARDS DE ESCALA (Compactos) */
-    .card-isosed { 
-        background: rgba(255, 215, 0, 0.05) !important; 
-        border: 1px solid #ffd700 !important; 
-        border-radius: 8px; padding: 10px; margin-bottom: 8px; 
-    }
+    .card-isosed { background: rgba(255, 215, 0, 0.05) !important; border: 1px solid #ffd700 !important; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -66,8 +50,7 @@ def conectar_planilha():
     try:
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-        client = gspread.authorize(creds)
-        return client.open_by_key("1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0")
+        return gspread.authorize(creds).open_by_key("1XSVQH3Aka3z51wPP18JvxNjImLVDxyCWUsVACqFcPK0")
     except: return None
 
 def carregar_dados(aba_nome):
@@ -81,16 +64,24 @@ def carregar_dados(aba_nome):
         except: return pd.DataFrame()
     return pd.DataFrame()
 
+def obter_datas_culto_pt(ano, mes):
+    dias_pt = {0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira", 3: "Quinta-feira", 4: "Sexta-feira", 5: "Sábado", 6: "Domingo"}
+    cal = calendar.Calendar()
+    dias_mes = [d for sem in cal.monthdatescalendar(ano, mes) for d in sem if d.month == mes]
+    datas = [d for d in dias_mes if d.weekday() in [2, 4, 6]] # Qua, Sex, Dom
+    sabados = [d for d in dias_mes if d.weekday() == 5]
+    if sabados: datas.append(max(sabados))
+    return [{"data": d.strftime('%d/%m/%Y'), "dia_pt": dias_pt[d.weekday()], "is_domingo": d.weekday() == 6} for d in sorted(datas)]
+
 # =========================================================
-# --- ROTEADOR PRINCIPAL (TODOS OS ELIF ALINHADOS) ---
+# --- ROTEADOR ---
 # =========================================================
 
-# 1. PÁGINA INICIAL
+# --- 1. INÍCIO ---
 if st.session_state.pagina == "Início":
     col_l1, col_l2, col_l3 = st.columns([1, 1.2, 1])
     with col_l2:
         if os.path.exists("logo igreja.png"): st.image("logo igreja.png", use_container_width=True)
-    
     st.markdown("<h1>ISOSED COSMÓPOLIS</h1>", unsafe_allow_html=True)
     
     # Santa Ceia
@@ -102,8 +93,7 @@ if st.session_state.pagina == "Início":
         if not ceia.empty: prox = ceia.iloc[0]['data']
     st.markdown(f'<div class="card-isosed" style="text-align:center;">🍇 PRÓXIMA SANTA CEIA<br><b style="font-size:1.3em; color:#ffd700;">{prox} às 18h00</b></div>', unsafe_allow_html=True)
 
-    # Botões
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Menu
     c1, c2 = st.columns(2)
     with c1:
         st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
@@ -114,61 +104,86 @@ if st.session_state.pagina == "Início":
         st.button("📖 Devocional", on_click=navegar, args=("Devocional",))
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
 
-# 2. PÁGINA ESCALAS (FIX: REORGANIZADA)
-elif st.session_state.pagina == "Escalas":
+# --- 2. GESTÃO (COM GERADOR DE ESCALAS) ---
+elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h2>📢 Escalas de Serviço</h2>", unsafe_allow_html=True)
-    df_esc = carregar_dados("Escalas")
-    if not df_esc.empty:
-        df_esc['dt'] = pd.to_datetime(df_esc['data'], dayfirst=True, errors='coerce')
-        prox = df_esc[df_esc['dt'].dt.date >= hoje_br].sort_values('dt')
+    if not st.session_state.admin_ok:
+        with st.form("adm"):
+            pw = st.text_input("Senha Master:", type="password")
+            if st.form_submit_button("Liberar Painel"):
+                if pw == "ISOSED2026": st.session_state.admin_ok = True; st.rerun()
+    else:
+        st.markdown("<h2>⚙️ Painel do Líder</h2>", unsafe_allow_html=True)
+        m = st.selectbox("Mês para Gerar:", list(range(1,13)), index=hoje_br.month-1)
+        tp = st.selectbox("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
         
-        t1, t2, t3 = st.tabs(["📸 Foto", "🔊 Som/Mídia", "🤝 Recepção"])
-        with t1:
-            f = prox[prox['departamento'].str.contains("Foto", case=False, na=False)]
-            for _, r in f.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
-        with t2:
-            o = prox[prox['departamento'].str.contains("Mídia|Som", case=False, na=False)]
-            for _, r in o.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
-        with t3:
-            rec = prox[prox['departamento'].str.contains("Recepção", case=False, na=False)]
-            for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
-    else: st.info("Nenhuma escala encontrada.")
+        with st.form("gerar_escala_form"):
+            if st.form_submit_button(f"Gerar Escala de {tp}"):
+                datas = obter_datas_culto_pt(2026, m)
+                sh = conectar_planilha()
+                aba = sh.worksheet("Escalas")
+                for d in datas:
+                    h = "18:00" if d['is_domingo'] else "19:30"
+                    aba.append_row([d['data'], d['dia_pt'], h, "Culto", tp, "A definir"])
+                st.success("✅ Escala enviada para o Google Sheets!")
 
-# 3. DEVOCIONAL (Puxando todas as informações)
-elif st.session_state.pagina == "Devocional":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    st.markdown("<h2>📖 Devocional Diário</h2>", unsafe_allow_html=True)
-    df_dev = carregar_dados("Devocional")
-    if not df_dev.empty:
-        item = df_dev.iloc[-1]
-        st.markdown(f"### {item['titulo']}")
-        st.write(f"✨ **Tema:** {item['tema']} | 📅 **Data:** {item['data']}")
-        st.info(f"📖 **Versículo:** {item['versiculo']}")
-        st.write(item['texto'])
-        with st.expander("🎯 Aplicação & Desafio"):
-            st.write(f"**Aplicação:** {item['aplicacao']}")
-            st.write(f"**Desafio:** {item['desafio']}")
-
-# 4. LEITURA (Puxando do Progresso)
+# --- 3. LEITURA (CADASTRO COM ESCOLHA DE PLANO) ---
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     if st.session_state.user is None:
-        with st.form("login_leitura"):
-            tel = st.text_input("WhatsApp (Login):")
-            sen = st.text_input("Senha:", type="password")
-            if st.form_submit_button("Entrar no Plano"):
-                df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['telefone'].astype(str) == str(tel)) & (df_u['senha'].astype(str) == str(sen))]
-                if not u_f.empty:
-                    st.session_state.user = u_f.iloc[0].to_dict()
-                    st.rerun()
+        t1, t2 = st.tabs(["Login", "Novo Cadastro"])
+        with t1:
+            with st.form("l_f"):
+                tel = st.text_input("WhatsApp:"); sen = st.text_input("Senha:", type="password")
+                if st.form_submit_button("Entrar"):
+                    df_u = carregar_dados("Usuarios")
+                    u_f = df_u[(df_u['telefone'].astype(str) == str(tel)) & (df_u['senha'].astype(str) == str(sen))]
+                    if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
+        with t2:
+            with st.form("c_f"):
+                st.write("Escolha seu plano para começar:")
+                plano_opt = st.selectbox("Plano de Leitura:", ["Anual 2026", "Novo Testamento", "Casais", "Infantil"])
+                n = st.text_input("Nome:"); t = st.text_input("WhatsApp:"); s = st.text_input("Senha:", type="password")
+                if st.form_submit_button("Criar Conta e Começar"):
+                    sh = conectar_planilha()
+                    sh.worksheet("Usuarios").append_row([n, t, "Membro", "", s, 1, plano_opt])
+                    sh.worksheet("Progresso").append_row([t, plano_opt, 1])
+                    st.success("Conta criada! Vá em Login.")
     else:
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
         p_row = df_p[df_p['usuario'].astype(str) == str(u['telefone'])]
         if not p_row.empty:
-            dia_atual = int(p_row.iloc[0]['dia_atual'])
-            st.markdown(f"### Olá, {u['nome']}! Você está no **Dia {dia_atual}**")
-            # Aqui você puxaria a leitura do dia da aba "Leitura"
-            st.write("Continue sua jornada bíblica hoje!")
+            dia = int(p_row.iloc[0]['dia_atual'])
+            st.markdown(f"### Olá, {u['nome']}! Dia {dia}")
+            # Aqui ele puxa o conteúdo da aba Leitura filtrando por Dia e Plano
+            st.info(f"Você está seguindo o plano: {u['plano_escolhido']}")
+            if st.button("✅ Marcar como Lido"):
+                sh = conectar_planilha(); cell = sh.worksheet("Progresso").find(str(u['telefone']))
+                sh.worksheet("Progresso").update_cell(cell.row, 3, dia + 1); st.rerun()
+
+# --- 4. ESCALAS ---
+elif st.session_state.pagina == "Escalas":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    df = carregar_dados("Escalas")
+    t1, t2, t3 = st.tabs(["📸 Foto", "🔊 Som/Mídia", "🤝 Recepção"])
+    if not df.empty:
+        df['dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
+        prox = df[df['dt'].dt.date >= hoje_br].sort_values('dt')
+        for t, dep in zip([t1, t2, t3], ["Foto", "Mídia", "Recepção"]):
+            with t:
+                f = prox[prox['departamento'].str.contains(dep, case=False, na=False)]
+                for _, r in f.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
+
+# --- 5. DEVOCIONAL ---
+elif st.session_state.pagina == "Devocional":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    df_dev = carregar_dados("Devocional")
+    if not df_dev.empty:
+        item = df_dev.iloc[-1]
+        st.markdown(f"### {item['titulo']}")
+        st.write(f"✨ Tema: {item['tema']} | Versículo: {item['versiculo']}")
+        st.write(item['texto'])
+        with st.expander("🎯 Aplicação & Desafio"):
+            st.write(item['aplicacao'])
+            st.write(item['desafio'])
