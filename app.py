@@ -135,7 +135,7 @@ if st.session_state.pagina == "Início":
         st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True, key="btn_aniversarios")
     with c2:
         st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True, key="btn_escalas")
-        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), use_container_width=True)
+        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), use_container_width=True, key="btn_gestao_lider")
         st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True, key="btn_meditar")
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True, key="btn_leitura")
 
