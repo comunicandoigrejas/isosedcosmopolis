@@ -258,7 +258,7 @@ elif st.session_state.pagina == "Leitura":
     # --- PÁGINA DE GESTÃO (ADICIONE AO FINAL DO ARQUIVO) ---
 elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-         ^^
+   
     st.markdown("<h2 style='text-align: center;'>⚙️ Gestão de Escalas ISOSED</h2>", unsafe_allow_html=True)
 
     # 1. CONTROLE DE ACESSO
