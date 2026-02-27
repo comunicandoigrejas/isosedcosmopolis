@@ -135,6 +135,7 @@ if st.session_state.pagina == "Início":
         st.button("🎂 Aniversários", on_click=navegar, args=("AnivMês",), use_container_width=True, key="btn_aniversarios")
     with c2:
         st.button("📢 Escalas", on_click=navegar, args=("Escalas",), use_container_width=True, key="btn_escalas")
+        st.button("⚙️ Painel do Líder", on_click=navegar, args=("Gestao",), use_container_width=True)
         st.button("📖 Meditar", on_click=navegar, args=("Meditar",), use_container_width=True, key="btn_meditar")
         st.button("📜 Leitura", on_click=navegar, args=("Leitura",), use_container_width=True, key="btn_leitura")
 
@@ -250,6 +251,115 @@ elif st.session_state.pagina == "Meditar":
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
     st.markdown("<h1>📜 Área do Leitor</h1>", unsafe_allow_html=True)
+
+    # --- PÁGINA DE GESTÃO (ADICIONE AO FINAL DO ARQUIVO) ---
+elif st.session_state.pagina == "Gestao":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    st.markdown("<h2 style='text-align: center;'>⚙️ Gestão de Escalas ISOSED</h2>", unsafe_allow_html=True)
+
+    # 1. CONTROLE DE ACESSO
+    if "admin_ok" not in st.session_state:
+        st.session_state.admin_ok = False
+
+    if not st.session_state.admin_ok:
+        with st.form("login_admin"):
+            senha = st.text_input("Senha de Líder:", type="password")
+            if st.form_submit_button("Acessar Painel"):
+                if senha == "ISOSED2026": # Mude sua senha aqui!
+                    st.session_state.admin_ok = True
+                    st.rerun()
+                else: st.error("Senha incorreta!")
+    else:
+        st.success("Bem-vindo ao Painel de Controle, Líder!")
+        
+        # 2. SELEÇÃO DO MÊS
+        c1, c2 = st.columns(2)
+        with c1:
+            mes_sel = st.selectbox("Mês da Escala:", list(range(1, 13)), index=hoje_br.month - 1)
+        with c2:
+            ano_sel = st.number_input("Ano:", min_value=2025, max_value=2030, value=2026)
+
+        # 3. ABAS POR DEPARTAMENTO
+        aba_rec, aba_foto, aba_ops = st.tabs(["🤝 Recepção", "📸 Fotógrafos", "🔊 Operadores"])
+
+        import calendar
+        cal = calendar.Calendar()
+        dias_mes = [d for semana in cal.monthdatescalendar(ano_sel, mes_sel) for d in semana if d.month == mes_sel]
+        ultimo_sabado = max([d for d in dias_mes if d.weekday() == 5])
+        datas_culto = [d for d in dias_mes if d.weekday() in [2, 4, 6] or d == ultimo_sabado]
+        datas_culto.sort()
+
+        # --- ABA: RECEPÇÃO ---
+        with aba_rec:
+            if st.button("🤖 Gerar Escala: RECEPÇÃO"):
+                equipe = ["Ailton", "Márcia", "Simone", "Ceia", "Elisabete", "Felipe", "Rita"]
+                res, idx = [], 0
+                for data in datas_culto:
+                    p1, p2 = equipe[idx % 7], equipe[(idx + 1) % 7]
+                    h = "14h30" if data == ultimo_sabado else ("17h30" if data.weekday()==6 else "19h00")
+                    res.append({"Data": data.strftime('%d/%m/%Y'), "Dia": data.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Recepção", "Responsável": f"{p1} e {p2}"})
+                    idx += 2
+                st.session_state.temp_escala = pd.DataFrame(res)
+
+        # --- ABA: FOTÓGRAFOS ---
+        with aba_foto:
+            if st.button("🤖 Gerar Escala: FOTÓGRAFOS"):
+                equipe = ["Tiago", "Grazi"]
+                res = []
+                for i, data in enumerate(datas_culto):
+                    h = "14h30" if data == ultimo_sabado else ("17h30" if data.weekday()==6 else "19h00")
+                    res.append({"Data": data.strftime('%d/%m/%Y'), "Dia": data.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Fotografia", "Responsável": equipe[i % 2]})
+                st.session_state.temp_escala = pd.DataFrame(res)
+
+        # --- ABA: OPERADORES ---
+        with aba_ops:
+            if st.button("🤖 Gerar Escala: OPERADORES"):
+                pool_geral, pool_dom = ["Lucas", "Samuel", "Nicholas"], ["Júnior", "Lucas", "Samuel", "Nicholas"]
+                res, idx_g, idx_d = [], 0, 0
+                for data in datas_culto:
+                    if data.weekday() == 6:
+                        op, idx_d = pool_dom[idx_d % 4], idx_d + 1
+                    else:
+                        op, idx_g = pool_geral[idx_g % 3], idx_g + 1
+                    h = "14h30" if data == ultimo_sabado else ("17h30" if data.weekday()==6 else "19h00")
+                    res.append({"Data": data.strftime('%d/%m/%Y'), "Dia": data.strftime('%A'), "Horário": h, "Evento": "Culto", "Departamento": "Mídia (Som)", "Responsável": op})
+                st.session_state.temp_escala = pd.DataFrame(res)
+
+        # --- 4. EXIBIR E GRAVAR ---
+        if "temp_escala" in st.session_state:
+            st.divider()
+            st.dataframe(st.session_state.temp_escala, use_container_width=True)
+            if st.button("✅ Gravar Tudo na Planilha"):
+                try:
+                    sh = conectar_planilha()
+                    aba = sh.worksheet("Escalas")
+                    for r in st.session_state.temp_escala.values.tolist():
+                        aba.append_row(r)
+                    st.success("Escala gravada com sucesso!")
+                    del st.session_state.temp_escala
+                except: st.error("Erro ao salvar. Verifique a aba 'Escalas' na planilha.")
+
+        # --- 5. LIMPEZA (Mês Anterior) ---
+        st.divider()
+        if st.button("🗑️ Limpar Escalas do Mês Anterior"):
+            try:
+                sh = conectar_planilha()
+                aba = sh.worksheet("Escalas")
+                dados = aba.get_all_records()
+                if dados:
+                    df_l = pd.DataFrame(dados)
+                    df_l['dt'] = pd.to_datetime(df_l['Data'], dayfirst=True, errors='coerce')
+                    # Filtra para apagar o que for do mês anterior ao atual
+                    mes_ant = (hoje_br.replace(day=1) - timedelta(days=1)).month
+                    df_f = df_l[df_l['dt'].dt.month != mes_ant].drop(columns=['dt'])
+                    aba.clear()
+                    aba.update([df_f.columns.values.tolist()] + df_f.values.tolist())
+                    st.success("Mês anterior limpo!")
+            except: st.error("Erro na limpeza.")
+
+        if st.button("Sair do Painel"):
+            st.session_state.admin_ok = False
+            st.rerun()
     
     if st.session_state.usuario is None:
         aba_ac = st.tabs(["🔐 Entrar", "📝 Cadastrar"])
