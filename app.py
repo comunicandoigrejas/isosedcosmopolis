@@ -266,93 +266,115 @@ elif st.session_state.pagina == "Gestao":
                 st.info(f"Gerando {setor_selecionado} para {meses_pt[mes_selecionado]} de {ano_selecionado}...")
                 # Lógica de salvar na planilha...)
     
-# --- PÁGINA: LEITURA ---
+# --- 1. FUNÇÃO DE BUSCA NA BÍBLIA (API ATUALIZADA) ---
+def buscar_texto_biblico(referencia):
+    try:
+        # A API bible-api.com aceita referências em português e retorna em Almeida
+        url = f"https://bible-api.com/{referencia}?translation=almeida"
+        r = requests.get(url)
+        if r.status_code == 200:
+            dados = r.json()
+            # Retorna o texto formatado
+            return dados.get('text', "Texto não disponível.")
+        return "Não consegui carregar os versículos agora. Verifique a conexão."
+    except:
+        return "Erro ao conectar com o servidor da Bíblia."
+
+# =========================================================
+# --- PÁGINA: LEITURA (COM SELETOR DE CAPÍTULOS) ---
+# =========================================================
 elif st.session_state.pagina == "Leitura":
-    # CSS: CAIXAS BRANCAS, FONTE PRETA (Garante visibilidade no seletor de planos)
+    # CSS: CAIXAS BRANCAS E FONTE PRETA (Para o seletor de capítulos e login)
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div, input { background-color: white !important; }
         div[data-baseweb="select"] * { color: black !important; -webkit-text-fill-color: black !important; }
         div[data-baseweb="popover"] * { color: black !important; background-color: white !important; }
+        /* Estilo do texto bíblico para leitura confortável */
+        .texto-biblico { 
+            background-color: #f8f9fa; 
+            color: #1a1a2e !important; 
+            padding: 20px; 
+            border-radius: 10px; 
+            line-height: 1.6; 
+            font-size: 1.1em;
+            text-align: justify;
+        }
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_leitura")
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="v_lei")
     
     if st.session_state.user is None:
-        with st.form("login_leitura"):
-            st.markdown("### 🔐 Acessar meus Planos")
-            login_nome = st.text_input("Seu Nome:")
-            login_senha = st.text_input("Sua Senha:", type="password")
-            if st.form_submit_button("ENTRAR"):
+        # (O seu código de login por Nome permanece aqui...)
+        with st.form("l_biblia"):
+            u_nome = st.text_input("Seu Nome:")
+            u_senha = st.text_input("Senha:", type="password")
+            if st.form_submit_button("ACESSAR PLANO"):
                 df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['nome'].str.lower() == login_nome.lower()) & (df_u['senha'].astype(str) == str(login_senha))]
+                u_f = df_u[(df_u['nome'].str.lower() == u_nome.lower()) & (df_u['senha'].astype(str) == str(u_senha))]
                 if not u_f.empty:
                     st.session_state.user = u_f.iloc[0].to_dict()
                     st.rerun()
-                else: st.error("Nome ou senha não conferem.")
     else:
         u = st.session_state.user
-        st.markdown(f"### 📖 Olá, {u['nome']}")
-        
-        # BUSCA OS PLANOS NA ABA 'PROGRESSO'
         df_p = carregar_dados("Progresso")
         meus_planos = df_p[df_p['usuario'].str.lower() == u['nome'].lower()]
         
         if not meus_planos.empty:
-            plano_selecionado = st.selectbox(
-                "Qual plano deseja ler agora?",
-                options=meus_planos['plano'].tolist(),
-                key="seletor_planos_usuario"
-            )
+            plano_sel = st.selectbox("Selecione o Plano:", meus_planos['plano'].tolist())
+            dados_p = meus_planos[meus_planos['plano'] == plano_sel].iloc[0]
+            dia_atual = int(dados_p['dia_atual'])
             
-            dados_plano = meus_planos[meus_planos['plano'] == plano_selecionado].iloc[0]
-            dia_atual = int(dados_plano['dia_atual'])
-            
-            st.markdown(f"""
-                <div class="card-isosed">
-                    📌 <b>Plano Ativo:</b> {plano_selecionado}<br>
-                    📅 <b>Progresso:</b> Dia {dia_atual}
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # BUSCA A LEITURA NA ABA 'LEITURA'
-            df_leituras = carregar_dados("Leitura")
-            l_hoje = df_leituras[(df_leituras['plano'] == plano_selecionado) & (df_leituras['dia'].astype(str) == str(dia_atual))]
+            # Busca a leitura do dia
+            df_l = carregar_dados("Leitura")
+            l_hoje = df_l[(df_l['plano'] == plano_sel) & (df_l['dia'].astype(str) == str(dia_atual))]
             
             if not l_hoje.empty:
-                l = l_hoje.iloc[0]
+                item_leitura = l_hoje.iloc[0]
+                ref_completa = item_leitura.get('referência', item_leitura.get('referencia', ''))
                 
-                # --- SOLUÇÃO PARA O KEYERROR ---
-                # Procura 'referência' com acento ou 'referencia' sem acento
-                ref = l.get('referência', l.get('referencia', 'Referência não encontrada'))
-                # Procura 'resumo' ou 'resumo para meditação'
-                res = l.get('resumo', l.get('resumo para meditação', ''))
+                st.markdown(f"### 📖 Dia {dia_atual}: {ref_completa}")
                 
-                st.info(f"📖 **LEITURA DE HOJE:** {ref}")
-                if res: st.write(f"💡 *Meditação:* {res}")
+                # --- NOVO: SELETOR DE CAPÍTULOS ---
+                # Se a referência for "Mateus 1-3", vamos quebrar para o usuário escolher
+                # Se for apenas "Mateus 1", o seletor mostra apenas uma opção
+                partes = ref_completa.split(',') if ',' in ref_completa else [ref_completa]
                 
-                if st.button("✅ CONCLUIR DIA"):
+                escolha_leitura = st.selectbox(
+                    "Escolha a parte da leitura para exibir:",
+                    options=partes,
+                    help="Se a leitura for longa, selecione um capítulo por vez."
+                )
+                
+                # CHAMADA DA API
+                with st.spinner("Buscando na Bíblia..."):
+                    texto_sagrado = buscar_texto_biblico(escolha_leitura)
+                
+                # Exibição do Texto Bíblico (Fundo claro, letra escura para não cansar a vista)
+                st.markdown(f'<div class="texto-biblico">{texto_sagrado}</div>', unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if st.button("✅ CONCLUIR LEITURA DO DIA"):
                     sh = conectar_planilha()
                     aba_p = sh.worksheet("Progresso")
-                    # Localiza a linha exata (Nome + Plano) para atualizar
-                    todas_celulas = aba_p.findall(u['nome'])
-                    atualizado = False
-                    for celula in todas_celulas:
-                        if aba_p.cell(celula.row, 2).value == plano_selecionado:
-                            aba_p.update_cell(celula.row, 3, dia_atual + 1)
-                            st.success("Progresso salvo!")
-                            atualizado = True
+                    todas = aba_p.findall(u['nome'])
+                    for c in todas:
+                        if aba_p.cell(c.row, 2).value == plano_sel:
+                            aba_p.update_cell(c.row, 3, dia_atual + 1)
+                            st.balloons()
+                            st.success("Parabéns! Dia concluído.")
                             st.rerun()
-                    if not atualizado: st.error("Não foi possível encontrar este plano na sua lista.")
             else:
-                st.warning("⚠️ Leitura não configurada para este dia/plano na planilha.")
+                st.warning("Roteiro de leitura não encontrado para hoje.")
         else:
-            st.info("Você ainda não tem planos iniciados no seu nome.")
-            
+            st.info("Você não tem planos ativos.")
+        
         if st.button("Sair da Conta"):
             st.session_state.user = None
             st.rerun()
+            
 # --- 4. ESCALAS ---
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
