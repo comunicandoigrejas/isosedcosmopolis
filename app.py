@@ -316,43 +316,76 @@ elif st.session_state.pagina == "Escalas":
 
 # --- PÁGINA: DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
-    # Botão de Voltar
+    # CSS ESPECÍFICO PARA O DEVOCIONAL (Caixas Brancas, Fonte Preta e Emojis Visíveis)
+    st.markdown("""
+        <style>
+        /* 1. FORÇA FUNDO BRANCO E FONTE PRETA NAS CAIXAS DE SELEÇÃO */
+        div[data-baseweb="select"] > div {
+            background-color: white !important;
+            color: black !important;
+            border: 2px solid #ffd700 !important;
+        }
+
+        /* 2. GARANTE QUE O TEXTO SELECIONADO E O EMOJI FIQUEM PRETOS */
+        div[data-baseweb="select"] * {
+            color: black !important;
+            -webkit-text-fill-color: black !important;
+        }
+
+        /* 3. LISTA DE OPÇÕES QUE ABRE (DROPDOWN) */
+        div[data-baseweb="popover"] * {
+            color: black !important;
+            background-color: white !important;
+        }
+
+        /* 4. TEXTO DOS EXPANDERS (Caso use expander para ler o conteúdo) */
+        .stExpander {
+            border: 1px solid #ffd700 !important;
+            background-color: rgba(255, 215, 0, 0.05) !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_dev")
     
-    st.markdown("<h2>📖 Devocional Diário</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📖 Devocional ISOSED</h2>", unsafe_allow_html=True)
     
-    # Carrega os dados da aba "Devocional"
+    # Carrega os dados
     df_dev = carregar_dados("Devocional")
     
     if not df_dev.empty:
-        # Puxa sempre a última linha cadastrada (o devocional mais recente)
+        # Pega o último devocional postado
         item = df_dev.iloc[-1]
         
-        # Exibição do Título e Tema
+        # Cabeçalho do Devocional
         st.markdown(f"""
             <div class="card-isosed" style="text-align:center;">
-                <h3 style="margin:0; color:#ffd700;">{item['titulo']}</h3>
-                <p style="margin:5px 0 0 0; opacity:0.8; font-size:0.9em;">
-                    ✨ Tema: {item['tema']} | 📅 {item['data']}
-                </p>
+                <h3 style="margin:0;">{item['titulo']}</h3>
+                <p style="margin:5px 0; font-size:0.9em;">✨ Tema: {item['tema']} | 📅 {item['data']}</p>
             </div>
         """, unsafe_allow_html=True)
         
-        # Versículo em destaque
-        st.success(f"📖 **Versículo Chave:** {item['versiculo']}")
-        
-        # Texto Principal
-        st.markdown("#### Palavra de Hoje")
+        # Versículo e Texto Principal
+        st.warning(f"📖 **VERSÍCULO:** {item['versiculo']}")
         st.write(item['texto'])
         
         st.markdown("---")
         
-        # Aplicação e Desafio em menus expansíveis (melhor para Mobile)
-        with st.expander("🎯 APLICAÇÃO PESSOAL"):
-            st.write(item['aplicacao'])
+        # AS DUAS CAIXAS QUE ESTAVAM COM ERRO DE COR
+        # Usando selectbox para que o usuário clique e veja o conteúdo
+        
+        opcao = st.selectbox(
+            "O que deseja ver agora?",
+            ["Escolha uma opção...", "🎯 Aplicação Pessoal", "🔥 Desafio do Dia"]
+        )
+        
+        if opcao == "🎯 Aplicação Pessoal":
+            st.markdown("#### 🎯 Aplicação Pessoal")
+            st.info(item['aplicacao'])
             
-        with st.expander("🔥 DESAFIO DO DIA"):
-            st.write(item['desafio'])
+        elif opcao == "🔥 Desafio do Dia":
+            st.markdown("#### 🔥 Desafio do Dia")
+            st.success(item['desafio'])
             
     else:
-        st.warning("⚠️ Nenhum devocional encontrado na aba 'Devocional' da planilha.")
+        st.error("⚠️ Nenhuma informação encontrada na planilha de Devocional.")
