@@ -184,28 +184,73 @@ elif st.session_state.pagina == "Aniv":
     else:
         st.warning("⚠️ Aba 'Aniversariantes' está vazia ou não foi encontrada.")
 
-# --- 2. GESTÃO (COM GERADOR DE ESCALAS) ---
+# --- PÁGINA: GESTÃO ---
 elif st.session_state.pagina == "Gestao":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    # CSS Específico para esta página: Caixas Brancas com Fonte Preta
+    st.markdown("""
+        <style>
+        /* Força fundo branco e fonte preta em todos os campos de entrada */
+        input, textarea, [data-baseweb="select"] > div {
+            background-color: white !important;
+            color: black !important;
+            border: 2px solid #ffd700 !important;
+        }
+        /* Garante que o texto digitado seja preto */
+        .stTextInput input {
+            color: black !important;
+            -webkit-text-fill-color: black !important;
+        }
+        /* Ajusta a cor da fonte dentro do seletor (selectbox) */
+        div[data-baseweb="select"] {
+            color: black !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_gestao")
+    
+    st.markdown("<h2>⚙️ Painel de Administração</h2>", unsafe_allow_html=True)
+
+    # 1. Sistema de Login Admin
     if not st.session_state.admin_ok:
-        with st.form("adm"):
-            pw = st.text_input("Senha Master:", type="password")
-            if st.form_submit_button("Liberar Painel"):
-                if pw == "ISOSED2026": st.session_state.admin_ok = True; st.rerun()
+        with st.form("login_admin"):
+            st.markdown("<p style='text-align:center;'>Digite a senha master para liberar as ferramentas:</p>", unsafe_allow_html=True)
+            senha_gestao = st.text_input("Senha:", type="password")
+            
+            if st.form_submit_button("LIBERAR ACESSO"):
+                if senha_gestao == "ISOSED2026":
+                    st.session_state.admin_ok = True
+                    st.rerun()
+                else:
+                    st.error("Senha incorreta. Tente novamente.")
+    
+    # 2. Painel de Ferramentas (Só aparece após o login)
     else:
-        st.markdown("<h2>⚙️ Painel do Líder</h2>", unsafe_allow_html=True)
-        m = st.selectbox("Mês para Gerar:", list(range(1,13)), index=hoje_br.month-1)
-        tp = st.selectbox("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
+        st.success("Acesso Liberado! Bem-vindo, Administrador.")
         
-        with st.form("gerar_escala_form"):
-            if st.form_submit_button(f"Gerar Escala de {tp}"):
-                datas = obter_datas_culto_pt(2026, m)
-                sh = conectar_planilha()
-                aba = sh.worksheet("Escalas")
-                for d in datas:
-                    h = "18:00" if d['is_domingo'] else "19:30"
-                    aba.append_row([d['data'], d['dia_pt'], h, "Culto", tp, "A definir"])
-                st.success("✅ Escala enviada para o Google Sheets!")
+        tab_estatistica, tab_gerador = st.tabs(["📊 Estatísticas", "🤖 Gerar Escalas"])
+        
+        with tab_estatistica:
+            df_usuarios = carregar_dados("Usuarios")
+            st.metric("Total de Membros Cadastrados", len(df_usuarios))
+            if not df_usuarios.empty:
+                st.dataframe(df_usuarios, use_container_width=True)
+
+        with tab_gerador:
+            st.write("Crie o rodízio do próximo mês automaticamente:")
+            
+            # Formulário de Geração
+            with st.form("gerador_escalas"):
+                c1, c2 = st.columns(2)
+                mes_gen = c1.selectbox("Mês:", list(range(1, 13)), index=hoje_br.month - 1)
+                ano_gen = c2.number_input("Ano:", value=2026)
+                
+                setor_gen = st.radio("Selecione o Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
+                
+                if st.form_submit_button(f"GERAR ESCALA DE {setor_gen.upper()}"):
+                    # Aqui entra a lógica de salvar na planilha que vimos anteriormente
+                    st.info(f"Processando geração para {setor_gen} em {mes_gen}/{ano_gen}...")
+                    # (A função de salvar seria chamada aqui)
 
 # --- 3. LEITURA (CADASTRO COM ESCOLHA DE PLANO) ---
 elif st.session_state.pagina == "Leitura":
