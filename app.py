@@ -143,6 +143,47 @@ elif st.session_state.pagina == "Agenda":
     else:
         st.warning("⚠️ Nenhuma informação encontrada na aba 'Agenda' da planilha.")
 
+# --- PÁGINA: ANIVERSÁRIOS ---
+elif st.session_state.pagina == "Aniv":
+    # Botão de Voltar
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_aniv")
+    
+    st.markdown("<h2>🎂 Quadro de Aniversariantes</h2>", unsafe_allow_html=True)
+    
+    # Carrega os dados da aba "Aniversariantes"
+    df_aniv = carregar_dados("Aniversariantes")
+    
+    # Cria as 12 abas dos meses
+    meses_lista = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    abas_mes = st.tabs(meses_lista)
+    
+    if not df_aniv.empty:
+        # Identifica a coluna de mês (trata 'mes' ou 'mês')
+        col_mes = next((c for c in df_aniv.columns if 'mes' in c or 'mês' in c), None)
+        col_dia = next((c for c in df_aniv.columns if 'dia' in c), None)
+        col_nome = next((c for c in df_aniv.columns if 'nome' in c), None)
+
+        if col_mes and col_dia and col_nome:
+            for i, aba in enumerate(abas_mes):
+                with aba:
+                    num_mes = i + 1
+                    # Filtra e ordena por dia
+                    lista_mes = df_aniv[df_aniv[col_mes].astype(int) == num_mes].sort_values(col_dia)
+                    
+                    if not lista_mes.empty:
+                        for _, r in lista_mes.iterrows():
+                            st.markdown(f"""
+                                <div class="card-aniv">
+                                    <span style="font-size:1.1em;">🎁 Dia {r[col_dia]} - {r[col_nome]}</span>
+                                end
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info("Nenhum aniversariante registado para este mês.")
+        else:
+            st.error("⚠️ Verifique se as colunas 'nome', 'dia' e 'mes' existem na planilha.")
+    else:
+        st.warning("⚠️ Aba 'Aniversariantes' está vazia ou não foi encontrada.")
+
 # --- 2. GESTÃO (COM GERADOR DE ESCALAS) ---
 elif st.session_state.pagina == "Gestao":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
