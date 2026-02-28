@@ -203,7 +203,7 @@ elif st.session_state.pagina == "Gestao":
             
             setor_sel = st.radio("Setor para Gerar:", ["Fotografia", "Recepção", "Som/Mídia"])
             
-            if st.form_submit_button(f"🚀 GERAR ESCALA DE {setor_sel.upper()}"):
+            if st.form_submit_button(f"🚀 GERAR ESCALA"):
                 with st.spinner(f"Conectando à planilha e gerando datas para {setor_sel}..."):
                     # 1. Calcula as datas dos cultos (Qua, Sex, Dom e último Sáb)
                     datas_calculadas = obter_datas_culto_pt(ano_sel, mes_sel)
