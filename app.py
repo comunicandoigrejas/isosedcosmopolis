@@ -268,106 +268,87 @@ elif st.session_state.pagina == "Gestao":
     
 # --- PÁGINA: LEITURA ---
 elif st.session_state.pagina == "Leitura":
-    # CSS para garantir Caixas Brancas e Fonte Preta no Login/Cadastro
+    # CSS: CAIXAS BRANCAS, FONTE PRETA (Garante visibilidade no seletor de planos)
     st.markdown("""
         <style>
-        input, [data-baseweb="select"] > div { background-color: white !important; color: black !important; }
-        .stTextInput input { color: black !important; }
+        div[data-baseweb="select"] > div, input { background-color: white !important; }
+        div[data-baseweb="select"] * { color: black !important; -webkit-text-fill-color: black !important; }
+        div[data-baseweb="popover"] * { color: black !important; background-color: white !important; }
         </style>
     """, unsafe_allow_html=True)
 
     st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_leitura")
     
-    # 1. TELA DE ACESSO (Se não estiver logado)
     if st.session_state.user is None:
-        tab_login, tab_cadastro = st.tabs(["🔐 Entrar", "📝 Novo Cadastro"])
-        
-        with tab_login:
-            with st.form("form_login_nome"):
-                st.markdown("<p style='color:white;'>Acesse seu plano de leitura:</p>", unsafe_allow_html=True)
-                login_nome = st.text_input("Digite seu Nome:")
-                login_senha = st.text_input("Senha:", type="password")
-                
-                if st.form_submit_button("ENTRAR NO PLANO"):
-                    df_usuarios = carregar_dados("Usuarios")
-                    # Busca pelo Nome e Senha
-                    user_match = df_usuarios[
-                        (df_usuarios['nome'].astype(str).str.lower() == login_nome.lower()) & 
-                        (df_usuarios['senha'].astype(str) == login_senha)
-                    ]
-                    
-                    if not user_match.empty:
-                        st.session_state.user = user_match.iloc[0].to_dict()
-                        st.success(f"Bem-vindo, {login_nome}!")
-                        st.rerun()
-                    else:
-                        st.error("Nome ou senha não encontrados. Verifique a grafia.")
-
-        with tab_cadastro:
-            with st.form("form_cadastro_completo"):
-                st.write("Crie sua conta bíblica:")
-                novo_nome = st.text_input("Nome Completo:")
-                novo_zap = st.text_input("WhatsApp (com DDD):")
-                nova_senha = st.text_input("Crie uma Senha:", type="password")
-                plano_escolhido = st.selectbox("Escolha seu Plano:", ["Anual 2026", "Novo Testamento", "Casais"])
-                
-                if st.form_submit_button("CADASTRAR E COMEÇAR"):
-                    if novo_nome and novo_zap and nova_senha:
-                        sh = conectar_planilha()
-                        # Grava na aba Usuarios (Mantendo o Zap no registro)
-                        sh.worksheet("Usuarios").append_row([novo_nome, novo_zap, "Membro", "", nova_senha, 1, plano_escolhido])
-                        # Inicia o histórico na aba Progresso
-                        sh.worksheet("Progresso").append_row([novo_zap, plano_escolhido, 1])
-                        st.success("Conta criada com sucesso! Agora é só fazer o Login.")
-                    else:
-                        st.warning("Preencha todos os campos.")
-
-    # 2. TELA DE PROGRESSO (Se já estiver logado)
+        # TELA DE LOGIN (Simplificada por Nome)
+        with st.form("login_leitura"):
+            st.markdown("### 🔐 Acessar meus Planos")
+            login_nome = st.text_input("Seu Nome (conforme a planilha):")
+            login_senha = st.text_input("Sua Senha:", type="password")
+            if st.form_submit_button("ENTRAR"):
+                df_u = carregar_dados("Usuarios")
+                u_f = df_u[(df_u['nome'].str.lower() == login_nome.lower()) & (df_u['senha'].astype(str) == str(login_senha))]
+                if not u_f.empty:
+                    st.session_state.user = u_f.iloc[0].to_dict()
+                    st.rerun()
+                else: st.error("Nome ou senha não conferem.")
     else:
+        # USUÁRIO LOGADO
         u = st.session_state.user
-        st.markdown(f"### 📖 Plano de Leitura: {u['nome']}")
+        st.markdown(f"### 📖 Olá, {u['nome']}")
         
-        # Puxa o progresso real da aba 'Progresso' usando o WhatsApp (zap) do usuário logado
-        df_progresso = carregar_dados("Progresso")
-        # Coluna 'usuario' na planilha deve conter o WhatsApp
-        minha_linha = df_progresso[df_progresso['usuario'].astype(str) == str(u['telefone'])]
+        # BUSCA OS PLANOS DO USUÁRIO NA ABA 'PROGRESSO'
+        df_p = carregar_dados("Progresso")
+        # Filtra pelo Nome (conforme a imagem que você enviou)
+        meus_planos = df_p[df_p['usuario'].str.lower() == u['nome'].lower()]
         
-        if not minha_linha.empty:
-            dia_atual = int(minha_linha.iloc[0]['dia_atual'])
-            plano_ativo = minha_linha.iloc[0]['plano']
+        if not meus_planos.empty:
+            # CAIXA DE SELEÇÃO: Escolher qual plano ler agora
+            # Aqui listamos todos os planos que o usuário já iniciou
+            plano_selecionado = st.selectbox(
+                "Qual plano deseja ler agora?",
+                options=meus_planos['plano'].tolist(),
+                key="seletor_planos_usuario"
+            )
+            
+            # Pega os dados do plano escolhido
+            dados_plano = meus_planos[meus_planos['plano'] == plano_selecionado].iloc[0]
+            dia_atual = int(dados_plano['dia_atual'])
             
             st.markdown(f"""
                 <div class="card-isosed">
-                    <span style="font-size:1.2em;">📍 Você está no <b>Dia {dia_atual}</b></span><br>
-                    <span style="opacity:0.8;">Plano: {plano_ativo}</span>
+                    📌 <b>Plano Ativo:</b> {plano_selecionado}<br>
+                    📅 <b>Progresso:</b> Dia {dia_atual}
                 </div>
             """, unsafe_allow_html=True)
             
-            # Puxa a leitura do dia da aba 'Leitura'
+            # BUSCA A LEITURA DO DIA NA ABA 'LEITURA'
             df_leituras = carregar_dados("Leitura")
-            leitura_hoje = df_leituras[
-                (df_leituras['dia'].astype(str) == str(dia_atual)) & 
-                (df_leituras['plano'].astype(str).str.lower() == plano_ativo.lower())
-            ]
+            l_hoje = df_leituras[(df_leituras['plano'] == plano_selecionado) & (df_leituras['dia'].astype(str) == str(dia_atual))]
             
-            if not leitura_hoje.empty:
-                l = leitura_hoje.iloc[0]
-                st.info(f"📖 **HOJE:** {l['referencia']}")
-                st.write(f"💡 *Meditação:* {l['resumo']}")
+            if not l_hoje.empty:
+                l = l_hoje.iloc[0]
+                st.info(f"📖 **LEITURA DE HOJE:** {l['referencia']}")
+                # Verifica se existe a coluna resumo, se não, mostra apenas a referência
+                if 'resumo' in l: st.write(f"💡 *Meditação:* {l['resumo']}")
                 
-                if st.button("✅ CONCLUIR LEITURA DE HOJE"):
+                if st.button("✅ CONCLUIR DIA"):
                     sh = conectar_planilha()
                     aba_p = sh.worksheet("Progresso")
-                    # Localiza a célula certa para atualizar o dia
-                    cell = aba_p.find(str(u['telefone']))
-                    aba_p.update_cell(cell.row, 3, dia_atual + 1)
-                    st.balloons()
-                    st.success("Parabéns! Progresso salvo.")
-                    st.rerun()
+                    # Localiza a linha exata: Nome + Plano
+                    # Busca o usuário e depois filtra pelo plano
+                    todas_celulas = aba_p.findall(u['nome'])
+                    for celula in todas_celulas:
+                        if aba_p.cell(celula.row, 2).value == plano_selecionado:
+                            aba_p.update_cell(celula.row, 3, dia_atual + 1)
+                            st.success("Progresso salvo!")
+                            st.rerun()
             else:
-                st.warning("Leitura não configurada para este dia/plano na planilha.")
-        
-        if st.button("Sair da Conta"):
+                st.warning("Leitura não configurada para este dia neste plano.")
+        else:
+            st.info("Você ainda não tem planos iniciados. Vá em 'Novo Plano' ou peça ao administrador.")
+            
+        if st.button("Sair"):
             st.session_state.user = None
             st.rerun()
 
