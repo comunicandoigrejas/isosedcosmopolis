@@ -302,45 +302,111 @@ elif st.session_state.pagina == "Escalas":
             rec = prox[prox['departamento'].str.contains("Recepção", case=False, na=False)]
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
-# --- 7. LEITURA ---
+# =========================================================
+# 7. PÁGINA: LEITURA (VISUAL BLINDADO E BÍBLIA INTEGRADA)
+# =========================================================
 elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_ok")
+    # CSS PARA FORÇAR PRETO NO BRANCO (Planos e Capítulos)
+    st.markdown("""
+        <style>
+        /* Caixa de seleção e texto selecionado */
+        div[data-baseweb="select"] > div, 
+        div[data-baseweb="select"] * {
+            background-color: white !important;
+            color: black !important;
+            -webkit-text-fill-color: black !important;
+        }
+        /* Lista de opções que abre */
+        div[data-baseweb="popover"] * {
+            color: black !important;
+            background-color: white !important;
+        }
+        /* Texto bíblico: Fundo cinza claro e letra azul marinho para leitura */
+        .caixa-leitura {
+            background-color: #f1f3f8;
+            color: #1a1a2e !important;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.15em;
+            line-height: 1.6;
+            text-align: justify;
+            border: 1px solid #d1d9e6;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_leitura_final")
+
     if st.session_state.user is None:
-        with st.form("login_nome"):
-            st.markdown("### 🔐 Entrar no Plano")
-            u_nome = st.text_input("Seu Nome:")
-            u_pass = st.text_input("Senha:", type="password")
-            if st.form_submit_button("ACESSAR"):
+        with st.form("login_leitura_v2"):
+            st.markdown("### 🔐 Acessar meu Progresso")
+            u_nome = st.text_input("Nome Completo:")
+            u_senha = st.text_input("Senha:", type="password")
+            if st.form_submit_button("ENTRAR"):
                 df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['nome'].str.lower() == u_nome.lower()) & (df_u['senha'].astype(str) == str(u_pass))]
-                if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
-                else: st.error("Nome ou senha incorretos.")
+                # Busca exata pelo nome conforme a planilha
+                u_f = df_u[(df_u['nome'].str.lower() == u_nome.lower()) & (df_u['senha'].astype(str) == str(u_senha))]
+                if not u_f.empty:
+                    st.session_state.user = u_f.iloc[0].to_dict()
+                    st.rerun()
+                else: st.error("Usuário ou senha não encontrados.")
     else:
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
+        # Filtra os planos vinculados ao nome do usuário
         meus_planos = df_p[df_p['usuario'].str.lower() == u['nome'].lower()]
+        
         if not meus_planos.empty:
-            plano_ativo = st.selectbox("Selecione o Plano:", meus_planos['plano'].tolist())
-            dados_p = meus_planos[meus_planos['plano'] == plano_ativo].iloc[0]
-            dia_hoje = int(dados_p['dia_atual'])
-            st.markdown(f"#### 📖 {u['nome']} - Dia {dia_hoje}")
+            # 1. SELETOR DE PLANOS (Texto agora visível em preto)
+            plano_selecionado = st.selectbox("Selecione o seu plano:", meus_planos['plano'].tolist())
+            
+            dados_p = meus_planos[meus_planos['plano'] == plano_selecionado].iloc[0]
+            dia_atual = int(dados_p['dia_atual'])
+            
+            st.markdown(f"#### 📖 {u['nome']} - Dia {dia_atual}")
+            
+            # 2. BUSCA A REFERÊNCIA DO DIA
             df_lei = carregar_dados("Leitura")
-            l_data = df_lei[(df_lei['plano'] == plano_ativo) & (df_lei['dia'].astype(str) == str(dia_hoje))]
-            if not l_data.empty:
-                ref_bruta = l_data.iloc[0].get('referência', l_data.iloc[0].get('referencia', ''))
+            leitura_hoje = df_lei[(df_lei['plano'] == plano_selecionado) & (df_lei['dia'].astype(str) == str(dia_atual))]
+            
+            if not leitura_hoje.empty:
+                ref_bruta = leitura_hoje.iloc[0].get('referência', leitura_hoje.iloc[0].get('referencia', ''))
+                
+                # 3. SELETOR DE CAPÍTULOS (Se houver vírgula, ele separa)
                 caps = [c.strip() for c in ref_bruta.split(',')]
-                escolha_cap = st.selectbox("Capítulo para ler:", caps)
-                with st.spinner("Carregando..."): txt = buscar_texto_biblico(escolha_cap)
-                st.markdown(f'<div class="texto-sagrado">{txt}</div>', unsafe_allow_html=True)
-                if st.button("✅ CONCLUIR DIA"):
+                cap_escolhido = st.selectbox("Escolha o capítulo para ler:", caps)
+                
+                # 4. BUSCA NA API DA BÍBLIA
+                with st.spinner("Buscando Palavra de Deus..."):
+                    try:
+                        # bible-api.com - Tradução Almeida
+                        url = f"https://bible-api.com/{cap_escolhido}?translation=almeida"
+                        resp = requests.get(url).json()
+                        texto_biblico = resp.get('text', "Não encontramos o texto para esta referência.")
+                    except:
+                        texto_biblico = "⚠️ Erro ao conectar com a API da Bíblia. Tente novamente em instantes."
+
+                # Exibição do Texto Sagrado
+                st.markdown(f'<div class="caixa-leitura">{texto_biblico}</div>', unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if st.button("✅ CONCLUIR LEITURA DE HOJE"):
                     sh = conectar_planilha()
                     aba_p = sh.worksheet("Progresso")
+                    # Localiza a linha certa: Nome do Usuário + Plano
                     celulas = aba_p.findall(u['nome'])
                     for c in celulas:
-                        if aba_p.cell(c.row, 2).value == plano_ativo:
-                            aba_p.update_cell(c.row, 3, dia_hoje + 1)
-                            st.success("Dia atualizado!")
+                        if aba_p.cell(c.row, 2).value == plano_selecionado:
+                            aba_p.update_cell(c.row, 3, dia_atual + 1)
+                            st.balloons()
+                            st.success("Parabéns! Seu progresso foi salvo.")
                             st.rerun()
+            else:
+                st.warning("Roteiro de leitura não encontrado para este dia/plano.")
+        else:
+            st.info("Nenhum plano de leitura vinculado ao seu nome.")
+
         if st.button("Sair da Conta"):
             st.session_state.user = None
             st.rerun()
