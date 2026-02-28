@@ -281,151 +281,128 @@ def buscar_texto_biblico(referencia):
         return "Erro ao conectar com o servidor da Bíblia."
 
 # =========================================================
-# --- PÁGINA: LEITURA (COM SELETOR DE CAPÍTULOS) ---
+# =========================================================
+# 4. PÁGINA: DEVOCIONAL
+# =========================================================
+elif st.session_state.pagina == "Devocional":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
+    df_dev = carregar_dados("Devocional")
+    if not df_dev.empty:
+        item = df_dev.iloc[-1]
+        st.markdown(f"### {item['titulo']}")
+        st.warning(f"📖 **VERSÍCULO:** {item['versiculo']}")
+        st.write(item['texto'])
+        st.info(f"🎯 **APLICAÇÃO:** {item['aplicacao']}")
+        st.success(f"🔥 **DESAFIO:** {item['desafio']}")
+
+# =========================================================
+# 5. PÁGINA: ESCALAS (O BLOCO QUE ESTAVA FALTANDO)
+# =========================================================
+elif st.session_state.pagina == "Escalas":
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_esc")
+    st.markdown("<h2>📢 Escalas de Serviço</h2>", unsafe_allow_html=True)
+    df_esc = carregar_dados("Escalas")
+    
+    if not df_esc.empty:
+        df_esc['dt'] = pd.to_datetime(df_esc['data'], dayfirst=True, errors='coerce')
+        prox = df_esc[df_esc['dt'].dt.date >= hoje_br].sort_values('dt')
+        
+        t1, t2, t3 = st.tabs(["📸 Foto", "🔊 Som/Mídia", "🤝 Recepção"])
+        with t1:
+            f = prox[prox['departamento'].str.contains("Foto", case=False, na=False)]
+            for _, r in f.iterrows(): 
+                st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
+        with t2:
+            o = prox[prox['departamento'].str.contains("Mídia|Som", case=False, na=False)]
+            for _, r in o.iterrows(): 
+                st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
+        with t3:
+            rec = prox[prox['departamento'].str.contains("Recepção", case=False, na=False)]
+            for _, r in rec.iterrows(): 
+                st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
+    else:
+        st.info("Nenhuma escala encontrada.")
+
+# =========================================================
+# 6. PÁGINA: LEITURA (COM BÍBLIA E SELETOR DE CAPÍTULOS)
 # =========================================================
 elif st.session_state.pagina == "Leitura":
-    # CSS: CAIXAS BRANCAS E FONTE PRETA (Para o seletor de capítulos e login)
+    # CSS: CAIXAS BRANCAS E FONTE PRETA
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div, input { background-color: white !important; }
         div[data-baseweb="select"] * { color: black !important; -webkit-text-fill-color: black !important; }
         div[data-baseweb="popover"] * { color: black !important; background-color: white !important; }
-        /* Estilo do texto bíblico para leitura confortável */
-        .texto-biblico { 
-            background-color: #f8f9fa; 
-            color: #1a1a2e !important; 
-            padding: 20px; 
-            border-radius: 10px; 
-            line-height: 1.6; 
-            font-size: 1.1em;
-            text-align: justify;
+        .texto-sagrado { 
+            background-color: #f8f9fa; color: #1a1a2e !important; 
+            padding: 15px; border-radius: 8px; font-size: 1.1em; line-height: 1.6;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="v_lei")
-    
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_ok")
+
     if st.session_state.user is None:
-        # (O seu código de login por Nome permanece aqui...)
-        with st.form("l_biblia"):
+        with st.form("login_nome"):
+            st.markdown("### 🔐 Entrar no Plano")
             u_nome = st.text_input("Seu Nome:")
-            u_senha = st.text_input("Senha:", type="password")
-            if st.form_submit_button("ACESSAR PLANO"):
+            u_pass = st.text_input("Senha:", type="password")
+            if st.form_submit_button("ACESSAR"):
                 df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['nome'].str.lower() == u_nome.lower()) & (df_u['senha'].astype(str) == str(u_senha))]
+                u_f = df_u[(df_u['nome'].str.lower() == u_nome.lower()) & (df_u['senha'].astype(str) == str(u_pass))]
                 if not u_f.empty:
                     st.session_state.user = u_f.iloc[0].to_dict()
                     st.rerun()
+                else: st.error("Nome ou senha incorretos.")
     else:
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
         meus_planos = df_p[df_p['usuario'].str.lower() == u['nome'].lower()]
         
         if not meus_planos.empty:
-            plano_sel = st.selectbox("Selecione o Plano:", meus_planos['plano'].tolist())
-            dados_p = meus_planos[meus_planos['plano'] == plano_sel].iloc[0]
-            dia_atual = int(dados_p['dia_atual'])
+            # Seleção de Plano
+            plano_ativo = st.selectbox("Selecione o Plano:", meus_planos['plano'].tolist())
+            dados_p = meus_planos[meus_planos['plano'] == plano_ativo].iloc[0]
+            dia_hoje = int(dados_p['dia_atual'])
             
-            # Busca a leitura do dia
-            df_l = carregar_dados("Leitura")
-            l_hoje = df_l[(df_l['plano'] == plano_sel) & (df_l['dia'].astype(str) == str(dia_atual))]
+            st.markdown(f"#### 📖 {u['nome']} - Dia {dia_hoje}")
             
-            if not l_hoje.empty:
-                item_leitura = l_hoje.iloc[0]
-                ref_completa = item_leitura.get('referência', item_leitura.get('referencia', ''))
+            # Puxa a referência
+            df_lei = carregar_dados("Leitura")
+            l_data = df_lei[(df_lei['plano'] == plano_ativo) & (df_lei['dia'].astype(str) == str(dia_hoje))]
+            
+            if not l_data.empty:
+                # Trata erros de coluna com ou sem acento
+                ref_bruta = l_data.iloc[0].get('referência', l_data.iloc[0].get('referencia', ''))
                 
-                st.markdown(f"### 📖 Dia {dia_atual}: {ref_completa}")
+                # SELETOR DE CAPÍTULOS: Divide se houver vírgula na planilha
+                caps = [c.strip() for c in ref_bruta.split(',')]
+                escolha_cap = st.selectbox("Capítulo para ler agora:", caps)
                 
-                # --- NOVO: SELETOR DE CAPÍTULOS ---
-                # Se a referência for "Mateus 1-3", vamos quebrar para o usuário escolher
-                # Se for apenas "Mateus 1", o seletor mostra apenas uma opção
-                partes = ref_completa.split(',') if ',' in ref_completa else [ref_completa]
+                # BUSCA NA API
+                with st.spinner("Buscando Palavra..."):
+                    try:
+                        url_api = f"https://bible-api.com/{escolha_cap}?translation=almeida"
+                        r_biblia = requests.get(url_api).json()
+                        txt_biblia = r_biblia.get('text', "Capítulo não encontrado.")
+                    except:
+                        txt_biblia = "Erro de conexão com a Bíblia."
+
+                st.markdown(f'<div class="texto-sagrado">{txt_biblia}</div>', unsafe_allow_html=True)
                 
-                escolha_leitura = st.selectbox(
-                    "Escolha a parte da leitura para exibir:",
-                    options=partes,
-                    help="Se a leitura for longa, selecione um capítulo por vez."
-                )
-                
-                # CHAMADA DA API
-                with st.spinner("Buscando na Bíblia..."):
-                    texto_sagrado = buscar_texto_biblico(escolha_leitura)
-                
-                # Exibição do Texto Bíblico (Fundo claro, letra escura para não cansar a vista)
-                st.markdown(f'<div class="texto-biblico">{texto_sagrado}</div>', unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                if st.button("✅ CONCLUIR LEITURA DO DIA"):
+                if st.button("✅ CONCLUIR DIA"):
                     sh = conectar_planilha()
                     aba_p = sh.worksheet("Progresso")
-                    todas = aba_p.findall(u['nome'])
-                    for c in todas:
-                        if aba_p.cell(c.row, 2).value == plano_sel:
-                            aba_p.update_cell(c.row, 3, dia_atual + 1)
-                            st.balloons()
-                            st.success("Parabéns! Dia concluído.")
+                    # Atualiza a linha certa: Nome + Plano
+                    celulas = aba_p.findall(u['nome'])
+                    for c in celulas:
+                        if aba_p.cell(c.row, 2).value == plano_ativo:
+                            aba_p.update_cell(c.row, 3, dia_hoje + 1)
+                            st.success("Dia atualizado na planilha!")
                             st.rerun()
             else:
-                st.warning("Roteiro de leitura não encontrado para hoje.")
-        else:
-            st.info("Você não tem planos ativos.")
+                st.warning("Roteiro não encontrado.")
         
         if st.button("Sair da Conta"):
             st.session_state.user = None
             st.rerun()
-            
-# --- 4. ESCALAS ---
-elif st.session_state.pagina == "Escalas":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
-    df = carregar_dados("Escalas")
-    t1, t2, t3 = st.tabs(["📸 Foto", "🔊 Som/Mídia", "🤝 Recepção"])
-    if not df.empty:
-        df['dt'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        prox = df[df['dt'].dt.date >= hoje_br].sort_values('dt')
-        for t, dep in zip([t1, t2, t3], ["Foto", "Mídia", "Recepção"]):
-            with t:
-                f = prox[prox['departamento'].str.contains(dep, case=False, na=False)]
-                for _, r in f.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
-
-# --- PÁGINA: DEVOCIONAL ---
-elif st.session_state.pagina == "Devocional":
-    # Botão de Voltar
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_dev")
-    
-    st.markdown("<h2>📖 Devocional Diário</h2>", unsafe_allow_html=True)
-    
-    # Carrega os dados da aba "Devocional"
-    df_dev = carregar_dados("Devocional")
-    
-    if not df_dev.empty:
-        # Puxa o último devocional cadastrado
-        item = df_dev.iloc[-1]
-        
-        # 1. Título e Tema (Fixo no topo)
-        st.markdown(f"""
-            <div style="text-align:center; margin-bottom: 20px;">
-                <h3 style="color:#ffd700; margin-bottom:0;">{item['titulo']}</h3>
-                <p style="color:white; opacity:0.8; font-size:0.9em;">✨ Tema: {item['tema']} | 📅 {item['data']}</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # 2. Versículo (Em destaque Amarelo/Dourado)
-        st.warning(f"📖 **VERSÍCULO CHAVE:** {item['versiculo']}")
-        
-        # 3. Texto da Palavra
-        st.markdown("#### 📜 Mensagem de Hoje")
-        st.write(item['texto'])
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # 4. APLICAÇÃO PESSOAL (Texto Fixo em bloco Azul)
-        st.info(f"🎯 **APLICAÇÃO PESSOAL:** \n\n {item['aplicacao']}")
-        
-        # 5. DESAFIO DO DIA (Texto Fixo em bloco Verde)
-        st.success(f"🔥 **DESAFIO DO DIA:** \n\n {item['desafio']}")
-        
-        st.markdown("<br><p style='text-align:center; opacity:0.5; font-size:0.8em;'>ISOSED Cosmópolis - 2026</p>", unsafe_allow_html=True)
-            
-    else:
-        st.error("⚠️ Nenhum devocional encontrado. Verifique a planilha 'Devocional'.")
