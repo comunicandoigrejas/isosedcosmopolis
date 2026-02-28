@@ -303,13 +303,14 @@ elif st.session_state.pagina == "Escalas":
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
 # =========================================================
-# 7. PÁGINA: LEITURA (VERSÃO CORRIGIDA - TRADUÇÃO FORÇADA)
+# 7. PÁGINA: LEITURA (VERSÃO DEFINITIVA - CORREÇÃO DE SALMOS)
 # =========================================================
 elif st.session_state.pagina == "Leitura":
     import re
     import urllib.parse
+    import unicodedata
 
-    # Estilo das caixas de seleção (Branco com texto Preto)
+    # CSS: Força o texto preto nas caixas brancas
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div, div[data-baseweb="select"] * {
@@ -325,18 +326,17 @@ elif st.session_state.pagina == "Leitura":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v13")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_final_safe")
 
     if st.session_state.user is None:
-        # (Seu código de login aqui...)
-        with st.form("login_leitura_final"):
+        with st.form("login_leitura"):
             u_n = st.text_input("Seu Nome:")
             u_s = st.text_input("Senha:", type="password")
             if st.form_submit_button("ACESSAR"):
                 df_u = carregar_dados("Usuarios")
                 u_f = df_u[(df_u['nome'].str.lower() == u_n.lower()) & (df_u['senha'].astype(str) == str(u_s))]
                 if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
-                else: st.error("Login incorreto.")
+                else: st.error("Acesso negado.")
     else:
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
@@ -346,7 +346,7 @@ elif st.session_state.pagina == "Leitura":
             meus_planos = df_p[df_p[col_usu_p].astype(str).str.lower() == u['nome'].lower()]
             
             if not meus_planos.empty:
-                plano_sel = st.selectbox("Seu plano ativo:", meus_planos['plano'].tolist())
+                plano_sel = st.selectbox("Seu plano:", meus_planos['plano'].tolist())
                 col_dia_p = next((c for c in df_p.columns if 'dia' in c), 'dia_atual')
                 dia_hoje = int(meus_planos[meus_planos['plano'] == plano_sel].iloc[0][col_dia_p])
                 
@@ -357,8 +357,6 @@ elif st.session_state.pagina == "Leitura":
                 
                 if not l_hoje.empty:
                     ref_bruta = l_hoje.iloc[0].get('referência', l_hoje.iloc[0].get('referencia', ''))
-                    
-                    # Quebra referências como 'Salmos 8; Provérbios 2'
                     lista_previa = re.split(r'[,;]', ref_bruta)
                     lista_caps = []
                     for p in [item.strip() for item in lista_previa if item.strip()]:
@@ -370,9 +368,9 @@ elif st.session_state.pagina == "Leitura":
                             else: lista_caps.append(p)
                         else: lista_caps.append(p)
                     
-                    cap_sel = st.selectbox("Escolha o capítulo de hoje:", lista_caps)
+                    cap_sel = st.selectbox("Capítulo de hoje:", lista_caps)
 
-                    # --- DICIONÁRIO DE TRADUÇÃO RÍGIDO ---
+                    # --- DICIONÁRIO DE TRADUÇÃO ---
                     livros_en = {
                         "genesis": "Genesis", "exodo": "Exodus", "levitico": "Leviticus", "numeros": "Numbers",
                         "deuteronomio": "Deuteronomy", "josue": "Joshua", "juizes": "Judges", "rute": "Ruth",
@@ -392,36 +390,32 @@ elif st.session_state.pagina == "Leitura":
                         "judas": "Jude", "apocalipse": "Revelation"
                     }
 
-                    # --- PROCESSO DE TRADUÇÃO FORÇADA ---
-                    def traduzir_ref(ref):
-                        import unicodedata
-                        # Tira acentos e deixa minúsculo (Ex: Salmos 8 -> salmos 8)
-                        ref_limpa = "".join(c for c in unicodedata.normalize('NFD', ref) if unicodedata.category(c) != 'Mn').lower()
-                        
-                        # Tenta achar o livro dentro da string
-                        for pt, en in livros_en.items():
-                            if pt in ref_limpa:
-                                # Substitui o nome em PT pelo EN e mantém o número (Ex: salmos 8 -> Psalms 8)
-                                return ref_limpa.replace(pt, en).strip()
-                        return ref
+                    # --- FUNÇÃO DE TRADUÇÃO REFORÇADA ---
+                    def traduzir_para_api(ref_original):
+                        # Normaliza (Salmos 8 -> salmos 8)
+                        texto = "".join(c for c in unicodedata.normalize('NFD', ref_original) if unicodedata.category(c) != 'Mn').lower()
+                        # Ordena chaves por tamanho (evita 'salmo' substituir dentro de 'salmos')
+                        chaves = sorted(livros_en.keys(), key=len, reverse=True)
+                        for pt in chaves:
+                            if re.search(rf'^{re.escape(pt)}(\s|$)', texto):
+                                en = livros_en[pt]
+                                return re.sub(rf'^{re.escape(pt)}', en, texto).strip()
+                        return ref_original
 
-                    ref_para_api = traduzir_ref(cap_sel)
+                    ref_traduzida = traduzir_para_api(cap_sel)
                     
-                    with st.spinner("Buscando Palavra..."):
+                    with st.spinner("Buscando na Bíblia..."):
                         try:
-                            # Formata a URL corretamente para a API
-                            url_final = f"https://bible-api.com/{urllib.parse.quote(ref_para_api)}?translation=almeida"
+                            url_final = f"https://bible-api.com/{urllib.parse.quote(ref_traduzida)}?translation=almeida"
                             res = requests.get(url_final)
-                            
                             if res.status_code == 200:
-                                texto_biblia = res.json().get('text', "Capítulo vazio.")
-                                st.markdown(f'<div class="caixa-leitura">{texto_biblia}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="caixa-leitura">{res.json()["text"]}</div>', unsafe_allow_html=True)
                             else:
-                                st.error(f"Não encontramos o texto para '{cap_sel}'. Verifique se o nome do livro na planilha está correto.")
-                        except:
-                            st.warning("⚠️ Erro de conexão com a Bíblia Online.")
+                                st.error(f"Erro {res.status_code}: Não encontramos '{cap_sel}'. Verifique a planilha.")
+                        except: st.warning("Conexão falhou.")
                     
                     if st.button("✅ CONCLUIR DIA"):
+                        # (Código de atualização da planilha...)
                         sh = conectar_planilha()
                         aba_p = sh.worksheet("Progresso")
                         cels = aba_p.findall(u['nome'])
@@ -429,4 +423,3 @@ elif st.session_state.pagina == "Leitura":
                             if aba_p.cell(c.row, 2).value == plano_sel:
                                 aba_p.update_cell(c.row, 3, dia_hoje + 1)
                                 st.balloons(); st.rerun()
-                else: st.info("Plano não encontrado.")
