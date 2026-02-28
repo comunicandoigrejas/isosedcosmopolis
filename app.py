@@ -266,40 +266,110 @@ elif st.session_state.pagina == "Gestao":
                 st.info(f"Gerando {setor_selecionado} para {meses_pt[mes_selecionado]} de {ano_selecionado}...")
                 # Lógica de salvar na planilha...)
     
-# --- 3. LEITURA (CADASTRO COM ESCOLHA DE PLANO) ---
+# --- PÁGINA: LEITURA ---
 elif st.session_state.pagina == "Leitura":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    # CSS para garantir Caixas Brancas e Fonte Preta no Login/Cadastro
+    st.markdown("""
+        <style>
+        input, [data-baseweb="select"] > div { background-color: white !important; color: black !important; }
+        .stTextInput input { color: black !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_leitura")
+    
+    # 1. TELA DE ACESSO (Se não estiver logado)
     if st.session_state.user is None:
-        t1, t2 = st.tabs(["Login", "Novo Cadastro"])
-        with t1:
-            with st.form("l_f"):
-                tel = st.text_input("WhatsApp:"); sen = st.text_input("Senha:", type="password")
-                if st.form_submit_button("Entrar"):
-                    df_u = carregar_dados("Usuarios")
-                    u_f = df_u[(df_u['telefone'].astype(str) == str(tel)) & (df_u['senha'].astype(str) == str(sen))]
-                    if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
-        with t2:
-            with st.form("c_f"):
-                st.write("Escolha seu plano para começar:")
-                plano_opt = st.selectbox("Plano de Leitura:", ["Anual 2026", "Novo Testamento", "Casais", "Infantil"])
-                n = st.text_input("Nome:"); t = st.text_input("WhatsApp:"); s = st.text_input("Senha:", type="password")
-                if st.form_submit_button("Criar Conta e Começar"):
-                    sh = conectar_planilha()
-                    sh.worksheet("Usuarios").append_row([n, t, "Membro", "", s, 1, plano_opt])
-                    sh.worksheet("Progresso").append_row([t, plano_opt, 1])
-                    st.success("Conta criada! Vá em Login.")
+        tab_login, tab_cadastro = st.tabs(["🔐 Entrar", "📝 Novo Cadastro"])
+        
+        with tab_login:
+            with st.form("form_login_nome"):
+                st.markdown("<p style='color:white;'>Acesse seu plano de leitura:</p>", unsafe_allow_html=True)
+                login_nome = st.text_input("Digite seu Nome:")
+                login_senha = st.text_input("Senha:", type="password")
+                
+                if st.form_submit_button("ENTRAR NO PLANO"):
+                    df_usuarios = carregar_dados("Usuarios")
+                    # Busca pelo Nome e Senha
+                    user_match = df_usuarios[
+                        (df_usuarios['nome'].astype(str).str.lower() == login_nome.lower()) & 
+                        (df_usuarios['senha'].astype(str) == login_senha)
+                    ]
+                    
+                    if not user_match.empty:
+                        st.session_state.user = user_match.iloc[0].to_dict()
+                        st.success(f"Bem-vindo, {login_nome}!")
+                        st.rerun()
+                    else:
+                        st.error("Nome ou senha não encontrados. Verifique a grafia.")
+
+        with tab_cadastro:
+            with st.form("form_cadastro_completo"):
+                st.write("Crie sua conta bíblica:")
+                novo_nome = st.text_input("Nome Completo:")
+                novo_zap = st.text_input("WhatsApp (com DDD):")
+                nova_senha = st.text_input("Crie uma Senha:", type="password")
+                plano_escolhido = st.selectbox("Escolha seu Plano:", ["Anual 2026", "Novo Testamento", "Casais"])
+                
+                if st.form_submit_button("CADASTRAR E COMEÇAR"):
+                    if novo_nome and novo_zap and nova_senha:
+                        sh = conectar_planilha()
+                        # Grava na aba Usuarios (Mantendo o Zap no registro)
+                        sh.worksheet("Usuarios").append_row([novo_nome, novo_zap, "Membro", "", nova_senha, 1, plano_escolhido])
+                        # Inicia o histórico na aba Progresso
+                        sh.worksheet("Progresso").append_row([novo_zap, plano_escolhido, 1])
+                        st.success("Conta criada com sucesso! Agora é só fazer o Login.")
+                    else:
+                        st.warning("Preencha todos os campos.")
+
+    # 2. TELA DE PROGRESSO (Se já estiver logado)
     else:
         u = st.session_state.user
-        df_p = carregar_dados("Progresso")
-        p_row = df_p[df_p['usuario'].astype(str) == str(u['telefone'])]
-        if not p_row.empty:
-            dia = int(p_row.iloc[0]['dia_atual'])
-            st.markdown(f"### Olá, {u['nome']}! Dia {dia}")
-            # Aqui ele puxa o conteúdo da aba Leitura filtrando por Dia e Plano
-            st.info(f"Você está seguindo o plano: {u['plano_escolhido']}")
-            if st.button("✅ Marcar como Lido"):
-                sh = conectar_planilha(); cell = sh.worksheet("Progresso").find(str(u['telefone']))
-                sh.worksheet("Progresso").update_cell(cell.row, 3, dia + 1); st.rerun()
+        st.markdown(f"### 📖 Plano de Leitura: {u['nome']}")
+        
+        # Puxa o progresso real da aba 'Progresso' usando o WhatsApp (zap) do usuário logado
+        df_progresso = carregar_dados("Progresso")
+        # Coluna 'usuario' na planilha deve conter o WhatsApp
+        minha_linha = df_progresso[df_progresso['usuario'].astype(str) == str(u['telefone'])]
+        
+        if not minha_linha.empty:
+            dia_atual = int(minha_linha.iloc[0]['dia_atual'])
+            plano_ativo = minha_linha.iloc[0]['plano']
+            
+            st.markdown(f"""
+                <div class="card-isosed">
+                    <span style="font-size:1.2em;">📍 Você está no <b>Dia {dia_atual}</b></span><br>
+                    <span style="opacity:0.8;">Plano: {plano_ativo}</span>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Puxa a leitura do dia da aba 'Leitura'
+            df_leituras = carregar_dados("Leitura")
+            leitura_hoje = df_leituras[
+                (df_leituras['dia'].astype(str) == str(dia_atual)) & 
+                (df_leituras['plano'].astype(str).str.lower() == plano_ativo.lower())
+            ]
+            
+            if not leitura_hoje.empty:
+                l = leitura_hoje.iloc[0]
+                st.info(f"📖 **HOJE:** {l['referencia']}")
+                st.write(f"💡 *Meditação:* {l['resumo']}")
+                
+                if st.button("✅ CONCLUIR LEITURA DE HOJE"):
+                    sh = conectar_planilha()
+                    aba_p = sh.worksheet("Progresso")
+                    # Localiza a célula certa para atualizar o dia
+                    cell = aba_p.find(str(u['telefone']))
+                    aba_p.update_cell(cell.row, 3, dia_atual + 1)
+                    st.balloons()
+                    st.success("Parabéns! Progresso salvo.")
+                    st.rerun()
+            else:
+                st.warning("Leitura não configurada para este dia/plano na planilha.")
+        
+        if st.button("Sair da Conta"):
+            st.session_state.user = None
+            st.rerun()
 
 # --- 4. ESCALAS ---
 elif st.session_state.pagina == "Escalas":
