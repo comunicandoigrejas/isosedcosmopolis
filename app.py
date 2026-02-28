@@ -165,10 +165,10 @@ elif st.session_state.pagina == "Aniv":
 
 # =========================================================
 # =========================================================
-# 4. PÁGINA: GESTÃO (GERADOR COMPLETO E FUNCIONAL)
+# =========================================================
+# 4. PÁGINA: GESTÃO (COM AS REGRAS ESPECÍFICAS DA ISOSED)
 # =========================================================
 elif st.session_state.pagina == "Gestao":
-    # MANTENDO A BLINDAGEM VISUAL (FONTE PRETA)
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div { background-color: white !important; }
@@ -177,7 +177,7 @@ elif st.session_state.pagina == "Gestao":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_motor")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_regras")
     st.markdown("<h2>⚙️ Gestão de Escalas</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
@@ -190,45 +190,71 @@ elif st.session_state.pagina == "Gestao":
                 else: st.error("Senha incorreta.")
     else:
         st.success("Painel de Controle ISOSED Ativo")
-        
         meses_pt = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
         
-        with st.form("gerador_final"):
-            st.write("### 🤖 Gerar Datas Automaticamente")
+        with st.form("gerador_regras_isosed"):
+            st.write("### 🤖 Gerar Escala Inteligente")
             c1, c2 = st.columns(2)
             with c1:
                 mes_sel = st.selectbox("Mês:", options=list(meses_pt.keys()), format_func=lambda x: meses_pt[x], index=hoje_br.month - 1)
             with c2:
-                ano_sel = st.selectbox("Ano:", options=[2026, 2027, 2028], index=0)
+                ano_sel = st.selectbox("Ano:", options=[2026, 2027], index=0)
             
-            setor_sel = st.radio("Setor para Gerar:", ["Fotografia", "Recepção", "Som/Mídia"])
+            setor_sel = st.radio("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
             
-            if st.form_submit_button(f"🚀 GERAR ESCALA"):
-                with st.spinner(f"Conectando à planilha e gerando datas para {setor_sel}..."):
-                    # 1. Calcula as datas dos cultos (Qua, Sex, Dom e último Sáb)
-                    datas_calculadas = obter_datas_culto_pt(ano_sel, mes_sel)
-                    
-                    # 2. Conecta no Google Sheets
-                    sh = conectar_planilha()
-                    if sh:
-                        try:
-                            aba_escalas = sh.worksheet("Escalas")
-                            
-                            # 3. Loop para inserir cada data na planilha
-                            for d in datas_calculadas:
-                                # Define o horário padrão da ISOSED
-                                horario = "18:00" if d['is_domingo'] else "19:30"
-                                
-                                # Estrutura da linha: Data | Dia | Horário | Evento | Departamento | Responsável
-                                nova_linha = [d['data'], d['dia_pt'], horario, "Culto", setor_sel, "A definir"]
-                                
-                                aba_escalas.append_row(nova_linha)
-                            
-                            st.success(f"✅ Sucesso! {len(datas_calculadas)} datas de {setor_sel} foram enviadas para a planilha.")
-                        except Exception as e:
-                            st.error(f"Erro ao acessar a aba 'Escalas': {e}")
+            if st.form_submit_button(f"🚀 EXECUTAR REGRAS DE {setor_sel.upper()}"):
+                with st.spinner("Buscando Voluntários e aplicando regras de rodízio..."):
+                    df_v = carregar_dados("Voluntarios")
+                    if df_v.empty:
+                        st.error("Erro ao carregar a aba 'Voluntarios'.")
                     else:
-                        st.error("Erro de conexão com o Google Drive.")
+                        # 1. MAPEAMENTO DE TERMOS E LISTA DE NOMES
+                        mapa = {"Fotografia": "fotografia", "Recepção": "recepção", "Som/Mídia": "operador"}
+                        termo = mapa[setor_sel]
+                        
+                        # Lista base de voluntários do setor
+                        voluntarios = df_v[df_v['função'].str.lower() == termo]['nome'].tolist()
+                        
+                        # 2. GERAÇÃO DE DATAS (Qua, Sex, Dom + Último Sábado)
+                        datas = obter_datas_culto_pt(ano_sel, mes_sel)
+                        sh = conectar_planilha()
+                        aba_e = sh.worksheet("Escalas")
+                        
+                        idx_v = 0 # Ponteiro para o rodízio
+                        
+                        for d in datas:
+                            # Horários
+                            if d['dia_pt'] == "Sábado": horario = "14:30"
+                            elif d['is_domingo']: horario = "18:00"
+                            else: horario = "19:30"
+
+                            # --- APLICAÇÃO DAS REGRAS ESPECÍFICAS ---
+                            nomes_final = ""
+                            
+                            if setor_sel == "Recepção":
+                                # Regra: 2 pessoas por culto
+                                p1 = voluntarios[idx_v % len(voluntarios)]
+                                p2 = voluntarios[(idx_v + 1) % len(voluntarios)]
+                                nomes_final = f"{p1}, {p2}"
+                                idx_v += 2 # Pula 2 para o próximo culto
+                                
+                            elif setor_sel == "Som/Mídia":
+                                # Regra: No domingo o Júnior (ou quem for 'operador' extra) pode entrar
+                                # Se quiser uma lógica fixa pro Júnior, podemos forçar aqui
+                                responsavel = voluntarios[idx_v % len(voluntarios)]
+                                nomes_final = responsavel
+                                idx_v += 1
+                                
+                            else: # Fotografia
+                                # Regra: 1 pessoa por culto
+                                nomes_final = voluntarios[idx_v % len(voluntarios)]
+                                idx_v += 1
+
+                            # 3. SALVAR NA PLANILHA
+                            nova_linha = [d['data'], d['dia_pt'], horario, "Culto", setor_sel, nomes_final]
+                            aba_e.append_row(nova_linha)
+                            
+                        st.success(f"✅ Escala de {setor_sel} gerada seguindo as regras de rodízio!")
 
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
