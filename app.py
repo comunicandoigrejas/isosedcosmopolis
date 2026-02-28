@@ -303,10 +303,16 @@ elif st.session_state.pagina == "Escalas":
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
 # =========================================================
-# 7. PÁGINA: LEITURA (BÍBLIA 100% MAPEADA E SEM ERROS)
+# 7. PÁGINA: LEITURA (VERSÃO ULTRA-ROBUSTA)
 # =========================================================
 elif st.session_state.pagina == "Leitura":
     import re
+    import unicodedata
+
+    # Função interna para limpar texto (remove acentos e espaços)
+    def limpar(t):
+        return "".join(c for c in unicodedata.normalize('NFD', str(t)) 
+                       if unicodedata.category(c) != 'Mn').lower().strip()
 
     st.markdown("""
         <style>
@@ -323,30 +329,28 @@ elif st.session_state.pagina == "Leitura":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_completa")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v12")
 
     if st.session_state.user is None:
-        # --- LOGIN DE ACESSO ---
-        with st.form("login_lei_final"):
-            u_nome = st.text_input("Seu Nome:")
-            u_pass = st.text_input("Senha:", type="password")
-            if st.form_submit_button("ENTRAR"):
+        # (Seu código de login aqui...)
+        with st.form("login_final_lei"):
+            u_n = st.text_input("Nome:")
+            u_s = st.text_input("Senha:", type="password")
+            if st.form_submit_button("Acessar"):
                 df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['nome'].str.lower() == u_nome.lower()) & (df_u['senha'].astype(str) == str(u_pass))]
+                u_f = df_u[(df_u['nome'].str.lower() == u_n.lower()) & (df_u['senha'].astype(str) == str(u_s))]
                 if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
-                else: st.error("Login inválido.")
+                else: st.error("Erro de login.")
     else:
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
-        
-        # Busca a coluna de usuário na aba Progresso
         col_usu_p = next((c for c in df_p.columns if 'usu' in c), None)
         
         if col_usu_p:
             meus_planos = df_p[df_p[col_usu_p].astype(str).str.lower() == u['nome'].lower()]
             
             if not meus_planos.empty:
-                plano_sel = st.selectbox("Selecione o plano:", meus_planos['plano'].tolist())
+                plano_sel = st.selectbox("Seu plano:", meus_planos['plano'].tolist())
                 col_dia_p = next((c for c in df_p.columns if 'dia' in c), 'dia_atual')
                 dia_hoje = int(meus_planos[meus_planos['plano'] == plano_sel].iloc[0][col_dia_p])
                 
@@ -358,11 +362,12 @@ elif st.session_state.pagina == "Leitura":
                 if not l_hoje.empty:
                     ref_bruta = l_hoje.iloc[0].get('referência', l_hoje.iloc[0].get('referencia', ''))
                     
-                    # Processador de múltiplos livros e intervalos (Quebra em ; e ,)
+                    # Quebra múltiplos livros ( ; ou , )
                     lista_previa = re.split(r'[,;]', ref_bruta)
                     lista_caps = []
                     for p in [item.strip() for item in lista_previa if item.strip()]:
                         if '-' in p:
+                            # Tenta processar intervalos como Genesis 8-11
                             match = re.match(r"([0-9]*\s*[A-Za-zÀ-ÿ]+)\s*(\d+)-(\d+)", p)
                             if match:
                                 livro, ini, fim = match.groups()
@@ -370,44 +375,54 @@ elif st.session_state.pagina == "Leitura":
                             else: lista_caps.append(p)
                         else: lista_caps.append(p)
                     
-                    cap_sel = st.selectbox("Escolha o capítulo de hoje:", lista_caps)
+                    cap_sel = st.selectbox("Escolha o capítulo:", lista_caps)
 
-                    # --- DICIONÁRIO COMPLETO (66 LIVROS) ---
+                    # --- DICIONÁRIO DE TRADUÇÃO MAPEADO ---
                     livros_map = {
-                        "Gênesis": "Genesis", "Êxodo": "Exodus", "Levítico": "Leviticus", "Números": "Numbers", "Deuteronômio": "Deuteronomy",
-                        "Josué": "Joshua", "Juízes": "Judges", "Rute": "Ruth", "1 Samuel": "1 Samuel", "2 Samuel": "2 Samuel",
-                        "1 Reis": "1 Kings", "2 Reis": "2 Kings", "1 Crônicas": "1 Chronicles", "2 Crônicas": "2 Chronicles",
-                        "Esdras": "Ezra", "Neemias": "Nehemiah", "Ester": "Esther", "Jó": "Job", "Salmos": "Psalms",
-                        "Provérbios": "Proverbs", "Eclesiastes": "Ecclesiastes", "Cantares": "Song of Solomon", "Isaías": "Isaiah",
-                        "Jeremias": "Jeremiah", "Lamentações": "Lamentations", "Ezequiel": "Ezekiel", "Daniel": "Daniel",
-                        "Oseias": "Hosea", "Joel": "Joel", "Amós": "Amos", "Obadias": "Obadiah", "Jonas": "Jonah",
+                        "Genesis": "Genesis", "Exodo": "Exodus", "Levitico": "Leviticus", "Numeros": "Numbers", "Deuteronomio": "Deuteronomy",
+                        "Josue": "Joshua", "Juizes": "Judges", "Rute": "Ruth", "1 Samuel": "1 Samuel", "2 Samuel": "2 Samuel",
+                        "1 Reis": "1 Kings", "2 Reis": "2 Kings", "1 Cronicas": "1 Chronicles", "2 Cronicas": "2 Chronicles",
+                        "Esdras": "Ezra", "Neemias": "Nehemiah", "Ester": "Esther", "Jo": "Job", "Salmos": "Psalms", "Salmo": "Psalms",
+                        "Proverbios": "Proverbs", "Eclesiastes": "Ecclesiastes", "Cantares": "Song of Solomon", "Isaias": "Isaiah",
+                        "Jeremias": "Jeremiah", "Lamentacoes": "Lamentations", "Ezequiel": "Ezekiel", "Daniel": "Daniel",
+                        "Oseias": "Hosea", "Joel": "Joel", "Amos": "Amos", "Obadias": "Obadiah", "Jonas": "Jonah",
                         "Miqueias": "Micah", "Naum": "Nahum", "Habacuque": "Habakkuk", "Sofonias": "Zephaniah", "Ageu": "Haggai",
                         "Zacarias": "Zechariah", "Malaquias": "Malachi", "Mateus": "Matthew", "Marcos": "Mark", "Lucas": "Luke",
-                        "João": "John", "Atos": "Acts", "Romanos": "Romans", "1 Coríntios": "1 Corinthians", "2 Coríntios": "2 Corinthians",
-                        "Gálatas": "Galatians", "Efésios": "Ephesians", "Filipenses": "Philippians", "Colossenses": "Colossians",
-                        "1 Tessalonicenses": "1 Thessalonians", "2 Tessalonicenses": "2 Thessalonians", "1 Timóteo": "1 Timothy",
-                        "2 Timóteo": "2 Timothy", "Tito": "Titus", "Filemom": "Philemon", "Hebreus": "Hebrews", "Tiago": "James",
-                        "1 Pedro": "1 Peter", "2 Pedro": "2 Peter", "1 João": "1 John", "2 João": "2 John", "3 João": "3 John",
+                        "Joao": "John", "Atos": "Acts", "Romanos": "Romans", "1 Corintios": "1 Corinthians", "2 Corintios": "2 Corinthians",
+                        "Galatas": "Galatians", "Efesios": "Ephesians", "Filipenses": "Philippians", "Colossenses": "Colossians",
+                        "1 Tessalonicenses": "1 Thessalonians", "2 Tessalonicenses": "2 Thessalonians", "1 Timoteo": "1 Timothy",
+                        "2 Timoteo": "2 Timothy", "Tito": "Titus", "Filemom": "Philemon", "Hebreus": "Hebrews", "Tiago": "James",
+                        "1 Pedro": "1 Peter", "2 Pedro": "2 Peter", "1 Joao": "1 John", "2 Joao": "2 John", "3 Joao": "3 John",
                         "Judas": "Jude", "Apocalipse": "Revelation"
                     }
 
-                    # Tradução para a API
+                    # Busca o nome limpo do que foi selecionado
+                    cap_limpo = limpar(cap_sel)
                     ref_api = cap_sel
+                    
                     for pt, en in livros_map.items():
-                        if pt in cap_sel:
+                        # Se o nome limpo do dicionário estiver no nome limpo da seleção
+                        if limpar(pt) in cap_limpo:
                             ref_api = cap_sel.replace(pt, en)
+                            # Caso o replace direto não funcione por causa de acentos:
+                            ref_api = re.sub(rf"^{pt}", en, cap_sel, flags=re.IGNORECASE)
                             break
 
-                    with st.spinner("Buscando Palavra..."):
+                    with st.spinner("Buscando na Bíblia..."):
                         try:
+                            # Fallback: Se não traduziu nada, tenta mandar a referência original limpa
                             url = f"https://bible-api.com/{ref_api}?translation=almeida"
-                            resp = requests.get(url).json()
-                            texto = resp.get('text', "Texto não encontrado. Verifique a referência.")
-                        except: texto = "Erro de conexão com a Bíblia."
+                            res = requests.get(url)
+                            if res.status_code == 200:
+                                texto = res.json().get('text', "Texto não disponível.")
+                            else:
+                                texto = f"Não encontramos o texto para '{cap_sel}'. Verifique a planilha."
+                        except:
+                            texto = "Erro de conexão com o servidor da Bíblia."
 
                     st.markdown(f'<div class="caixa-leitura">{texto}</div>', unsafe_allow_html=True)
                     
-                    if st.button("✅ CONCLUIR LEITURA"):
+                    if st.button("✅ CONCLUIR DIA"):
                         sh = conectar_planilha()
                         aba_p = sh.worksheet("Progresso")
                         celulas = aba_p.findall(u['nome'])
@@ -416,5 +431,5 @@ elif st.session_state.pagina == "Leitura":
                                 aba_p.update_cell(c.row, 3, dia_hoje + 1)
                                 st.balloons(); st.rerun()
                 else: st.warning("Roteiro não encontrado.")
-            else: st.info("Nenhum plano vinculado ao seu nome.")
-        else: st.error("Coluna de usuário não encontrada na aba Progresso.")
+            else: st.info("Nenhum plano para você.")
+        else: st.error("Coluna de usuário não encontrada.")
