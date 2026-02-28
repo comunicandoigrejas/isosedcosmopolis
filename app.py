@@ -186,69 +186,71 @@ elif st.session_state.pagina == "Aniv":
 
 # --- PÁGINA: GESTÃO ---
 elif st.session_state.pagina == "Gestao":
+    # DICIONÁRIO DE MESES EM PORTUGUÊS
+    meses_pt = {
+        1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
+        5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
+        9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+    }
+
     st.markdown("""
         <style>
-        /* 1. Fundo da caixa fechada e texto que você digita */
-        input, [data-baseweb="select"] > div {
-            background-color: white !important;
+        /* 1. FORÇA O TEXTO DE DENTRO DA CAIXA (SELECIONADO OU NÃO) A FICAR PRETO */
+        div[data-baseweb="select"] * {
             color: black !important;
+            -webkit-text-fill-color: black !important; /* Força em iPhones/Safari */
         }
 
-        /* 2. FORÇA O TEXTO DA LISTA ABERTA A FICAR PRETO */
+        /* 2. GARANTE O FUNDO BRANCO NAS CAIXAS */
+        div[data-baseweb="select"] > div, input {
+            background-color: white !important;
+        }
+
+        /* 3. LISTA DE OPÇÕES (DROPDOWN) */
         div[data-baseweb="popover"] * {
             color: black !important;
-        }
-
-        /* 3. Garante que o fundo da lista seja branco */
-        div[data-baseweb="popover"] {
             background-color: white !important;
         }
 
-        /* 4. Cor do item quando você passa o mouse (amarelo com letra preta) */
+        /* 4. DESTAQUE AO SELECIONAR (AMARELO ISOSED) */
         div[data-baseweb="popover"] li:hover {
             background-color: #ffd700 !important;
-            color: black !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
     st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_gestao")
     
-    st.markdown("<h2>⚙️ Painel de Administração</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>⚙️ Gestão ISOSED</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
         with st.form("login_admin"):
-            st.markdown("<p style='text-align:center;'>Digite a senha master:</p>", unsafe_allow_html=True)
-            senha_gestao = st.text_input("Senha:", type="password")
+            senha_gestao = st.text_input("Senha Master:", type="password")
             if st.form_submit_button("LIBERAR ACESSO"):
                 if senha_gestao == "ISOSED2026":
                     st.session_state.admin_ok = True
                     st.rerun()
                 else:
                     st.error("Senha incorreta.")
-    
     else:
         st.success("Acesso Liberado!")
         
-        # Uso de abas para organizar a gestão
-        tab_dados, tab_escala = st.tabs(["📊 Ver Membros", "🤖 Gerar Escalas"])
-        
-        with tab_dados:
-            df_usuarios = carregar_dados("Usuarios")
-            st.dataframe(df_usuarios, use_container_width=True)
-
-        with tab_escala:
-            # Formulário para evitar erro de Submit fora do lugar
-            with st.form("gerador_de_datas"):
-                st.write("Selecione o mês para criar as datas na planilha:")
-                
-                mes_gen = st.selectbox("Escolha o Mês:", list(range(1, 13)), format_func=lambda x: calendar.month_name[x])
-                setor_gen = st.radio("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
-                
-                if st.form_submit_button(f"GERAR DATAS DE {setor_gen.upper()}"):
-                    # Lógica de geração (obter_datas_culto_pt deve estar no seu código)
-                    st.info(f"Gerando datas para {setor_gen} no mês {mes_gen}...")
-                    # Aqui você chamaria a função aba.append_row()
+        with st.form("gerador_escalas_final"):
+            st.write("### Gerador de Escalas Automático")
+            
+            # SELETOR DE MÊS TRADUZIDO
+            mes_selecionado = st.selectbox(
+                "Selecione o Mês:", 
+                options=list(meses_pt.keys()), 
+                format_func=lambda x: meses_pt[x],
+                index=hoje_br.month - 1
+            )
+            
+            setor_selecionado = st.radio("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
+            
+            if st.form_submit_button(f"GERAR DATAS DE {setor_selecionado.upper()}"):
+                # Aqui você chama a sua função de geração
+                st.info(f"Gerando {setor_selecionado} para {meses_pt[mes_selecionado]}...")
     
 # --- 3. LEITURA (CADASTRO COM ESCOLHA DE PLANO) ---
 elif st.session_state.pagina == "Leitura":
