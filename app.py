@@ -186,33 +186,26 @@ elif st.session_state.pagina == "Aniv":
 
 # --- PÁGINA: GESTÃO ---
 elif st.session_state.pagina == "Gestao":
-    # CSS REFORÇADO: Fundo Branco e Fonte Preta para Seletores e Inputs
     st.markdown("""
         <style>
-        /* 1. Caixa de texto e Seletor principal */
+        /* 1. Fundo da caixa fechada e texto que você digita */
         input, [data-baseweb="select"] > div {
             background-color: white !important;
             color: black !important;
         }
-        
-        /* 2. Texto dentro da caixa (o que aparece antes de clicar) */
-        [data-baseweb="select"] div {
+
+        /* 2. FORÇA O TEXTO DA LISTA ABERTA A FICAR PRETO */
+        div[data-baseweb="popover"] * {
             color: black !important;
         }
 
-        /* 3. A lista de opções que abre (Dropdown) */
-        [data-baseweb="popover"] ul {
-            background-color: white !important;
-        }
-        
-        /* 4. Cada item da lista (Janeiro, Fevereiro, etc.) */
-        [data-baseweb="popover"] li {
-            color: black !important;
+        /* 3. Garante que o fundo da lista seja branco */
+        div[data-baseweb="popover"] {
             background-color: white !important;
         }
 
-        /* 5. Efeito de passar o mouse na lista (opcional, para enxergar a seleção) */
-        [data-baseweb="popover"] li:hover {
+        /* 4. Cor do item quando você passa o mouse (amarelo com letra preta) */
+        div[data-baseweb="popover"] li:hover {
             background-color: #ffd700 !important;
             color: black !important;
         }
