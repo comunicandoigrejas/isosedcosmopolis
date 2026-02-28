@@ -280,10 +280,9 @@ elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_leitura")
     
     if st.session_state.user is None:
-        # TELA DE LOGIN (Simplificada por Nome)
         with st.form("login_leitura"):
             st.markdown("### 🔐 Acessar meus Planos")
-            login_nome = st.text_input("Seu Nome (conforme a planilha):")
+            login_nome = st.text_input("Seu Nome:")
             login_senha = st.text_input("Sua Senha:", type="password")
             if st.form_submit_button("ENTRAR"):
                 df_u = carregar_dados("Usuarios")
@@ -293,25 +292,20 @@ elif st.session_state.pagina == "Leitura":
                     st.rerun()
                 else: st.error("Nome ou senha não conferem.")
     else:
-        # USUÁRIO LOGADO
         u = st.session_state.user
         st.markdown(f"### 📖 Olá, {u['nome']}")
         
-        # BUSCA OS PLANOS DO USUÁRIO NA ABA 'PROGRESSO'
+        # BUSCA OS PLANOS NA ABA 'PROGRESSO'
         df_p = carregar_dados("Progresso")
-        # Filtra pelo Nome (conforme a imagem que você enviou)
         meus_planos = df_p[df_p['usuario'].str.lower() == u['nome'].lower()]
         
         if not meus_planos.empty:
-            # CAIXA DE SELEÇÃO: Escolher qual plano ler agora
-            # Aqui listamos todos os planos que o usuário já iniciou
             plano_selecionado = st.selectbox(
                 "Qual plano deseja ler agora?",
                 options=meus_planos['plano'].tolist(),
                 key="seletor_planos_usuario"
             )
             
-            # Pega os dados do plano escolhido
             dados_plano = meus_planos[meus_planos['plano'] == plano_selecionado].iloc[0]
             dia_atual = int(dados_plano['dia_atual'])
             
@@ -322,36 +316,43 @@ elif st.session_state.pagina == "Leitura":
                 </div>
             """, unsafe_allow_html=True)
             
-            # BUSCA A LEITURA DO DIA NA ABA 'LEITURA'
+            # BUSCA A LEITURA NA ABA 'LEITURA'
             df_leituras = carregar_dados("Leitura")
             l_hoje = df_leituras[(df_leituras['plano'] == plano_selecionado) & (df_leituras['dia'].astype(str) == str(dia_atual))]
             
             if not l_hoje.empty:
                 l = l_hoje.iloc[0]
-                st.info(f"📖 **LEITURA DE HOJE:** {l['referencia']}")
-                # Verifica se existe a coluna resumo, se não, mostra apenas a referência
-                if 'resumo' in l: st.write(f"💡 *Meditação:* {l['resumo']}")
+                
+                # --- SOLUÇÃO PARA O KEYERROR ---
+                # Procura 'referência' com acento ou 'referencia' sem acento
+                ref = l.get('referência', l.get('referencia', 'Referência não encontrada'))
+                # Procura 'resumo' ou 'resumo para meditação'
+                res = l.get('resumo', l.get('resumo para meditação', ''))
+                
+                st.info(f"📖 **LEITURA DE HOJE:** {ref}")
+                if res: st.write(f"💡 *Meditação:* {res}")
                 
                 if st.button("✅ CONCLUIR DIA"):
                     sh = conectar_planilha()
                     aba_p = sh.worksheet("Progresso")
-                    # Localiza a linha exata: Nome + Plano
-                    # Busca o usuário e depois filtra pelo plano
+                    # Localiza a linha exata (Nome + Plano) para atualizar
                     todas_celulas = aba_p.findall(u['nome'])
+                    atualizado = False
                     for celula in todas_celulas:
                         if aba_p.cell(celula.row, 2).value == plano_selecionado:
                             aba_p.update_cell(celula.row, 3, dia_atual + 1)
                             st.success("Progresso salvo!")
+                            atualizado = True
                             st.rerun()
+                    if not atualizado: st.error("Não foi possível encontrar este plano na sua lista.")
             else:
-                st.warning("Leitura não configurada para este dia neste plano.")
+                st.warning("⚠️ Leitura não configurada para este dia/plano na planilha.")
         else:
-            st.info("Você ainda não tem planos iniciados. Vá em 'Novo Plano' ou peça ao administrador.")
+            st.info("Você ainda não tem planos iniciados no seu nome.")
             
-        if st.button("Sair"):
+        if st.button("Sair da Conta"):
             st.session_state.user = None
             st.rerun()
-
 # --- 4. ESCALAS ---
 elif st.session_state.pagina == "Escalas":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
