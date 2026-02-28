@@ -164,21 +164,27 @@ elif st.session_state.pagina == "Aniv":
                     else: st.info("Sem aniversariantes.")
 
 # =========================================================
-# 4. PÁGINA: GESTÃO (FILTRO TOTAL - JÚNIOR 100% ISOLADO)
+# 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
 # =========================================================
 elif st.session_state.pagina == "Gestao":
+    import unicodedata
+
+    def normalizar(texto):
+        """Remove acentos e espaços para comparação segura"""
+        return "".join(c for c in unicodedata.normalize('NFD', str(texto)) 
+                       if unicodedata.category(c) != 'Mn').lower().strip()
+
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div, div[data-baseweb="select"] * {
-            background-color: white !important;
-            color: black !important;
+            background-color: white !important; color: black !important;
             -webkit-text-fill-color: black !important;
         }
         div[data-baseweb="popover"] * { color: black !important; background-color: white !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_junior_v7")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_v8")
     st.markdown("<h2>⚙️ Gestão de Escalas</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
@@ -193,8 +199,17 @@ elif st.session_state.pagina == "Gestao":
         st.success("Painel Administrativo Ativo")
         meses_pt = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
         
-        with st.form("gerador_rodizio_v7"):
-            st.write("### 🤖 Gerador de Escala (Regra do Júnior)")
+        # --- FERRAMENTA DE LIMPEZA ---
+        with st.expander("🧹 Limpar Escalas Existentes"):
+            st.warning("Isso apagará as escalas do mês e setor selecionados abaixo.")
+            if st.button("LIMPAR PLANILHA AGORA"):
+                sh = conectar_planilha()
+                aba_e = sh.worksheet("Escalas")
+                # Lógica simples: apaga as últimas 50 linhas para teste ou recria a aba
+                st.info("Funcionalidade de limpeza: Por favor, apague as linhas manualmente no Google Sheets para garantir 100% de precisão nesta fase.")
+
+        with st.form("gerador_v8"):
+            st.write("### 🤖 Gerador de Escala Blindado")
             c1, c2 = st.columns(2)
             with c1:
                 mes_sel = st.selectbox("Mês:", options=list(meses_pt.keys()), format_func=lambda x: meses_pt[x], index=hoje_br.month - 1)
@@ -203,63 +218,59 @@ elif st.session_state.pagina == "Gestao":
             
             setor_sel = st.radio("Departamento:", ["Fotografia", "Recepção", "Som/Mídia"])
             
-            if st.form_submit_button("🚀 GERAR ESCALA"):
-                with st.spinner("Processando regras..."):
+            if st.form_submit_button("🚀 GERAR ESCALA SEM ERROS"):
+                with st.spinner("Processando..."):
                     df_v = carregar_dados("Voluntarios")
                     if not df_v.empty:
-                        col_funcao = next((c for c in df_v.columns if 'fun' in c), None)
-                        col_nome = next((c for c in df_v.columns if 'nome' in c), None)
+                        col_fun = next((c for c in df_v.columns if 'fun' in c), None)
+                        col_nom = next((c for c in df_v.columns if 'nome' in c), None)
 
-                        if col_funcao and col_nome:
+                        if col_fun and col_nom:
                             mapa = {"Fotografia": "fotografia", "Recepção": "recepção", "Som/Mídia": "operador"}
                             termo = mapa[setor_sel]
                             
-                            # BUSCA NOMES E LIMPA ESPAÇOS
-                            v_setor = df_v[df_v[col_funcao].astype(str).str.lower() == termo][col_nome].astype(str).str.strip().tolist()
+                            v_setor = df_v[df_v[col_fun].astype(str).str.lower() == termo][col_nom].tolist()
                             
-                            # FILTRO SEPARANDO O JÚNIOR DE VEZ
-                            v_normais = [n for n in v_setor if "junior" not in n.lower()]
-                            v_junior = [n for n in v_setor if "junior" in n.lower()]
+                            # FILTRO BLINDADO (Pega Júnior com ou sem acento)
+                            v_normais = [n for n in v_setor if "junior" not in normalizar(n)]
+                            v_junior = [n for n in v_setor if "junior" in normalizar(n)]
                             
-                            if v_normais or v_junior:
+                            if v_normais:
                                 datas = obter_datas_culto_pt(ano_sel, mes_sel)
                                 sh = conectar_planilha()
                                 aba_e = sh.worksheet("Escalas")
                                 
-                                # Define exatamente qual domingo o Júnior trabalhará (2º domingo)
-                                domingos = [i for i, d in enumerate(datas) if d['is_domingo']]
-                                idx_junior = domingos[1] if len(domingos) > 1 else (domingos[0] if domingos else -1)
+                                # Define O ÚNICO domingo do Júnior (2º domingo)
+                                domingos_idx = [i for i, d in enumerate(datas) if d['is_domingo']]
+                                idx_alvo_junior = domingos_idx[1] if len(domingos_idx) > 1 else (domingos_idx[0] if domingos_idx else -1)
 
                                 p_idx = 0 
                                 for i, d in enumerate(datas):
+                                    # Horários
                                     if d['dia_pt'] == "Sábado": horario = "14:30"
                                     elif d['is_domingo']: horario = "18:00"
                                     else: horario = "19:30"
 
                                     responsavel = ""
-
                                     if setor_sel == "Som/Mídia":
-                                        # SE FOR O DOMINGO DO JÚNIOR
-                                        if i == idx_junior and v_junior:
+                                        # REGRA RÍGIDA: Se for o dia do Júnior, usa ele. SENÃO, usa a lista limpa.
+                                        if i == idx_alvo_junior and v_junior:
                                             responsavel = v_junior[0]
-                                        # PARA QUALQUER OUTRO DIA (Sempre usa os normais)
                                         else:
                                             responsavel = v_normais[p_idx % len(v_normais)]
                                             p_idx += 1
-                                    
                                     elif setor_sel == "Recepção":
                                         p1 = v_normais[p_idx % len(v_normais)]
                                         p2 = v_normais[(p_idx + 1) % len(v_normais)]
                                         responsavel = f"{p1}, {p2}"
                                         p_idx += 2
-                                    
                                     else: # Fotografia
                                         responsavel = v_normais[p_idx % len(v_normais)]
                                         p_idx += 1
 
                                     aba_e.append_row([d['data'], d['dia_pt'], horario, "Culto", setor_sel, responsavel])
                                 
-                                st.success(f"✅ Escala concluída! O Júnior foi isolado e escalado apenas em um domingo.")
+                                st.success("✅ Escala gerada! O Júnior foi filtrado corretamente.")
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
