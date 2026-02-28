@@ -164,7 +164,7 @@ elif st.session_state.pagina == "Aniv":
                     else: st.info("Sem aniversariantes.")
 
 # =========================================================
-# 4. PÁGINA: GESTÃO (CORREÇÃO DE COLUNAS E REGRAS)
+# 4. PÁGINA: GESTÃO (REGRAS DE DOMINGO E JÚNIOR)
 # =========================================================
 elif st.session_state.pagina == "Gestao":
     st.markdown("""
@@ -175,7 +175,7 @@ elif st.session_state.pagina == "Gestao":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_regras_fixed")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_junior_fix")
     st.markdown("<h2>⚙️ Gestão de Escalas</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
@@ -190,8 +190,8 @@ elif st.session_state.pagina == "Gestao":
         st.success("Painel de Controle ISOSED Ativo")
         meses_pt = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
         
-        with st.form("gerador_regras_isosed_v2"):
-            st.write("### 🤖 Gerar Escala Inteligente")
+        with st.form("gerador_regras_isosed_v3"):
+            st.write("### 🤖 Gerar Escala com Regras de Domingo")
             c1, c2 = st.columns(2)
             with c1:
                 mes_sel = st.selectbox("Mês:", options=list(meses_pt.keys()), format_func=lambda x: meses_pt[x], index=hoje_br.month - 1)
@@ -200,53 +200,69 @@ elif st.session_state.pagina == "Gestao":
             
             setor_sel = st.radio("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
             
-            if st.form_submit_button(f"🚀 EXECUTAR REGRAS DE {setor_sel.upper()}"):
-                with st.spinner("Buscando Voluntários..."):
+            if st.form_submit_button(f"🚀 EXECUTAR ESCALA"):
+                with st.spinner("Processando voluntários e regras..."):
                     df_v = carregar_dados("Voluntarios")
                     
                     if not df_v.empty:
-                        # --- SOLUÇÃO PARA O KEYERROR ---
-                        # Procura a coluna que contém 'fun' (pode ser função, funcao, Função...)
                         col_funcao = next((c for c in df_v.columns if 'fun' in c), None)
                         col_nome = next((c for c in df_v.columns if 'nome' in c), None)
 
                         if col_funcao and col_nome:
-                            # Mapeamento de termos
                             mapa = {"Fotografia": "fotografia", "Recepção": "recepção", "Som/Mídia": "operador"}
                             termo = mapa[setor_sel]
                             
-                            # Filtra os voluntários
-                            voluntarios = df_v[df_v[col_funcao].astype(str).str.lower() == termo]['nome'].tolist()
+                            # Todos os voluntários do setor
+                            v_todos = df_v[df_v[col_funcao].astype(str).str.lower() == termo][col_nome].tolist()
                             
-                            if voluntarios:
-                                # GERAÇÃO DE DATAS
+                            if v_todos:
                                 datas = obter_datas_culto_pt(ano_sel, mes_sel)
                                 sh = conectar_planilha()
                                 aba_e = sh.worksheet("Escalas")
-                                idx_v = 0 
                                 
+                                # Contadores separados para rotatividade justa
+                                idx_geral = 0
+                                idx_domingo = 0
+                                
+                                # Lista sem o Júnior para dias de semana
+                                v_sem_junior = [n for n in v_todos if "junior" not in n.lower()]
+
                                 for d in datas:
+                                    # Definição de Horário
                                     if d['dia_pt'] == "Sábado": horario = "14:30"
                                     elif d['is_domingo']: horario = "18:00"
                                     else: horario = "19:30"
 
                                     nomes_final = ""
+                                    
+                                    # --- REGRAS POR SETOR ---
                                     if setor_sel == "Recepção":
-                                        p1 = voluntarios[idx_v % len(voluntarios)]
-                                        p2 = voluntarios[(idx_v + 1) % len(voluntarios)]
+                                        p1 = v_todos[idx_geral % len(v_todos)]
+                                        p2 = v_todos[(idx_geral + 1) % len(v_todos)]
                                         nomes_final = f"{p1}, {p2}"
-                                        idx_v += 2 
-                                    else:
-                                        nomes_final = voluntarios[idx_v % len(voluntarios)]
-                                        idx_v += 1
+                                        idx_geral += 2
+                                        
+                                    elif setor_sel == "Som/Mídia":
+                                        if d['is_domingo']:
+                                            # No domingo, usa a lista de TODOS (incluindo Júnior)
+                                            nomes_final = v_todos[idx_domingo % len(v_todos)]
+                                            idx_domingo += 1
+                                        else:
+                                            # Dia de semana, pula o Júnior
+                                            nomes_final = v_sem_junior[idx_geral % len(v_sem_junior)]
+                                            idx_geral += 1
+                                            
+                                    else: # Fotografia
+                                        nomes_final = v_todos[idx_geral % len(v_todos)]
+                                        idx_geral += 1
 
                                     aba_e.append_row([d['data'], d['dia_pt'], horario, "Culto", setor_sel, nomes_final])
                                 
-                                st.success(f"✅ Escala de {setor_sel} gerada com sucesso!")
+                                st.success(f"✅ Escala de {setor_sel} gerada! Júnior alocado apenas aos domingos e rodízio de domingo respeitado.")
                             else:
-                                st.warning(f"Nenhum voluntário encontrado para '{termo}'.")
+                                st.warning("Nenhum voluntário encontrado.")
                         else:
-                            st.error("Não encontrei as colunas 'Nome' ou 'Função' na aba Voluntarios.")
+                            st.error("Colunas da planilha não identificadas.")
 
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
