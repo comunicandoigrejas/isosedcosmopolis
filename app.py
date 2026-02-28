@@ -164,39 +164,20 @@ elif st.session_state.pagina == "Aniv":
                     else: st.info("Sem aniversariantes.")
 
 # =========================================================
-# 4. PÁGINA: GESTÃO (VISUAL REFORÇADO)
+# =========================================================
+# 4. PÁGINA: GESTÃO (GERADOR COMPLETO E FUNCIONAL)
 # =========================================================
 elif st.session_state.pagina == "Gestao":
-    # CSS ULTRA-ESPECÍFICO PARA CONTRASTE
+    # MANTENDO A BLINDAGEM VISUAL (FONTE PRETA)
     st.markdown("""
         <style>
-        /* 1. Fundo da caixa e texto selecionado (Fixa o preto no branco) */
-        div[data-baseweb="select"] > div {
-            background-color: white !important;
-        }
-        
-        /* 2. Alvo direto no texto que aparece dentro da caixa após selecionar */
-        div[data-baseweb="select"] div[data-testid="stMarkdownContainer"] p,
-        div[data-baseweb="select"] span,
-        div[data-baseweb="select"] div {
-            color: black !important;
-            -webkit-text-fill-color: black !important;
-        }
-
-        /* 3. Dropdown (Lista que abre ao clicar) */
-        div[data-baseweb="popover"] * {
-            color: black !important;
-            background-color: white !important;
-        }
-
-        /* 4. Destaque ao passar o mouse na lista */
-        div[data-baseweb="popover"] li:hover {
-            background-color: #ffd700 !important;
-        }
+        div[data-baseweb="select"] > div { background-color: white !important; }
+        div[data-baseweb="select"] * { color: black !important; -webkit-text-fill-color: black !important; }
+        div[data-baseweb="popover"] * { color: black !important; background-color: white !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_gestao")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_motor")
     st.markdown("<h2>⚙️ Gestão de Escalas</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
@@ -206,34 +187,48 @@ elif st.session_state.pagina == "Gestao":
                 if senha_gestao == "ISOSED2026":
                     st.session_state.admin_ok = True
                     st.rerun()
-                else:
-                    st.error("Senha incorreta.")
+                else: st.error("Senha incorreta.")
     else:
-        st.success("Painel Administrativo Ativo")
+        st.success("Painel de Controle ISOSED Ativo")
         
-        # Variáveis de apoio
         meses_pt = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
-        anos_opcoes = [2026, 2027, 2028]
-
-        with st.form("gerador_escalas_v3"):
-            st.write("### 🤖 Configurar Novo Rodízio")
+        
+        with st.form("gerador_final"):
+            st.write("### 🤖 Gerar Datas Automaticamente")
+            c1, c2 = st.columns(2)
+            with c1:
+                mes_sel = st.selectbox("Mês:", options=list(meses_pt.keys()), format_func=lambda x: meses_pt[x], index=hoje_br.month - 1)
+            with c2:
+                ano_sel = st.selectbox("Ano:", options=[2026, 2027, 2028], index=0)
             
-            col_m, col_a = st.columns(2)
-            with col_m:
-                mes_sel = st.selectbox(
-                    "Mês:", 
-                    options=list(meses_pt.keys()), 
-                    format_func=lambda x: meses_pt[x],
-                    index=hoje_br.month - 1
-                )
-            with col_a:
-                ano_sel = st.selectbox("Ano:", options=anos_opcoes, index=0)
+            setor_sel = st.radio("Setor para Gerar:", ["Fotografia", "Recepção", "Som/Mídia"])
             
-            setor_sel = st.radio("Setor da Igreja:", ["Fotografia", "Recepção", "Som/Mídia"])
-            
-            if st.form_submit_button(f"GERAR ESCALA DE {setor_sel.upper()}"):
-                st.info(f"Gerando para {meses_pt[mes_sel]} de {ano_sel}...")
-                # A lógica de salvar na planilha permanece a mesma
+            if st.form_submit_button(f"🚀 GERAR ESCALA DE {setor_sel.upper()}"):
+                with st.spinner(f"Conectando à planilha e gerando datas para {setor_sel}..."):
+                    # 1. Calcula as datas dos cultos (Qua, Sex, Dom e último Sáb)
+                    datas_calculadas = obter_datas_culto_pt(ano_sel, mes_sel)
+                    
+                    # 2. Conecta no Google Sheets
+                    sh = conectar_planilha()
+                    if sh:
+                        try:
+                            aba_escalas = sh.worksheet("Escalas")
+                            
+                            # 3. Loop para inserir cada data na planilha
+                            for d in datas_calculadas:
+                                # Define o horário padrão da ISOSED
+                                horario = "18:00" if d['is_domingo'] else "19:30"
+                                
+                                # Estrutura da linha: Data | Dia | Horário | Evento | Departamento | Responsável
+                                nova_linha = [d['data'], d['dia_pt'], horario, "Culto", setor_sel, "A definir"]
+                                
+                                aba_escalas.append_row(nova_linha)
+                            
+                            st.success(f"✅ Sucesso! {len(datas_calculadas)} datas de {setor_sel} foram enviadas para a planilha.")
+                        except Exception as e:
+                            st.error(f"Erro ao acessar a aba 'Escalas': {e}")
+                    else:
+                        st.error("Erro de conexão com o Google Drive.")
 
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
