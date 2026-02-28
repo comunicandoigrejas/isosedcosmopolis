@@ -186,26 +186,33 @@ elif st.session_state.pagina == "Aniv":
 
 # --- PÁGINA: GESTÃO ---
 elif st.session_state.pagina == "Gestao":
+    # CSS REFORÇADO: Fundo Branco e Fonte Preta para Seletores e Inputs
     st.markdown("""
         <style>
-        /* 1. Fundo da caixa fechada e texto que você digita */
+        /* 1. Caixa de texto e Seletor principal */
         input, [data-baseweb="select"] > div {
             background-color: white !important;
             color: black !important;
         }
-
-        /* 2. FORÇA O TEXTO DA LISTA ABERTA A FICAR PRETO */
-        div[data-baseweb="popover"] * {
+        
+        /* 2. Texto dentro da caixa (o que aparece antes de clicar) */
+        [data-baseweb="select"] div {
             color: black !important;
         }
 
-        /* 3. Garante que o fundo da lista seja branco */
-        div[data-baseweb="popover"] {
+        /* 3. A lista de opções que abre (Dropdown) */
+        [data-baseweb="popover"] ul {
+            background-color: white !important;
+        }
+        
+        /* 4. Cada item da lista (Janeiro, Fevereiro, etc.) */
+        [data-baseweb="popover"] li {
+            color: black !important;
             background-color: white !important;
         }
 
-        /* 4. Cor do item quando você passa o mouse (amarelo com letra preta) */
-        div[data-baseweb="popover"] li:hover {
+        /* 5. Efeito de passar o mouse na lista (opcional, para enxergar a seleção) */
+        [data-baseweb="popover"] li:hover {
             background-color: #ffd700 !important;
             color: black !important;
         }
@@ -214,7 +221,42 @@ elif st.session_state.pagina == "Gestao":
 
     st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_gestao")
     
-    # ... restante do código da gestão (login e gerador)
+    st.markdown("<h2>⚙️ Painel de Administração</h2>", unsafe_allow_html=True)
+
+    if not st.session_state.admin_ok:
+        with st.form("login_admin"):
+            st.markdown("<p style='text-align:center;'>Digite a senha master:</p>", unsafe_allow_html=True)
+            senha_gestao = st.text_input("Senha:", type="password")
+            if st.form_submit_button("LIBERAR ACESSO"):
+                if senha_gestao == "ISOSED2026":
+                    st.session_state.admin_ok = True
+                    st.rerun()
+                else:
+                    st.error("Senha incorreta.")
+    
+    else:
+        st.success("Acesso Liberado!")
+        
+        # Uso de abas para organizar a gestão
+        tab_dados, tab_escala = st.tabs(["📊 Ver Membros", "🤖 Gerar Escalas"])
+        
+        with tab_dados:
+            df_usuarios = carregar_dados("Usuarios")
+            st.dataframe(df_usuarios, use_container_width=True)
+
+        with tab_escala:
+            # Formulário para evitar erro de Submit fora do lugar
+            with st.form("gerador_de_datas"):
+                st.write("Selecione o mês para criar as datas na planilha:")
+                
+                mes_gen = st.selectbox("Escolha o Mês:", list(range(1, 13)), format_func=lambda x: calendar.month_name[x])
+                setor_gen = st.radio("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
+                
+                if st.form_submit_button(f"GERAR DATAS DE {setor_gen.upper()}"):
+                    # Lógica de geração (obter_datas_culto_pt deve estar no seu código)
+                    st.info(f"Gerando datas para {setor_gen} no mês {mes_gen}...")
+                    # Aqui você chamaria a função aba.append_row()
+    
 # --- 3. LEITURA (CADASTRO COM ESCOLHA DE PLANO) ---
 elif st.session_state.pagina == "Leitura":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
