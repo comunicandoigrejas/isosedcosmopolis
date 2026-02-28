@@ -192,27 +192,30 @@ elif st.session_state.pagina == "Gestao":
         5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
         9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
     }
+    
+    # LISTA DE ANOS (Para evitar erros de digitação)
+    anos_disponiveis = [2026, 2027, 2028]
 
     st.markdown("""
         <style>
-        /* 1. FORÇA O TEXTO DE DENTRO DA CAIXA (SELECIONADO OU NÃO) A FICAR PRETO */
+        /* FORÇA O TEXTO DE DENTRO DAS CAIXAS A FICAR PRETO */
         div[data-baseweb="select"] * {
             color: black !important;
-            -webkit-text-fill-color: black !important; /* Força em iPhones/Safari */
+            -webkit-text-fill-color: black !important;
         }
 
-        /* 2. GARANTE O FUNDO BRANCO NAS CAIXAS */
+        /* GARANTE O FUNDO BRANCO NAS CAIXAS */
         div[data-baseweb="select"] > div, input {
             background-color: white !important;
         }
 
-        /* 3. LISTA DE OPÇÕES (DROPDOWN) */
+        /* LISTA DE OPÇÕES (DROPDOWN) */
         div[data-baseweb="popover"] * {
             color: black !important;
             background-color: white !important;
         }
 
-        /* 4. DESTAQUE AO SELECIONAR (AMARELO ISOSED) */
+        /* DESTAQUE AO SELECIONAR */
         div[data-baseweb="popover"] li:hover {
             background-color: #ffd700 !important;
         }
@@ -221,7 +224,7 @@ elif st.session_state.pagina == "Gestao":
 
     st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_gestao")
     
-    st.markdown("<h2>⚙️ Gestão ISOSED</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>⚙️ Gestão de Escalas</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
         with st.form("login_admin"):
@@ -233,24 +236,35 @@ elif st.session_state.pagina == "Gestao":
                 else:
                     st.error("Senha incorreta.")
     else:
-        st.success("Acesso Liberado!")
+        st.success("Painel Administrativo Ativo")
         
-        with st.form("gerador_escalas_final"):
-            st.write("### Gerador de Escalas Automático")
+        with st.form("gerador_escalas_ano"):
+            st.write("### 🤖 Configurar Novo Rodízio")
             
-            # SELETOR DE MÊS TRADUZIDO
-            mes_selecionado = st.selectbox(
-                "Selecione o Mês:", 
-                options=list(meses_pt.keys()), 
-                format_func=lambda x: meses_pt[x],
-                index=hoje_br.month - 1
-            )
+            # MÊS E ANO LADO A LADO
+            col_mes, col_ano = st.columns(2)
             
-            setor_selecionado = st.radio("Setor:", ["Fotografia", "Recepção", "Som/Mídia"])
+            with col_mes:
+                mes_selecionado = st.selectbox(
+                    "Mês:", 
+                    options=list(meses_pt.keys()), 
+                    format_func=lambda x: meses_pt[x],
+                    index=hoje_br.month - 1
+                )
             
-            if st.form_submit_button(f"GERAR DATAS DE {setor_selecionado.upper()}"):
-                # Aqui você chama a sua função de geração
-                st.info(f"Gerando {setor_selecionado} para {meses_pt[mes_selecionado]}...")
+            with col_ano:
+                ano_selecionado = st.selectbox(
+                    "Ano:", 
+                    options=anos_disponiveis,
+                    index=0 # Começa em 2026
+                )
+            
+            setor_selecionado = st.radio("Setor da Igreja:", ["Fotografia", "Recepção", "Som/Mídia"])
+            
+            if st.form_submit_button(f"GERAR ESCALA DE {setor_selecionado.upper()}"):
+                # Aqui o App usará o mes_selecionado e o ano_selecionado para calcular as datas
+                st.info(f"Gerando {setor_selecionado} para {meses_pt[mes_selecionado]} de {ano_selecionado}...")
+                # Lógica de salvar na planilha...)
     
 # --- 3. LEITURA (CADASTRO COM ESCOLHA DE PLANO) ---
 elif st.session_state.pagina == "Leitura":
