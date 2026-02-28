@@ -255,15 +255,45 @@ elif st.session_state.pagina == "Escalas":
                 f = prox[prox['departamento'].str.contains(dep, case=False, na=False)]
                 for _, r in f.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
-# --- 5. DEVOCIONAL ---
+# --- PÁGINA: DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",))
+    # Botão de Voltar
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_dev")
+    
+    st.markdown("<h2>📖 Devocional Diário</h2>", unsafe_allow_html=True)
+    
+    # Carrega os dados da aba "Devocional"
     df_dev = carregar_dados("Devocional")
+    
     if not df_dev.empty:
+        # Puxa sempre a última linha cadastrada (o devocional mais recente)
         item = df_dev.iloc[-1]
-        st.markdown(f"### {item['titulo']}")
-        st.write(f"✨ Tema: {item['tema']} | Versículo: {item['versiculo']}")
+        
+        # Exibição do Título e Tema
+        st.markdown(f"""
+            <div class="card-isosed" style="text-align:center;">
+                <h3 style="margin:0; color:#ffd700;">{item['titulo']}</h3>
+                <p style="margin:5px 0 0 0; opacity:0.8; font-size:0.9em;">
+                    ✨ Tema: {item['tema']} | 📅 {item['data']}
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Versículo em destaque
+        st.success(f"📖 **Versículo Chave:** {item['versiculo']}")
+        
+        # Texto Principal
+        st.markdown("#### Palavra de Hoje")
         st.write(item['texto'])
-        with st.expander("🎯 Aplicação & Desafio"):
+        
+        st.markdown("---")
+        
+        # Aplicação e Desafio em menus expansíveis (melhor para Mobile)
+        with st.expander("🎯 APLICAÇÃO PESSOAL"):
             st.write(item['aplicacao'])
+            
+        with st.expander("🔥 DESAFIO DO DIA"):
             st.write(item['desafio'])
+            
+    else:
+        st.warning("⚠️ Nenhum devocional encontrado na aba 'Devocional' da planilha.")
