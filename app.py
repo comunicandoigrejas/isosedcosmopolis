@@ -164,7 +164,7 @@ elif st.session_state.pagina == "Aniv":
                     else: st.info("Sem aniversariantes.")
 
 # =========================================================
-# 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS - JÚNIOR SÓ 1X NO DOMINGO)
+# 4. PÁGINA: GESTÃO (FILTRO TOTAL - JÚNIOR 100% ISOLADO)
 # =========================================================
 elif st.session_state.pagina == "Gestao":
     st.markdown("""
@@ -178,7 +178,7 @@ elif st.session_state.pagina == "Gestao":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_junior_v6")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_ges_junior_v7")
     st.markdown("<h2>⚙️ Gestão de Escalas</h2>", unsafe_allow_html=True)
 
     if not st.session_state.admin_ok:
@@ -193,18 +193,18 @@ elif st.session_state.pagina == "Gestao":
         st.success("Painel Administrativo Ativo")
         meses_pt = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
         
-        with st.form("gerador_rodizio_blindado"):
-            st.write("### 🤖 Gerador de Escala Inteligente")
+        with st.form("gerador_rodizio_v7"):
+            st.write("### 🤖 Gerador de Escala (Regra do Júnior)")
             c1, c2 = st.columns(2)
             with c1:
                 mes_sel = st.selectbox("Mês:", options=list(meses_pt.keys()), format_func=lambda x: meses_pt[x], index=hoje_br.month - 1)
             with c2:
                 ano_sel = st.selectbox("Ano:", options=[2026, 2027], index=0)
             
-            setor_sel = st.radio("Selecione o Departamento:", ["Fotografia", "Recepção", "Som/Mídia"])
+            setor_sel = st.radio("Departamento:", ["Fotografia", "Recepção", "Som/Mídia"])
             
-            if st.form_submit_button(f"🚀 GERAR ESCALA"):
-                with st.spinner("Aplicando regras rígidas de rodízio..."):
+            if st.form_submit_button("🚀 GERAR ESCALA"):
+                with st.spinner("Processando regras..."):
                     df_v = carregar_dados("Voluntarios")
                     if not df_v.empty:
                         col_funcao = next((c for c in df_v.columns if 'fun' in c), None)
@@ -214,25 +214,24 @@ elif st.session_state.pagina == "Gestao":
                             mapa = {"Fotografia": "fotografia", "Recepção": "recepção", "Som/Mídia": "operador"}
                             termo = mapa[setor_sel]
                             
-                            # LISTAS SEPARADAS
-                            todos_nomes = df_v[df_v[col_funcao].astype(str).str.lower() == termo][col_nome].tolist()
-                            v_normais = [n for n in todos_nomes if "junior" not in n.lower()]
-                            v_junior = [n for n in todos_nomes if "junior" in n.lower()]
+                            # BUSCA NOMES E LIMPA ESPAÇOS
+                            v_setor = df_v[df_v[col_funcao].astype(str).str.lower() == termo][col_nome].astype(str).str.strip().tolist()
+                            
+                            # FILTRO SEPARANDO O JÚNIOR DE VEZ
+                            v_normais = [n for n in v_setor if "junior" not in n.lower()]
+                            v_junior = [n for n in v_setor if "junior" in n.lower()]
                             
                             if v_normais or v_junior:
                                 datas = obter_datas_culto_pt(ano_sel, mes_sel)
                                 sh = conectar_planilha()
                                 aba_e = sh.worksheet("Escalas")
                                 
-                                # Identifica os domingos para o Júnior
-                                domingos_idx = [i for i, d in enumerate(datas) if d['is_domingo']]
-                                # Júnior fica rigorosamente com o 2º domingo (se existir) ou o único disponível
-                                idx_alvo_junior = domingos_idx[1] if len(domingos_idx) > 1 else (domingos_idx[0] if domingos_idx else -1)
+                                # Define exatamente qual domingo o Júnior trabalhará (2º domingo)
+                                domingos = [i for i, d in enumerate(datas) if d['is_domingo']]
+                                idx_junior = domingos[1] if len(domingos) > 1 else (domingos[0] if domingos else -1)
 
-                                p_idx = 0 # Ponteiro exclusivo para o rodízio normal
-                                
+                                p_idx = 0 
                                 for i, d in enumerate(datas):
-                                    # Definição de horários padrão ISOSED
                                     if d['dia_pt'] == "Sábado": horario = "14:30"
                                     elif d['is_domingo']: horario = "18:00"
                                     else: horario = "19:30"
@@ -240,10 +239,10 @@ elif st.session_state.pagina == "Gestao":
                                     responsavel = ""
 
                                     if setor_sel == "Som/Mídia":
-                                        # REGRA RÍGIDA DO JÚNIOR
-                                        if i == idx_alvo_junior and v_junior:
+                                        # SE FOR O DOMINGO DO JÚNIOR
+                                        if i == idx_junior and v_junior:
                                             responsavel = v_junior[0]
-                                            # Aqui o p_idx NÃO aumenta para manter a sequência dos outros
+                                        # PARA QUALQUER OUTRO DIA (Sempre usa os normais)
                                         else:
                                             responsavel = v_normais[p_idx % len(v_normais)]
                                             p_idx += 1
@@ -260,9 +259,7 @@ elif st.session_state.pagina == "Gestao":
 
                                     aba_e.append_row([d['data'], d['dia_pt'], horario, "Culto", setor_sel, responsavel])
                                 
-                                st.success(f"✅ Escala de {setor_sel} gerada com sucesso! Júnior alocado apenas no domingo dia {datas[idx_alvo_junior]['data'] if idx_alvo_junior != -1 else 'N/A'}.")
-                            else: st.warning("Nenhum voluntário encontrado.")
-                        else: st.error("Erro nas colunas da planilha.")
+                                st.success(f"✅ Escala concluída! O Júnior foi isolado e escalado apenas em um domingo.")
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
