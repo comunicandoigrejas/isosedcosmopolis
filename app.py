@@ -303,14 +303,13 @@ elif st.session_state.pagina == "Escalas":
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
 # =========================================================
-# 6. PÁGINA: LEITURA (VERSÃO FINAL - BÍBLIA SEM ERRO 404)
+# 6. PÁGINA: LEITURA (VERSÃO "NÃO ACEITO 404")
 # =========================================================
 elif st.session_state.pagina == "Leitura":
     import re
     import urllib.parse
     import unicodedata
 
-    # CSS: Texto Preto nas Caixas Brancas (Visibilidade total)
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div, div[data-baseweb="select"] * {
@@ -326,10 +325,11 @@ elif st.session_state.pagina == "Leitura":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v16_final")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v17_final")
 
     if st.session_state.user is None:
-        with st.form("login_leitura_final"):
+        # (Seu código de login aqui...)
+        with st.form("login_leitura_v17"):
             u_n = st.text_input("Seu Nome:")
             u_s = st.text_input("Senha:", type="password")
             if st.form_submit_button("ACESSAR"):
@@ -357,8 +357,6 @@ elif st.session_state.pagina == "Leitura":
                 
                 if not l_hoje.empty:
                     ref_bruta = l_hoje.iloc[0].get('referência', l_hoje.iloc[0].get('referencia', ''))
-                    
-                    # 1. SEPARA MÚLTIPLAS REFERÊNCIAS
                     lista_previa = re.split(r'[,;]', ref_bruta)
                     lista_caps = []
                     for p in [item.strip() for item in lista_previa if item.strip()]:
@@ -370,41 +368,50 @@ elif st.session_state.pagina == "Leitura":
                             else: lista_caps.append(p)
                         else: lista_caps.append(p)
                     
-                    cap_sel = st.selectbox("Escolha o capítulo para ler:", lista_caps)
+                    cap_sel = st.selectbox("Escolha o capítulo:", lista_caps)
 
-                    # --- 2. DICIONÁRIO DE TRADUÇÃO (RÍGIDO) ---
+                    # --- DICIONÁRIO DE TRADUÇÃO (SINGULAR PARA EVITAR ERRO) ---
                     tradutor_en = {
-                        "salmos": "Psalms", "salmo": "Psalms", "genesis": "Genesis", "exodo": "Exodus",
+                        "salmos": "Psalm", "salmo": "Psalm", "genesis": "Genesis", "exodo": "Exodus",
                         "levitico": "Leviticus", "numeros": "Numbers", "deuteronomio": "Deuteronomy",
-                        "joao": "John", "mateus": "Matthew", "marcos": "Mark", "lucas": "Luke",
-                        "atos": "Acts", "romanos": "Romans", "proverbios": "Proverbs", "isaias": "Isaiah"
+                        "joao": "John", "mateus": "Matthew", "marcos": "Mark", "lucas": "Luke"
                     }
 
-                    # --- 3. LIMPEZA E FORMATAÇÃO PARA A API ---
-                    def formatar_link(ref_original):
-                        # Remove acentos e deixa minúsculo
-                        texto = "".join(c for c in unicodedata.normalize('NFD', ref_original) if unicodedata.category(c) != 'Mn').lower().strip()
-                        # Extrai o nome do livro e o número separadamente (Ex: salmos 24 -> salmos e 24)
-                        partes = re.match(r"([0-9]*\s*[a-z]+)\s*(\d+.*)", texto)
-                        if partes:
-                            livro_pt, num = partes.groups()
-                            livro_en = tradutor_en.get(livro_pt.strip(), livro_pt.strip().capitalize())
-                            return f"{livro_en} {num}"
-                        return ref_original
+                    def limpar_nome(ref):
+                        return "".join(c for c in unicodedata.normalize('NFD', ref) if unicodedata.category(c) != 'Mn').lower().strip()
 
-                    ref_final = formatar_link(cap_sel)
-                    
+                    # Lógica de Busca com Fallback (Tripla Tentativa)
+                    def buscar_biblia(ref_original):
+                        nome_limpo = limpar_nome(ref_original)
+                        ref_en = ref_original
+                        
+                        # Tenta traduzir para o Inglês Singular (Psalm 24)
+                        for pt, en in tradutor_en.items():
+                            if nome_limpo.startswith(pt):
+                                ref_en = nome_limpo.replace(pt, en)
+                                break
+                        
+                        urls_tentativas = [
+                            f"https://bible-api.com/{urllib.parse.quote(ref_en)}?translation=almeida", # 1. Inglês com Almeida
+                            f"https://bible-api.com/{urllib.parse.quote(ref_original)}?translation=almeida", # 2. Português com Almeida
+                            f"https://bible-api.com/{urllib.parse.quote(ref_en)}" # 3. Inglês (Padrão) como última opção
+                        ]
+
+                        for url in urls_tentativas:
+                            try:
+                                res = requests.get(url, timeout=5)
+                                if res.status_code == 200:
+                                    return res.json().get('text', None)
+                            except: continue
+                        return None
+
                     with st.spinner("Buscando Palavra..."):
-                        try:
-                            # Monta o link final codificado para evitar 404
-                            url_api = f"https://bible-api.com/{urllib.parse.quote(ref_final)}?translation=almeida"
-                            res = requests.get(url_api)
-                            
-                            if res.status_code == 200:
-                                st.markdown(f'<div class="caixa-leitura">{res.json()["text"]}</div>', unsafe_allow_html=True)
-                            else:
-                                st.error(f"Não encontramos o texto para '{cap_sel}'. Tentamos buscar como '{ref_final}'.")
-                        except: st.warning("Conexão falhou.")
+                        texto_sagrado = buscar_biblia(cap_sel)
+                        
+                        if texto_sagrado:
+                            st.markdown(f'<div class="caixa-leitura">{texto_sagrado}</div>', unsafe_allow_html=True)
+                        else:
+                            st.error(f"⚠️ Não conseguimos carregar '{cap_sel}'. A API da Bíblia está fora do ar ou a referência não existe.")
                     
                     if st.button("✅ CONCLUIR DIA"):
                         sh = conectar_planilha()
@@ -414,4 +421,3 @@ elif st.session_state.pagina == "Leitura":
                             if aba_p.cell(c.row, 2).value == plano_sel:
                                 aba_p.update_cell(c.row, 3, dia_hoje + 1)
                                 st.balloons(); st.rerun()
-                else: st.warning("Leitura não encontrada.")
