@@ -303,14 +303,14 @@ elif st.session_state.pagina == "Escalas":
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
 # =========================================================
-# 7. PÁGINA: LEITURA (VERSÃO DEFINITIVA - CORREÇÃO SALMOS)
+# 6. PÁGINA: LEITURA (VERSÃO FINAL - BÍBLIA SEM ERRO 404)
 # =========================================================
 elif st.session_state.pagina == "Leitura":
     import re
     import urllib.parse
     import unicodedata
 
-    # CSS: Força o texto preto nas caixas brancas
+    # CSS: Texto Preto nas Caixas Brancas (Visibilidade total)
     st.markdown("""
         <style>
         div[data-baseweb="select"] > div, div[data-baseweb="select"] * {
@@ -326,10 +326,10 @@ elif st.session_state.pagina == "Leitura":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v15_final")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v16_final")
 
     if st.session_state.user is None:
-        with st.form("login_leitura_v15"):
+        with st.form("login_leitura_final"):
             u_n = st.text_input("Seu Nome:")
             u_s = st.text_input("Senha:", type="password")
             if st.form_submit_button("ACESSAR"):
@@ -358,7 +358,7 @@ elif st.session_state.pagina == "Leitura":
                 if not l_hoje.empty:
                     ref_bruta = l_hoje.iloc[0].get('referência', l_hoje.iloc[0].get('referencia', ''))
                     
-                    # Separa por vírgula ou ponto e vírgula
+                    # 1. SEPARA MÚLTIPLAS REFERÊNCIAS
                     lista_previa = re.split(r'[,;]', ref_bruta)
                     lista_caps = []
                     for p in [item.strip() for item in lista_previa if item.strip()]:
@@ -370,44 +370,41 @@ elif st.session_state.pagina == "Leitura":
                             else: lista_caps.append(p)
                         else: lista_caps.append(p)
                     
-                    cap_sel = st.selectbox("Capítulo para ler agora:", lista_caps)
+                    cap_sel = st.selectbox("Escolha o capítulo para ler:", lista_caps)
 
-                    # --- DICIONÁRIO DE TRADUÇÃO (Ordem de tamanho importa) ---
-                    # Colocamos os maiores primeiro para não "atropelar" (Ex: Salmos antes de Salmo)
+                    # --- 2. DICIONÁRIO DE TRADUÇÃO (RÍGIDO) ---
                     tradutor_en = {
                         "salmos": "Psalms", "salmo": "Psalms", "genesis": "Genesis", "exodo": "Exodus",
                         "levitico": "Leviticus", "numeros": "Numbers", "deuteronomio": "Deuteronomy",
                         "joao": "John", "mateus": "Matthew", "marcos": "Mark", "lucas": "Luke",
-                        "atos": "Acts", "romanos": "Romans", "proverbios": "Proverbs", "isaias": "Isaiah",
-                        "tiago": "James", "pedro": "Peter", "apocalipse": "Revelation"
+                        "atos": "Acts", "romanos": "Romans", "proverbios": "Proverbs", "isaias": "Isaiah"
                     }
 
-                    def formatar_para_api(ref_original):
-                        # 1. Normaliza (tira acentos e minúsculo)
+                    # --- 3. LIMPEZA E FORMATAÇÃO PARA A API ---
+                    def formatar_link(ref_original):
+                        # Remove acentos e deixa minúsculo
                         texto = "".join(c for c in unicodedata.normalize('NFD', ref_original) if unicodedata.category(c) != 'Mn').lower().strip()
-                        
-                        # 2. Busca exata com Regex (evita trocar 'salmo' dentro de 'salmos')
-                        for pt, en in tradutor_en.items():
-                            # Se a palavra existe isolada no texto
-                            if re.search(rf'\b{pt}\b', texto):
-                                return texto.replace(pt, en).strip()
-                        return texto
+                        # Extrai o nome do livro e o número separadamente (Ex: salmos 24 -> salmos e 24)
+                        partes = re.match(r"([0-9]*\s*[a-z]+)\s*(\d+.*)", texto)
+                        if partes:
+                            livro_pt, num = partes.groups()
+                            livro_en = tradutor_en.get(livro_pt.strip(), livro_pt.strip().capitalize())
+                            return f"{livro_en} {num}"
+                        return ref_original
 
-                    ref_para_api = formatar_para_api(cap_sel)
+                    ref_final = formatar_link(cap_sel)
                     
                     with st.spinner("Buscando Palavra..."):
                         try:
-                            # Montagem limpa do link
-                            link = f"https://bible-api.com/{urllib.parse.quote(ref_para_api)}?translation=almeida"
-                            res = requests.get(link)
+                            # Monta o link final codificado para evitar 404
+                            url_api = f"https://bible-api.com/{urllib.parse.quote(ref_final)}?translation=almeida"
+                            res = requests.get(url_api)
                             
                             if res.status_code == 200:
-                                texto_final = res.json().get('text', "Capítulo sem texto.")
-                                st.markdown(f'<div class="caixa-leitura">{texto_final}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="caixa-leitura">{res.json()["text"]}</div>', unsafe_allow_html=True)
                             else:
-                                st.error(f"⚠️ Erro {res.status_code}. Não encontramos o texto para '{cap_sel}'.")
-                        except:
-                            st.warning("Falha de conexão com a Bíblia Online.")
+                                st.error(f"Não encontramos o texto para '{cap_sel}'. Tentamos buscar como '{ref_final}'.")
+                        except: st.warning("Conexão falhou.")
                     
                     if st.button("✅ CONCLUIR DIA"):
                         sh = conectar_planilha()
@@ -417,4 +414,4 @@ elif st.session_state.pagina == "Leitura":
                             if aba_p.cell(c.row, 2).value == plano_sel:
                                 aba_p.update_cell(c.row, 3, dia_hoje + 1)
                                 st.balloons(); st.rerun()
-                else: st.warning("Leitura não cadastrada para hoje.")
+                else: st.warning("Leitura não encontrada.")
