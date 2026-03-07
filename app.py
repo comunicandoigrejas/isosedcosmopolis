@@ -99,30 +99,87 @@ def buscar_texto_biblico(referencia):
 # --- ROTEADOR PRINCIPAL ---
 # =========================================================
 
-# --- 1. INÍCIO ---
-if st.session_state.pagina == "Início":
-    col_l1, col_l2, col_l3 = st.columns([1, 1.2, 1])
-    with col_l2:
-        if os.path.exists("logo igreja.png"): st.image("logo igreja.png", use_container_width=True)
-    st.markdown("<h1>ISOSED COSMÓPOLIS</h1>", unsafe_allow_html=True)
-    
-    df_ag = carregar_dados("Agenda")
-    prox = "A definir"
-    if not df_ag.empty:
-        df_ag['dt_p'] = pd.to_datetime(df_ag['data'], dayfirst=True, errors='coerce')
-        ceia = df_ag[df_ag['evento'].str.contains("Santa Ceia", case=False, na=False)].sort_values('dt_p')
-        if not ceia.empty: prox = ceia.iloc[0]['data']
-    st.markdown(f'<div class="card-isosed" style="text-align:center;">🍇 PRÓXIMA SANTA CEIA<br><b style="font-size:1.3em; color:#ffd700;">{prox} às 18h00</b></div>', unsafe_allow_html=True)
+# =========================================================
+# 2. PÁGINA: INÍCIO (SANTA CEIA E ANIVERSARIANTES)
+# =========================================================
+elif st.session_state.pagina == "Início":
+    from datetime import timedelta
 
-    c1, c2 = st.columns(2)
+    # Título Principal
+    st.markdown("<h1 style='text-align: center; color: white;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #d1d9e6;'>Bem-vindo ao nosso App Oficial</p>", unsafe_allow_html=True)
+
+    # --- BLOCO 1: PRÓXIMA SANTA CEIA ---
+    st.markdown("---")
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.subheader("🍷 Próxima Santa Ceia")
+        df_ceia = carregar_dados("SantaCeia") # Certifique-se que o nome da aba é este
+        if not df_ceia.empty:
+            # Pega a primeira linha da lista (assumindo que a próxima está no topo)
+            proxima = df_ceia.iloc[0]
+            st.info(f"📅 **Data:** {proxima.get('data', 'A definir')}\n\n⏰ **Horário:** {proxima.get('horario', '19:00')}")
+        else:
+            st.write("Em breve nova data.")
+
+    # --- BLOCO 2: ANIVERSARIANTES (PRÓXIMOS 7 DIAS) ---
+    with col2:
+        st.subheader("🎂 Aniversariantes")
+        df_ani = carregar_dados("Aniversariantes")
+        
+        if not df_ani.empty:
+            # Identifica as colunas (Nome e Data)
+            col_nome = next((c for c in df_ani.columns if 'nome' in c.lower()), None)
+            col_data = next((c for c in df_ani.columns if 'data' in c.lower() or 'aniv' in c.lower()), None)
+
+            if col_nome and col_data:
+                hoje = hoje_br
+                lista_niver = []
+
+                for _, row in df_ani.iterrows():
+                    try:
+                        # Tenta converter a data da planilha (ex: 25/03 ou 25/03/1990)
+                        data_str = str(row[col_data]).strip()
+                        dia, mes = map(int, data_str.split('/')[:2])
+                        
+                        # Cria a data do niver no ano atual
+                        data_niver_este_ano = datetime(hoje.year, mes, dia).date()
+                        
+                        # Verifica se está no intervalo de hoje até +7 dias
+                        diferenca = (data_niver_este_ano - hoje).days
+                        
+                        # Lógica para aniversários que já passaram no ano mas estão nos próximos 7 dias (virada de ano)
+                        if diferenca < 0:
+                            data_niver_prox_ano = datetime(hoje.year + 1, mes, dia).date()
+                            diferenca = (data_niver_prox_ano - hoje).days
+
+                        if 0 <= diferenca <= 7:
+                            lista_niver.append(f"🎈 **{row[col_nome]}** ({dia}/{mes:02d})")
+                    except:
+                        continue
+
+                if lista_niver:
+                    for n in lista_niver:
+                        st.success(n)
+                else:
+                    st.write("Nenhum aniversariante nos próximos 7 dias.")
+            else:
+                st.warning("Colunas da aba 'Aniversariantes' não identificadas.")
+        else:
+            st.write("Lista de aniversariantes vazia.")
+
+    # --- MENU DE NAVEGAÇÃO RÁPIDA ---
+    st.markdown("---")
+    st.write("### 🛠️ O que deseja fazer?")
+    
+    c1, c2, c3 = st.columns(3)
     with c1:
-        st.button("🗓️ Agenda", on_click=navegar, args=("Agenda",))
-        st.button("🎂 Aniversários", on_click=navegar, args=("Aniv",))
-        st.button("⚙️ Gestão", on_click=navegar, args=("Gestao",))
+        if st.button("📖 LEITURA BÍBLICA", use_container_width=True): navegar("Leitura")
     with c2:
-        st.button("📢 Escalas", on_click=navegar, args=("Escalas",))
-        st.button("📖 Devocional", on_click=navegar, args=("Devocional",))
-        st.button("📜 Leitura", on_click=navegar, args=("Leitura",))
+        if st.button("📅 VER ESCALAS", use_container_width=True): navegar("Escalas")
+    with c3:
+        if st.button("⚙️ GESTÃO", use_container_width=True): navegar("Gestao")
 
 # --- 2. AGENDA ---
 elif st.session_state.pagina == "Agenda":
