@@ -121,7 +121,7 @@ elif st.session_state.pagina == "Início":
     col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 1, 1])
     with col_logo_2:
         # Substitua 'logo.png' pelo nome do seu arquivo ou pelo link direto da imagem
-        st.image("Logo igreja.png", width=180) 
+        st.image("logo igreja.png", width=180) 
     
     st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #d1d9e6;'>ISOSED Cosmópolis</p>", unsafe_allow_html=True)
