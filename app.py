@@ -102,73 +102,56 @@ def buscar_texto_biblico(referencia):
 # =========================================================
 # 2. PÁGINA: INÍCIO (SANTA CEIA E ANIVERSARIANTES)
 # =========================================================
+# PÁGINA INICIAL (Alinhada exatamente abaixo do 'if')
 elif st.session_state.pagina == "Início":
-    from datetime import timedelta
-
-    # Título Principal
-    st.markdown("<h1 style='text-align: center; color: white;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #d1d9e6;'>Bem-vindo ao nosso App Oficial</p>", unsafe_allow_html=True)
-
-    # --- BLOCO 1: PRÓXIMA SANTA CEIA ---
+    from datetime import date
+    
+    st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
+    
     st.markdown("---")
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns(2)
 
+    # --- Bloco Santa Ceia ---
     with col1:
-        st.subheader("🍷 Próxima Santa Ceia")
-        df_ceia = carregar_dados("SantaCeia") # Certifique-se que o nome da aba é este
+        st.subheader("🍷 Santa Ceia")
+        df_ceia = carregar_dados("SantaCeia")
         if not df_ceia.empty:
-            # Pega a primeira linha da lista (assumindo que a próxima está no topo)
-            proxima = df_ceia.iloc[0]
-            st.info(f"📅 **Data:** {proxima.get('data', 'A definir')}\n\n⏰ **Horário:** {proxima.get('horario', '19:00')}")
+            p = df_ceia.iloc[0]
+            st.info(f"📅 {p.get('data', 'TBA')}\n\n⏰ {p.get('horario', '19:00')}")
         else:
-            st.write("Em breve nova data.")
+            st.write("Sem data definida.")
 
-    # --- BLOCO 2: ANIVERSARIANTES (PRÓXIMOS 7 DIAS) ---
+    # --- Bloco Aniversariantes (Próximos 7 dias) ---
     with col2:
         st.subheader("🎂 Aniversariantes")
         df_ani = carregar_dados("Aniversariantes")
-        
         if not df_ani.empty:
-            # Identifica as colunas (Nome e Data)
-            col_nome = next((c for c in df_ani.columns if 'nome' in c.lower()), None)
-            col_data = next((c for c in df_ani.columns if 'data' in c.lower() or 'aniv' in c.lower()), None)
+            # Busca colunas de forma flexível
+            c_nome = next((c for c in df_ani.columns if 'nome' in c.lower()), None)
+            c_data = next((c for c in df_ani.columns if 'data' in c.lower() or 'aniv' in c.lower()), None)
 
-            if col_nome and col_data:
-                hoje = hoje_br
-                lista_niver = []
-
+            if c_nome and c_data:
+                hoje = date.today()
+                achou = False
                 for _, row in df_ani.iterrows():
                     try:
-                        # Tenta converter a data da planilha (ex: 25/03 ou 25/03/1990)
-                        data_str = str(row[col_data]).strip()
-                        dia, mes = map(int, data_str.split('/')[:2])
+                        d_str = str(row[c_data]).strip()
+                        dia, mes = map(int, d_str.split('/')[:2])
+                        niver = date(hoje.year, mes, dia)
+                        diff = (niver - hoje).days
                         
-                        # Cria a data do niver no ano atual
-                        data_niver_este_ano = datetime(hoje.year, mes, dia).date()
-                        
-                        # Verifica se está no intervalo de hoje até +7 dias
-                        diferenca = (data_niver_este_ano - hoje).days
-                        
-                        # Lógica para aniversários que já passaram no ano mas estão nos próximos 7 dias (virada de ano)
-                        if diferenca < 0:
-                            data_niver_prox_ano = datetime(hoje.year + 1, mes, dia).date()
-                            diferenca = (data_niver_prox_ano - hoje).days
+                        # Ajuste para virada de ano
+                        if diff < 0:
+                            niver = date(hoje.year + 1, mes, dia)
+                            diff = (niver - hoje).days
 
-                        if 0 <= diferenca <= 7:
-                            lista_niver.append(f"🎈 **{row[col_nome]}** ({dia}/{mes:02d})")
-                    except:
-                        continue
-
-                if lista_niver:
-                    for n in lista_niver:
-                        st.success(n)
-                else:
-                    st.write("Nenhum aniversariante nos próximos 7 dias.")
-            else:
-                st.warning("Colunas da aba 'Aniversariantes' não identificadas.")
+                        if 0 <= diff <= 7:
+                            st.success(f"🎈 **{row[c_nome]}** ({dia}/{mes:02d})")
+                            achou = True
+                    except: continue
+                if not achou: st.write("Ninguém nos próximos 7 dias.")
         else:
-            st.write("Lista de aniversariantes vazia.")
-
+            st.write("Lista vazia.")
     # --- MENU DE NAVEGAÇÃO RÁPIDA ---
     st.markdown("---")
     st.write("### 🛠️ O que deseja fazer?")
