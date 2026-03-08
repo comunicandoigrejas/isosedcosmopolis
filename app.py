@@ -121,15 +121,25 @@ elif st.session_state.pagina == "Início":
     
     col1, col2 = st.columns(2)
 
-    # --- Bloco Santa Ceia ---
+  # --- Bloco Santa Ceia (Versão Inteligente) ---
     with col1:
         st.subheader("🍷 Santa Ceia")
         df_ceia = carregar_dados("SantaCeia")
+        
         if not df_ceia.empty:
+            # Tenta achar a coluna de data (pode ser 'data', 'ceia', 'próxima ceia', etc)
+            col_data_ceia = next((c for c in df_ceia.columns if 'data' in c or 'ceia' in c), None)
+            col_hora_ceia = next((c for c in df_ceia.columns if 'hora' in c), None)
+            
             p = df_ceia.iloc[0]
-            st.info(f"📅 **Data:** {p.get('data', 'TBA')}\n\n⏰ **Horário:** {p.get('horario', '19:00')}")
+            
+            # Puxa os valores ou define um padrão caso esteja vazio na planilha
+            data_val = str(p[col_data_ceia]) if col_data_ceia and pd.notna(p[col_data_ceia]) else "A definir"
+            hora_val = str(p[col_hora_ceia]) if col_hora_ceia and pd.notna(p[col_hora_ceia]) else "19:00"
+
+            st.info(f"📅 **Data:** {data_val}\n\n⏰ **Horário:** {hora_val}")
         else:
-            st.write("Sem data definida.")
+            st.write("Dados da Ceia não encontrados na planilha.")
 
     # --- Bloco Aniversariantes (Próximos 7 dias) ---
     with col2:
