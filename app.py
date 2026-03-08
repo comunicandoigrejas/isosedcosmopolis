@@ -169,16 +169,27 @@ elif st.session_state.pagina == "Início":
             if not achou: st.write("Ninguém soprando velinhas nos próximos 7 dias.")
         else:
             st.write("Lista de aniversariantes não encontrada.")
-            # --- MENU DE NAVEGAÇÃO ---
+           # --- MENU DE NAVEGAÇÃO COMPLETO (6 BOTÕES) ---
     st.markdown("---")
-    st.write("### 🛠️ Atalhos Rápidos")
+    st.write("### ⛪ Ministérios e Ferramentas")
+    
+    # Linha 1
     c1, c2, c3 = st.columns(3)
     with c1:
-        if st.button("📖 LEITURA BÍBLICA", use_container_width=True): navegar("Leitura")
+        if st.button("📖 LEITURA", use_container_width=True, key="btn_lei"): navegar("Leitura")
     with c2:
-        if st.button("📅 VER ESCALAS", use_container_width=True): navegar("Escalas")
+        if st.button("📅 ESCALAS", use_container_width=True, key="btn_esc"): navegar("Escalas")
     with c3:
-        if st.button("⚙️ GESTÃO", use_container_width=True): navegar("Gestao")
+        if st.button("⚙️ GESTÃO", use_container_width=True, key="btn_ges"): navegar("Gestao")
+
+    # Linha 2
+    c4, c5, c6 = st.columns(3)
+    with c4:
+        if st.button("🗓️ AGENDA", use_container_width=True, key="btn_age"): navegar("Agenda")
+    with c5:
+        if st.button("🎂 ANIVERSÁRIOS", use_container_width=True, key="btn_ani"): navegar("Aniv")
+    with c6:
+        if st.button("🙏 DEVOCIONAL", use_container_width=True, key="btn_dev"): navegar("Devocional")
 
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
