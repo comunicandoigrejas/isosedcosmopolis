@@ -121,7 +121,7 @@ elif st.session_state.pagina == "Início":
     with col_l2:
         # Tenta carregar o logo. Se não achar o arquivo, ele pula para não dar erro.
         try:
-            st.image("logo.png", width=180) 
+            st.image("logo igreja.png", width=180) 
         except:
             st.markdown("<h3 style='text-align:center;'>⛪</h3>", unsafe_allow_html=True)
     
