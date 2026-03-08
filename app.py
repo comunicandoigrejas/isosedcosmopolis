@@ -169,6 +169,16 @@ elif st.session_state.pagina == "Início":
             if not achou: st.write("Ninguém soprando velinhas nos próximos 7 dias.")
         else:
             st.write("Lista de aniversariantes não encontrada.")
+            # --- MENU DE NAVEGAÇÃO ---
+    st.markdown("---")
+    st.write("### 🛠️ Atalhos Rápidos")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("📖 LEITURA BÍBLICA", use_container_width=True): navegar("Leitura")
+    with c2:
+        if st.button("📅 VER ESCALAS", use_container_width=True): navegar("Escalas")
+    with c3:
+        if st.button("⚙️ GESTÃO", use_container_width=True): navegar("Gestao")
 
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
