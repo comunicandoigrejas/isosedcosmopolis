@@ -113,13 +113,13 @@ if st.session_state.pagina == "Login":
                 st.error("Usuário ou senha incorretos.")
 
 # =========================================================
-# 2. PÁGINA: INÍCIO (SEM BARRA SUPERIOR E LOGO CENTRALIZADO)
+# 2. PÁGINA: INÍCIO (NAVEGAÇÃO INSTANTÂNEA DE 1 CLIQUE)
 # =========================================================
 elif st.session_state.pagina == "Início":
     from datetime import date
     import base64
 
-    # --- REMOVE A "PRIMEIRA LINHA" (BARRA DO GITHUB/STREAMLIT) ---
+    # --- ESCONDER BARRA SUPERIOR E MENUS ---
     st.markdown("""
         <style>
         header {visibility: hidden;}
@@ -128,7 +128,7 @@ elif st.session_state.pagina == "Início":
         </style>
     """, unsafe_allow_html=True)
 
-    # --- FUNÇÃO PARA CENTRALIZAR O LOGO ---
+    # --- LOGO CENTRALIZADO ---
     def set_centered_logo(png_file, width=180):
         try:
             with open(png_file, "rb") as f:
@@ -145,34 +145,27 @@ elif st.session_state.pagina == "Início":
         except:
             st.markdown("<h3 style='text-align:center;'>⛪</h3>", unsafe_allow_html=True)
 
-    # 1. Chamada do Logo (Perfeitamente Centralizado)
     set_centered_logo("logo igreja.png", width=180)
-    
     st.markdown("<p style='text-align: center; color: #d1d9e6; font-weight: bold;'>ISOSED Cosmópolis</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # 2. Colunas de Informação
+    # --- INFO: SANTA CEIA E ANIVERSARIANTES ---
     col1, col2 = st.columns(2)
 
-    # --- BLOCO SANTA CEIA (Lendo da aba Agenda) ---
     with col1:
         st.subheader("🍷 Próxima Santa Ceia")
         df_agenda = carregar_dados("Agenda")
         if not df_agenda.empty:
-            # Procura especificamente pelo evento "Santa Ceia"
             df_so_ceia = df_agenda[df_agenda['evento'].str.contains("Santa Ceia", case=False, na=False)]
             if not df_so_ceia.empty:
                 df_so_ceia['dt_temp'] = pd.to_datetime(df_so_ceia['data'], dayfirst=True, errors='coerce')
-                # Pega a próxima ceia a partir de hoje
-                proximas = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
-                if not proximas.empty:
-                    p = proximas.iloc[0]
+                prox = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
+                if not prox.empty:
+                    p = prox.iloc[0]
                     st.info(f"📅 **Data:** {p['data']}\n\n⏰ **Horário:** 19:00")
-                else: st.write("Nenhuma data futura encontrada.")
+                else: st.write("A definir.")
             else: st.write("Santa Ceia não agendada.")
-        else: st.write("Agenda vazia.")
 
-    # --- BLOCO ANIVERSARIANTES ---
     with col2:
         st.subheader("🎂 Aniversariantes")
         df_ani = carregar_dados("Aniversariantes")
@@ -180,7 +173,6 @@ elif st.session_state.pagina == "Início":
             c_nome = next((c for c in df_ani.columns if 'nome' in c), None)
             c_dia = next((c for c in df_ani.columns if 'dia' in c), None)
             c_mes = next((c for c in df_ani.columns if 'mes' in c or 'mês' in c), None)
-            
             hoje = date.today()
             achou = False
             for _, row in df_ani.iterrows():
@@ -195,23 +187,26 @@ elif st.session_state.pagina == "Início":
                 except: continue
             if not achou: st.write("Ninguém nos próximos 7 dias.")
 
-    # --- 3. MENU DE NAVEGAÇÃO (GRADE DE 6 BOTÕES) ---
+    # --- MENU DE NAVEGAÇÃO (BOTÕES COM ON_CLICK PARA 1 CLIQUE REAL) ---
     st.markdown("---")
+    st.write("### ⛪ Ministérios e Ferramentas")
+    
     m1, m2, m3 = st.columns(3)
+    # Aqui usamos 'on_click' para a mudança ser imediata
     with m1:
-        if st.button("📖 LEITURA", use_container_width=True, key="btn_lei"): navegar("Leitura")
+        st.button("📖 LEITURA", use_container_width=True, on_click=navegar, args=("Leitura",), key="btn_lei")
     with m2:
-        if st.button("📅 ESCALAS", use_container_width=True, key="btn_esc"): navegar("Escalas")
+        st.button("📅 ESCALAS", use_container_width=True, on_click=navegar, args=("Escalas",), key="btn_esc")
     with m3:
-        if st.button("⚙️ GESTÃO", use_container_width=True, key="btn_ges"): navegar("Gestao")
+        st.button("⚙️ GESTÃO", use_container_width=True, on_click=navegar, args=("Gestao",), key="btn_ges")
 
     m4, m5, m6 = st.columns(3)
     with m4:
-        if st.button("🗓️ AGENDA", use_container_width=True, key="btn_age"): navegar("Agenda")
+        st.button("🗓️ AGENDA", use_container_width=True, on_click=navegar, args=("Agenda",), key="btn_age")
     with m5:
-        if st.button("🎂 ANIVERSÁRIOS", use_container_width=True, key="btn_ani"): navegar("Aniv")
+        st.button("🎂 ANIVERSÁRIOS", use_container_width=True, on_click=navegar, args=("Aniv",), key="btn_ani")
     with m6:
-        if st.button("🙏 DEVOCIONAL", use_container_width=True, key="btn_dev"): navegar("Devocional")
+        st.button("🙏 DEVOCIONAL", use_container_width=True, on_click=navegar, args=("Devocional",), key="btn_dev")
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
 # =========================================================
