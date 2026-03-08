@@ -112,46 +112,64 @@ if st.session_state.pagina == "Login":
             else:
                 st.error("Usuário ou senha incorretos.")
 
-# 2. PÁGINA: INÍCIO (LOGO, CEIA DA AGENDA E MENUS)
+# =========================================================
+# 2. PÁGINA: INÍCIO (SEM BARRA SUPERIOR E LOGO CENTRALIZADO)
+# =========================================================
 elif st.session_state.pagina == "Início":
     from datetime import date
-    
-    # --- 1. LOGO CENTRALIZADO ---
-    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
-    with col_l2:
-        # Tenta carregar o logo. Se não achar o arquivo, ele pula para não dar erro.
+    import base64
+
+    # --- REMOVE A "PRIMEIRA LINHA" (BARRA DO GITHUB/STREAMLIT) ---
+    st.markdown("""
+        <style>
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- FUNÇÃO PARA CENTRALIZAR O LOGO ---
+    def set_centered_logo(png_file, width=180):
         try:
-            st.image("logo igreja.png", width=180) 
+            with open(png_file, "rb") as f:
+                data = f.read()
+                bin_str = base64.b64encode(data).decode()
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+                        <img src="data:image/png;base64,{bin_str}" width="{width}px">
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
         except:
             st.markdown("<h3 style='text-align:center;'>⛪</h3>", unsafe_allow_html=True)
+
+    # 1. Chamada do Logo (Perfeitamente Centralizado)
+    set_centered_logo("logo igreja.png", width=180)
     
-    st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #d1d9e6;'>ISOSED Cosmópolis</p>", unsafe_allow_html=True)
-    
+    st.markdown("<p style='text-align: center; color: #d1d9e6; font-weight: bold;'>ISOSED Cosmópolis</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # --- 2. DEFINIÇÃO DAS COLUNAS (O que resolve o NameError) ---
+    # 2. Colunas de Informação
     col1, col2 = st.columns(2)
 
-    # --- BLOCO SANTA CEIA (Busca na aba Agenda) ---
+    # --- BLOCO SANTA CEIA (Lendo da aba Agenda) ---
     with col1:
         st.subheader("🍷 Próxima Santa Ceia")
-        df_agenda_ceia = carregar_dados("Agenda")
-        
-        if not df_agenda_ceia.empty:
-            # Filtra eventos que contêm "Santa Ceia"
-            df_so_ceia = df_agenda_ceia[df_agenda_ceia['evento'].str.contains("Santa Ceia", case=False, na=False)]
-            
+        df_agenda = carregar_dados("Agenda")
+        if not df_agenda.empty:
+            # Procura especificamente pelo evento "Santa Ceia"
+            df_so_ceia = df_agenda[df_agenda['evento'].str.contains("Santa Ceia", case=False, na=False)]
             if not df_so_ceia.empty:
                 df_so_ceia['dt_temp'] = pd.to_datetime(df_so_ceia['data'], dayfirst=True, errors='coerce')
-                # Pega a próxima ceia (hoje ou futuro)
+                # Pega a próxima ceia a partir de hoje
                 proximas = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
-                
                 if not proximas.empty:
                     p = proximas.iloc[0]
                     st.info(f"📅 **Data:** {p['data']}\n\n⏰ **Horário:** 19:00")
-                else: st.write("Nenhuma data futura.")
-            else: st.write("Evento não achado na Agenda.")
+                else: st.write("Nenhuma data futura encontrada.")
+            else: st.write("Santa Ceia não agendada.")
         else: st.write("Agenda vazia.")
 
     # --- BLOCO ANIVERSARIANTES ---
@@ -164,25 +182,21 @@ elif st.session_state.pagina == "Início":
             c_mes = next((c for c in df_ani.columns if 'mes' in c or 'mês' in c), None)
             
             hoje = date.today()
-            achou_niver = False
+            achou = False
             for _, row in df_ani.iterrows():
                 try:
                     d, m = int(row[c_dia]), int(row[c_mes])
                     niver = date(hoje.year, m, d)
                     diff = (niver - hoje).days
                     if diff < 0: niver = date(hoje.year + 1, m, d); diff = (niver - hoje).days
-                    
                     if 0 <= diff <= 7:
                         st.success(f"🎈 **{row[c_nome].upper()}** ({d}/{m:02d})")
-                        achou_niver = True
+                        achou = True
                 except: continue
-            if not achou_niver: st.write("Ninguém nos próximos 7 dias.")
-        else: st.write("Lista vazia.")
+            if not achou: st.write("Ninguém nos próximos 7 dias.")
 
-    # --- 3. MENU DE NAVEGAÇÃO (6 BOTÕES) ---
+    # --- 3. MENU DE NAVEGAÇÃO (GRADE DE 6 BOTÕES) ---
     st.markdown("---")
-    st.write("### ⛪ Ministérios e Ferramentas")
-    
     m1, m2, m3 = st.columns(3)
     with m1:
         if st.button("📖 LEITURA", use_container_width=True, key="btn_lei"): navegar("Leitura")
