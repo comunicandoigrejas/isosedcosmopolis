@@ -112,14 +112,21 @@ if st.session_state.pagina == "Login":
             else:
                 st.error("Usuário ou senha incorretos.")
 
-# 2. PÁGINA: INÍCIO (AGORA COMO 'ELIF')
+# 2. PÁGINA: INÍCIO (AGORA COM LOGO)
 elif st.session_state.pagina == "Início":
     from datetime import date
     
-    st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
-    st.markdown("---")
+    # --- LOGO CENTRALIZADO ---
+    # Criamos 3 colunas para colocar o logo na do meio e ele ficar no centro da tela
+    col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 1, 1])
+    with col_logo_2:
+        # Substitua 'logo.png' pelo nome do seu arquivo ou pelo link direto da imagem
+        st.image("logo.png", width=180) 
     
-    col1, col2 = st.columns(2)
+    st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #d1d9e6;'>ISOSED Cosmópolis</p>", unsafe_allow_html=True)
+    
+    st.markdown("---")
 
  # --- Bloco Santa Ceia (Buscando na aba Agenda) ---
     with col1:
