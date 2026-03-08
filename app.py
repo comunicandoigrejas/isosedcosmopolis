@@ -183,7 +183,7 @@ elif st.session_state.pagina == "Início":
     st.markdown("---")
     st.write("### ⛪ Ministérios e Ferramentas")
     
-    # Linha 1
+    # Linha 1: Funções Principais
     c1, c2, c3 = st.columns(3)
     with c1:
         if st.button("📖 LEITURA", use_container_width=True, key="btn_lei"): navegar("Leitura")
@@ -192,7 +192,7 @@ elif st.session_state.pagina == "Início":
     with c3:
         if st.button("⚙️ GESTÃO", use_container_width=True, key="btn_ges"): navegar("Gestao")
 
-    # Linha 2
+    # Linha 2: Agenda e Comunidade
     c4, c5, c6 = st.columns(3)
     with c4:
         if st.button("🗓️ AGENDA", use_container_width=True, key="btn_age"): navegar("Agenda")
@@ -200,7 +200,6 @@ elif st.session_state.pagina == "Início":
         if st.button("🎂 ANIVERSÁRIOS", use_container_width=True, key="btn_ani"): navegar("Aniv")
     with c6:
         if st.button("🙏 DEVOCIONAL", use_container_width=True, key="btn_dev"): navegar("Devocional")
-
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
 # =========================================================
