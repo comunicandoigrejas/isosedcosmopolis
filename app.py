@@ -121,25 +121,31 @@ elif st.session_state.pagina == "Início":
     
     col1, col2 = st.columns(2)
 
-  # --- Bloco Santa Ceia (Versão Inteligente) ---
+ # --- Bloco Santa Ceia (Buscando na aba Agenda) ---
     with col1:
-        st.subheader("🍷 Santa Ceia")
-        df_ceia = carregar_dados("SantaCeia")
+        st.subheader("🍷 Próxima Santa Ceia")
+        # Agora buscamos na aba 'Agenda' conforme sua foto
+        df_agenda_ceia = carregar_dados("Agenda")
         
-        if not df_ceia.empty:
-            # Tenta achar a coluna de data (pode ser 'data', 'ceia', 'próxima ceia', etc)
-            col_data_ceia = next((c for c in df_ceia.columns if 'data' in c or 'ceia' in c), None)
-            col_hora_ceia = next((c for c in df_ceia.columns if 'hora' in c), None)
+        if not df_agenda_ceia.empty:
+            # Filtra apenas os eventos que contém "Santa Ceia"
+            df_so_ceia = df_agenda_ceia[df_agenda_ceia['evento'].str.contains("Santa Ceia", case=False, na=False)]
             
-            p = df_ceia.iloc[0]
-            
-            # Puxa os valores ou define um padrão caso esteja vazio na planilha
-            data_val = str(p[col_data_ceia]) if col_data_ceia and pd.notna(p[col_data_ceia]) else "A definir"
-            hora_val = str(p[col_hora_ceia]) if col_hora_ceia and pd.notna(p[col_hora_ceia]) else "19:00"
-
-            st.info(f"📅 **Data:** {data_val}\n\n⏰ **Horário:** {hora_val}")
+            if not df_so_ceia.empty:
+                # Converte para data para garantir que pegamos a próxima
+                df_so_ceia['dt_temp'] = pd.to_datetime(df_so_ceia['data'], dayfirst=True, errors='coerce')
+                # Pega a primeira data que é hoje ou no futuro
+                proximas_ceias = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
+                
+                if not proximas_ceias.empty:
+                    p = proximas_ceias.iloc[0]
+                    st.info(f"📅 **Data:** {p['data']}\n\n⏰ **Horário:** 19:00")
+                else:
+                    st.write("Nenhuma data futura encontrada.")
+            else:
+                st.write("Evento 'Santa Ceia' não achado na Agenda.")
         else:
-            st.write("Dados da Ceia não encontrados na planilha.")
+            st.write("Aba 'Agenda' está vazia.")
 
     # --- Bloco Aniversariantes (Próximos 7 dias) ---
     with col2:
