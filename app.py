@@ -99,16 +99,26 @@ def buscar_texto_biblico(referencia):
 # --- ROTEADOR PRINCIPAL ---
 # =========================================================
 
-# =========================================================
-# 2. PÁGINA: INÍCIO (SANTA CEIA E ANIVERSARIANTES)
-# =========================================================
-# PÁGINA INICIAL (Alinhada exatamente abaixo do 'if')
+# 1. PÁGINA: LOGIN (O PRIMEIRO DEVE SER 'IF')
+if st.session_state.pagina == "Login":
+    st.markdown("<h2>🔐 Acesso ao Sistema</h2>", unsafe_allow_html=True)
+    with st.form("login_isosed"):
+        u_nome = st.text_input("Usuário:")
+        u_pass = st.text_input("Senha:", type="password")
+        if st.form_submit_button("ENTRAR"):
+            if u_nome.lower() == "admin" and u_pass == "isosed":
+                st.session_state.pagina = "Início"
+                st.rerun()
+            else:
+                st.error("Usuário ou senha incorretos.")
+
+# 2. PÁGINA: INÍCIO (AGORA COMO 'ELIF')
 elif st.session_state.pagina == "Início":
     from datetime import date
     
     st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
-    
     st.markdown("---")
+    
     col1, col2 = st.columns(2)
 
     # --- Bloco Santa Ceia ---
@@ -117,7 +127,7 @@ elif st.session_state.pagina == "Início":
         df_ceia = carregar_dados("SantaCeia")
         if not df_ceia.empty:
             p = df_ceia.iloc[0]
-            st.info(f"📅 {p.get('data', 'TBA')}\n\n⏰ {p.get('horario', '19:00')}")
+            st.info(f"📅 **Data:** {p.get('data', 'TBA')}\n\n⏰ **Horário:** {p.get('horario', '19:00')}")
         else:
             st.write("Sem data definida.")
 
@@ -126,82 +136,39 @@ elif st.session_state.pagina == "Início":
         st.subheader("🎂 Aniversariantes")
         df_ani = carregar_dados("Aniversariantes")
         if not df_ani.empty:
-            # Busca colunas de forma flexível
-            c_nome = next((c for c in df_ani.columns if 'nome' in c.lower()), None)
-            c_data = next((c for c in df_ani.columns if 'data' in c.lower() or 'aniv' in c.lower()), None)
+            # Identifica colunas de forma inteligente
+            c_nome = next((c for c in df_ani.columns if 'nome' in c), None)
+            c_dia = next((c for c in df_ani.columns if 'dia' in c), None)
+            c_mes = next((c for c in df_ani.columns if 'mes' in c or 'mês' in c), None)
+            c_data = next((c for c in df_ani.columns if 'data' in c or 'aniv' in c), None)
 
-            if c_nome and c_data:
-                hoje = date.today()
-                achou = False
-                for _, row in df_ani.iterrows():
-                    try:
-                        d_str = str(row[c_data]).strip()
-                        dia, mes = map(int, d_str.split('/')[:2])
-                        niver = date(hoje.year, mes, dia)
+            hoje = date.today()
+            achou = False
+            
+            for _, row in df_ani.iterrows():
+                try:
+                    # Tenta pegar dia/mes de colunas separadas ou de uma coluna de data
+                    if c_dia and c_mes:
+                        d, m = int(row[c_dia]), int(row[c_mes])
+                    elif c_data:
+                        partes = str(row[c_data]).split('/')
+                        d, m = int(partes[0]), int(partes[1])
+                    else: continue
+
+                    niver = date(hoje.year, m, d)
+                    diff = (niver - hoje).days
+                    if diff < 0: # Caso já tenha passado este ano
+                        niver = date(hoje.year + 1, m, d)
                         diff = (niver - hoje).days
-                        
-                        # Ajuste para virada de ano
-                        if diff < 0:
-                            niver = date(hoje.year + 1, mes, dia)
-                            diff = (niver - hoje).days
 
-                        if 0 <= diff <= 7:
-                            st.success(f"🎈 **{row[c_nome]}** ({dia}/{mes:02d})")
-                            achou = True
-                    except: continue
-                if not achou: st.write("Ninguém nos próximos 7 dias.")
+                    if 0 <= diff <= 7:
+                        st.success(f"🎈 **{row[c_nome].upper()}** ({d}/{m:02d})")
+                        achou = True
+                except: continue
+            
+            if not achou: st.write("Ninguém soprando velinhas nos próximos 7 dias.")
         else:
-            st.write("Lista vazia.")
-    # --- MENU DE NAVEGAÇÃO RÁPIDA ---
-    st.markdown("---")
-    st.write("### 🛠️ O que deseja fazer?")
-    
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button("📖 LEITURA BÍBLICA", use_container_width=True): navegar("Leitura")
-    with c2:
-        if st.button("📅 VER ESCALAS", use_container_width=True): navegar("Escalas")
-    with c3:
-        if st.button("⚙️ GESTÃO", use_container_width=True): navegar("Gestao")
-
-# --- 2. AGENDA ---
-elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_agenda")
-    st.markdown("<h2>🗓️ Agenda ISOSED 2026</h2>", unsafe_allow_html=True)
-    df_agenda = carregar_dados("Agenda")
-    abas = st.tabs(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-    
-    if not df_agenda.empty:
-        df_agenda['data_dt'] = pd.to_datetime(df_agenda['data'], dayfirst=True, errors='coerce')
-        for i, aba in enumerate(abas):
-            with aba:
-                mes_atual = i + 1
-                eventos_mes = df_agenda[df_agenda['data_dt'].dt.month == mes_atual].sort_values('data_dt')
-                if not eventos_mes.empty:
-                    for _, linha in eventos_mes.iterrows():
-                        st.markdown(f'<div class="card-isosed"><b style="color:#ffd700;">{linha["data"]}</b><br>{linha["evento"]}</div>', unsafe_allow_html=True)
-                else: st.info("Sem eventos.")
-
-# --- 3. ANIVERSÁRIOS ---
-elif st.session_state.pagina == "Aniv":
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_aniv")
-    st.markdown("<h2>🎂 Aniversariantes</h2>", unsafe_allow_html=True)
-    df_aniv = carregar_dados("Aniversariantes")
-    abas_mes = st.tabs(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-    
-    if not df_aniv.empty:
-        col_mes = next((c for c in df_aniv.columns if 'mes' in c or 'mês' in c), None)
-        col_dia = next((c for c in df_aniv.columns if 'dia' in c), None)
-        col_nome = next((c for c in df_aniv.columns if 'nome' in c), None)
-        if col_mes and col_dia and col_nome:
-            for i, aba in enumerate(abas_mes):
-                with aba:
-                    num_mes = i + 1
-                    lista_mes = df_aniv[df_aniv[col_mes].astype(int) == num_mes].sort_values(col_dia)
-                    if not lista_mes.empty:
-                        for _, r in lista_mes.iterrows():
-                            st.markdown(f'<div class="card-isosed">🎁 Dia {r[col_dia]} - {r[col_nome]}</div>', unsafe_allow_html=True)
-                    else: st.info("Sem aniversariantes.")
+            st.write("Lista de aniversariantes não encontrada.")
 
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
