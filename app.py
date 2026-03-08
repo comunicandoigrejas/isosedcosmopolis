@@ -112,106 +112,91 @@ if st.session_state.pagina == "Login":
             else:
                 st.error("Usuário ou senha incorretos.")
 
-# 2. PÁGINA: INÍCIO (AGORA COM LOGO)
+# 2. PÁGINA: INÍCIO (LOGO, CEIA DA AGENDA E MENUS)
 elif st.session_state.pagina == "Início":
     from datetime import date
     
-    # --- LOGO CENTRALIZADO ---
-    # Criamos 3 colunas para colocar o logo na do meio e ele ficar no centro da tela
-    col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 1, 1])
-    with col_logo_2:
-        # Substitua 'logo.png' pelo nome do seu arquivo ou pelo link direto da imagem
-        st.image("logo igreja.png", width=180) 
+    # --- 1. LOGO CENTRALIZADO ---
+    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
+    with col_l2:
+        # Tenta carregar o logo. Se não achar o arquivo, ele pula para não dar erro.
+        try:
+            st.image("logo.png", width=180) 
+        except:
+            st.markdown("<h3 style='text-align:center;'>⛪</h3>", unsafe_allow_html=True)
     
     st.markdown("<h1 style='text-align: center;'>Igreja Só o Senhor é Deus</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #d1d9e6;'>ISOSED Cosmópolis</p>", unsafe_allow_html=True)
     
     st.markdown("---")
+    
+    # --- 2. DEFINIÇÃO DAS COLUNAS (O que resolve o NameError) ---
+    col1, col2 = st.columns(2)
 
- # --- Bloco Santa Ceia (Buscando na aba Agenda) ---
+    # --- BLOCO SANTA CEIA (Busca na aba Agenda) ---
     with col1:
         st.subheader("🍷 Próxima Santa Ceia")
-        # Agora buscamos na aba 'Agenda' conforme sua foto
         df_agenda_ceia = carregar_dados("Agenda")
         
         if not df_agenda_ceia.empty:
-            # Filtra apenas os eventos que contém "Santa Ceia"
+            # Filtra eventos que contêm "Santa Ceia"
             df_so_ceia = df_agenda_ceia[df_agenda_ceia['evento'].str.contains("Santa Ceia", case=False, na=False)]
             
             if not df_so_ceia.empty:
-                # Converte para data para garantir que pegamos a próxima
                 df_so_ceia['dt_temp'] = pd.to_datetime(df_so_ceia['data'], dayfirst=True, errors='coerce')
-                # Pega a primeira data que é hoje ou no futuro
-                proximas_ceias = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
+                # Pega a próxima ceia (hoje ou futuro)
+                proximas = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
                 
-                if not proximas_ceias.empty:
-                    p = proximas_ceias.iloc[0]
+                if not proximas.empty:
+                    p = proximas.iloc[0]
                     st.info(f"📅 **Data:** {p['data']}\n\n⏰ **Horário:** 19:00")
-                else:
-                    st.write("Nenhuma data futura encontrada.")
-            else:
-                st.write("Evento 'Santa Ceia' não achado na Agenda.")
-        else:
-            st.write("Aba 'Agenda' está vazia.")
+                else: st.write("Nenhuma data futura.")
+            else: st.write("Evento não achado na Agenda.")
+        else: st.write("Agenda vazia.")
 
-    # --- Bloco Aniversariantes (Próximos 7 dias) ---
+    # --- BLOCO ANIVERSARIANTES ---
     with col2:
         st.subheader("🎂 Aniversariantes")
         df_ani = carregar_dados("Aniversariantes")
         if not df_ani.empty:
-            # Identifica colunas de forma inteligente
             c_nome = next((c for c in df_ani.columns if 'nome' in c), None)
             c_dia = next((c for c in df_ani.columns if 'dia' in c), None)
             c_mes = next((c for c in df_ani.columns if 'mes' in c or 'mês' in c), None)
-            c_data = next((c for c in df_ani.columns if 'data' in c or 'aniv' in c), None)
-
-            hoje = date.today()
-            achou = False
             
+            hoje = date.today()
+            achou_niver = False
             for _, row in df_ani.iterrows():
                 try:
-                    # Tenta pegar dia/mes de colunas separadas ou de uma coluna de data
-                    if c_dia and c_mes:
-                        d, m = int(row[c_dia]), int(row[c_mes])
-                    elif c_data:
-                        partes = str(row[c_data]).split('/')
-                        d, m = int(partes[0]), int(partes[1])
-                    else: continue
-
+                    d, m = int(row[c_dia]), int(row[c_mes])
                     niver = date(hoje.year, m, d)
                     diff = (niver - hoje).days
-                    if diff < 0: # Caso já tenha passado este ano
-                        niver = date(hoje.year + 1, m, d)
-                        diff = (niver - hoje).days
-
+                    if diff < 0: niver = date(hoje.year + 1, m, d); diff = (niver - hoje).days
+                    
                     if 0 <= diff <= 7:
                         st.success(f"🎈 **{row[c_nome].upper()}** ({d}/{m:02d})")
-                        achou = True
+                        achou_niver = True
                 except: continue
-            
-            if not achou: st.write("Ninguém soprando velinhas nos próximos 7 dias.")
-        else:
-            st.write("Lista de aniversariantes não encontrada.")
-           # --- MENU DE NAVEGAÇÃO COMPLETO (6 BOTÕES) ---
+            if not achou_niver: st.write("Ninguém nos próximos 7 dias.")
+        else: st.write("Lista vazia.")
+
+    # --- 3. MENU DE NAVEGAÇÃO (6 BOTÕES) ---
     st.markdown("---")
     st.write("### ⛪ Ministérios e Ferramentas")
     
-    # Linha 1: Funções Principais
-    c1, c2, c3 = st.columns(3)
-    with c1:
+    m1, m2, m3 = st.columns(3)
+    with m1:
         if st.button("📖 LEITURA", use_container_width=True, key="btn_lei"): navegar("Leitura")
-    with c2:
+    with m2:
         if st.button("📅 ESCALAS", use_container_width=True, key="btn_esc"): navegar("Escalas")
-    with c3:
+    with m3:
         if st.button("⚙️ GESTÃO", use_container_width=True, key="btn_ges"): navegar("Gestao")
 
-    # Linha 2: Agenda e Comunidade
-    c4, c5, c6 = st.columns(3)
-    with c4:
+    m4, m5, m6 = st.columns(3)
+    with m4:
         if st.button("🗓️ AGENDA", use_container_width=True, key="btn_age"): navegar("Agenda")
-    with c5:
+    with m5:
         if st.button("🎂 ANIVERSÁRIOS", use_container_width=True, key="btn_ani"): navegar("Aniv")
-    with c6:
+    with m6:
         if st.button("🙏 DEVOCIONAL", use_container_width=True, key="btn_dev"): navegar("Devocional")
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
