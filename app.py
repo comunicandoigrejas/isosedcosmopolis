@@ -207,6 +207,71 @@ elif st.session_state.pagina == "Início":
         st.button("🎂 ANIVERSÁRIOS", use_container_width=True, on_click=navegar, args=("Aniv",), key="btn_ani")
     with m6:
         st.button("🙏 DEVOCIONAL", use_container_width=True, on_click=navegar, args=("Devocional",), key="btn_dev")
+
+        # =========================================================
+# 3. PÁGINA: ANIVERSARIANTES (VERSÃO BLINDADA)
+# =========================================================
+elif st.session_state.pagina == "Aniv":
+    # Botão Voltar com 1 clique real
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_aniv_v2")
+    
+    st.markdown("<h2>🎂 Mural de Aniversariantes</h2>", unsafe_allow_html=True)
+    
+    df_aniv = carregar_dados("Aniversariantes")
+    
+    # Criamos as abas para cada mês
+    nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    abas_mes = st.tabs(nomes_meses)
+    
+    if not df_aniv.empty:
+        # Busca inteligente de colunas
+        c_nome = next((c for c in df_aniv.columns if 'nome' in c), None)
+        c_dia = next((c for c in df_aniv.columns if 'dia' in c), None)
+        c_mes = next((c for c in df_aniv.columns if 'mes' in c or 'mês' in c), None)
+        c_data = next((c for c in df_aniv.columns if 'data' in c or 'aniv' in c), None)
+
+        if c_nome:
+            for i, aba in enumerate(abas_mes):
+                with aba:
+                    num_mes_alvo = i + 1
+                    lista_do_mes = []
+
+                    # Processa cada linha da planilha
+                    for _, r in df_aniv.iterrows():
+                        try:
+                            d, m = None, None
+                            
+                            # Opção 1: Colunas separadas (Dia e Mês)
+                            if c_dia and c_mes and pd.notna(r[c_dia]) and pd.notna(r[c_mes]):
+                                d, m = int(r[c_dia]), int(r[c_mes])
+                            
+                            # Opção 2: Coluna única de Data (DD/MM)
+                            elif c_data and pd.notna(r[c_data]):
+                                partes = str(r[c_data]).split('/')
+                                d, m = int(partes[0]), int(partes[1])
+                            
+                            # Se o mês da pessoa for o mês da aba atual, adiciona na lista
+                            if m == num_mes_alvo:
+                                lista_do_mes.append({"dia": d, "nome": str(r[c_nome]).upper()})
+                        except:
+                            continue
+
+                    # Exibe os aniversariantes do mês ordenados por dia
+                    if lista_do_mes:
+                        # Ordena a lista pelo dia antes de mostrar
+                        lista_do_mes = sorted(lista_do_mes, key=lambda x: x['dia'])
+                        for pessoa in lista_do_mes:
+                            st.markdown(f"""
+                                <div class="card-isosed" style="border-left: 5px solid #ffd700;">
+                                    <b>🎁 Dia {pessoa['dia']:02d}</b> — {pessoa['nome']}
+                                </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info(f"Sem aniversariantes em {nomes_meses[i]}.")
+        else:
+            st.error("Erro: A coluna 'NOME' não foi encontrada na aba Aniversariantes.")
+    else:
+        st.warning("A aba 'Aniversariantes' está vazia ou não foi encontrada.")
 # =========================================================
 # 4. PÁGINA: GESTÃO (REGRAS RÍGIDAS E FILTRO DE ACENTOS)
 # =========================================================
