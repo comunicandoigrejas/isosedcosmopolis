@@ -300,7 +300,7 @@ elif st.session_state.pagina == "Gestao":
         with st.form("login_admin"):
             senha_gestao = st.text_input("Senha Master:", type="password")
             if st.form_submit_button("LIBERAR ACESSO"):
-                if senha_gestao == "CIVIRINA2026":
+                if senha_gestao == "MEUPAINAODEIXA":
                     st.session_state.admin_ok = True
                     st.rerun()
                 else: st.error("Senha incorreta.")
