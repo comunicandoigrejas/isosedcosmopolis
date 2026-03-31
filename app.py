@@ -452,17 +452,49 @@ elif st.session_state.pagina == "Agenda":
             st.error("Colunas 'data' ou 'evento' não encontradas.")
     else:
         st.warning("Aba 'Agenda' está vazia.")
-# --- 5. DEVOCIONAL ---
+# =========================================================
+# 5. PÁGINA: DEVOCIONAL (BUSCA PELA DATA DE HOJE)
+# =========================================================
 elif st.session_state.pagina == "Devocional":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
+    # Botão Voltar Instantâneo
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev_hoje")
+    
+    st.markdown("<h2>🙏 Devocional Diário</h2>", unsafe_allow_html=True)
+    
     df_dev = carregar_dados("Devocional")
+    
     if not df_dev.empty:
-        item = df_dev.iloc[-1]
-        st.markdown(f"### {item['titulo']}")
-        st.warning(f"📖 **VERSÍCULO:** {item['versiculo']}")
-        st.write(item['texto'])
-        st.info(f"🎯 **APLICAÇÃO:** {item['aplicacao']}")
-        st.success(f"🔥 **DESAFIO:** {item['desafio']}")
+        # 1. Identifica a coluna de data
+        c_data = next((c for c in df_dev.columns if 'dat' in c), None)
+        
+        if c_data:
+            # 2. Formata a data de hoje para o padrão da planilha (DD/MM/AAAA)
+            hoje_str = hoje_br.strftime('%d/%m/%Y')
+            
+            # 3. Filtra a planilha para achar o texto de HOJE
+            devocional_hoje = df_dev[df_dev[c_data].astype(str).str.strip() == hoje_str]
+            
+            if not devocional_hoje.empty:
+                item = devocional_hoje.iloc[0] # Pega o devocional do dia
+                
+                # Exibição Bonita e Organizada
+                st.markdown(f"<h3 style='color:#ffd700; text-align:center;'>{item.get('titulo', 'Devocional do Dia')}</h3>", unsafe_allow_html=True)
+                
+                st.warning(f"📖 **VERSÍCULO:** {item.get('versiculo', item.get('versículo', 'Consulte sua Bíblia'))}")
+                
+                st.write(f'<div style="text-align: justify; line-height: 1.6; font-size: 1.1em;">{item.get("texto", "")}</div>', unsafe_allow_html=True)
+                
+                st.markdown("---")
+                st.info(f"🎯 **APLICAÇÃO:** {item.get('aplicacao', item.get('aplicação', 'Reflita sobre isso hoje.'))}")
+                st.success(f"🔥 **DESAFIO:** {item.get('desafio', 'Pratique a Palavra!')}")
+            else:
+                # Se não houver devocional para hoje, ele avisa em vez de mostrar a data errada
+                st.info(f"📅 Hoje é {hoje_str}. Ainda não temos um devocional cadastrado para esta data.")
+                st.write("Que tal ler um Salmo enquanto aguarda o texto de amanhã?")
+        else:
+            st.error("Erro: Não encontrei a coluna 'data' na aba Devocional.")
+    else:
+        st.warning("A aba 'Devocional' está vazia.")
 
 # --- 6. ESCALAS ---
 elif st.session_state.pagina == "Escalas":
