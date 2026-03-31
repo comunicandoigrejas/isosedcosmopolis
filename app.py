@@ -516,20 +516,17 @@ elif st.session_state.pagina == "Escalas":
             for _, r in rec.iterrows(): st.markdown(f'<div class="card-isosed"><b>{r["data"]} - {r["dia"]}</b><br>👤 {r["responsável"]}</div>', unsafe_allow_html=True)
 
 # =========================================================
-# 6. PÁGINA: LEITURA (VERSÃO "NÃO ACEITO 404")
+# 6. PÁGINA: LEITURA (LOGIN + INSCRIÇÃO DE NOVOS USUÁRIOS)
 # =========================================================
 elif st.session_state.pagina == "Leitura":
     import re
     import urllib.parse
     import unicodedata
 
+    # CSS para manter o padrão visual (Inputs brancos, botões azuis)
     st.markdown("""
         <style>
-        div[data-baseweb="select"] > div, div[data-baseweb="select"] * {
-            background-color: white !important; color: black !important;
-            -webkit-text-fill-color: black !important;
-        }
-        div[data-baseweb="popover"] * { color: black !important; background-color: white !important; }
+        div[data-baseweb="select"] > div, div[data-baseweb="select"] * { background-color: white !important; color: black !important; }
         .caixa-leitura {
             background-color: #f1f3f8; color: #1a1a2e !important;
             padding: 20px; border-radius: 10px; font-size: 1.2em;
@@ -538,19 +535,60 @@ elif st.session_state.pagina == "Leitura":
         </style>
     """, unsafe_allow_html=True)
 
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_lei_v17_final")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="btn_voltar_leitura")
 
     if st.session_state.user is None:
-        # (Seu código de login aqui...)
-        with st.form("login_leitura_v17"):
-            u_n = st.text_input("Seu Nome:")
-            u_s = st.text_input("Senha:", type="password")
-            if st.form_submit_button("ACESSAR"):
-                df_u = carregar_dados("Usuarios")
-                u_f = df_u[(df_u['nome'].str.lower() == u_n.lower()) & (df_u['senha'].astype(str) == str(u_s))]
-                if not u_f.empty: st.session_state.user = u_f.iloc[0].to_dict(); st.rerun()
-                else: st.error("Acesso negado.")
+        st.markdown("### 📖 Plano de Leitura Bíblica")
+        
+        # Cria as abas de ACESSO ou CADASTRO
+        tab_login, tab_cadastro = st.tabs(["Já tenho conta", "Quero me inscrever"])
+
+        # --- ABA 1: LOGIN ---
+        with tab_login:
+            with st.form("form_login"):
+                u_n = st.text_input("Seu Nome:")
+                u_s = st.text_input("Senha:", type="password")
+                if st.form_submit_button("ACESSAR PLANO"):
+                    df_u = carregar_dados("Usuarios")
+                    if not df_u.empty:
+                        u_f = df_u[(df_u['nome'].str.lower() == u_n.lower()) & (df_u['senha'].astype(str) == str(u_s))]
+                        if not u_f.empty:
+                            st.session_state.user = u_f.iloc[0].to_dict()
+                            st.rerun()
+                        else: st.error("Nome ou senha não encontrados.")
+
+        # --- ABA 2: NOVO CADASTRO (INSCRIÇÃO) ---
+        with tab_cadastro:
+            st.write("Crie seu perfil para salvar seu progresso na leitura!")
+            df_planos = carregar_dados("Leitura") # Busca os planos disponíveis
+            planos_disponiveis = df_planos['plano'].unique().tolist() if not df_planos.empty else ["Plano Geral"]
+
+            with st.form("form_cadastro"):
+                novo_nome = st.text_input("Nome Completo:")
+                nova_senha = st.text_input("Crie uma Senha:", type="password")
+                plano_escolhido = st.selectbox("Escolha seu Plano de Leitura:", planos_disponiveis)
+                
+                if st.form_submit_button("FINALIZAR INSCRIÇÃO"):
+                    if novo_nome and nova_senha:
+                        sh = conectar_planilha()
+                        # 1. Salva na aba Usuarios
+                        aba_u = sh.worksheet("Usuarios")
+                        # Verifica se já existe
+                        if any(novo_nome.lower() == n.lower() for n in aba_u.col_values(1)):
+                            st.warning("Este nome já está cadastrado. Tente fazer login.")
+                        else:
+                            aba_u.append_row([novo_nome, nova_senha, "Leitor"])
+                            
+                            # 2. Inicializa o Progresso na aba Progresso (Dia 1)
+                            aba_p = sh.worksheet("Progresso")
+                            aba_p.append_row([novo_nome, plano_escolhido, 1])
+                            
+                            st.success("🎉 Inscrição realizada! Agora é só fazer login na aba ao lado.")
+                    else:
+                        st.error("Por favor, preencha todos os campos.")
+
     else:
+        # --- CÓDIGO DO USUÁRIO LOGADO (LEITURA) ---
         u = st.session_state.user
         df_p = carregar_dados("Progresso")
         col_usu_p = next((c for c in df_p.columns if 'usu' in c), 'usuario')
@@ -559,7 +597,7 @@ elif st.session_state.pagina == "Leitura":
             meus_planos = df_p[df_p[col_usu_p].astype(str).str.lower() == u['nome'].lower()]
             
             if not meus_planos.empty:
-                plano_sel = st.selectbox("Seu plano:", meus_planos['plano'].tolist())
+                plano_sel = st.selectbox("Seu plano ativo:", meus_planos['plano'].tolist())
                 col_dia_p = next((c for c in df_p.columns if 'dia' in c), 'dia_atual')
                 dia_hoje = int(meus_planos[meus_planos['plano'] == plano_sel].iloc[0][col_dia_p])
                 
