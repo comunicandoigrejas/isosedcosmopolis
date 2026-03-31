@@ -381,79 +381,85 @@ elif st.session_state.pagina == "Gestao":
                                 
                                 st.success("✅ Escala gerada! O Júnior foi filtrado corretamente.")
 
-                                # =========================================================
-# =========================================================
-# 4. PÁGINA: AGENDA (ORGANIZADA POR DEPARTAMENTOS)
+                            # =========================================================
+# 4. PÁGINA: AGENDA (FILTRO POR MÊS E DEPARTAMENTO)
 # =========================================================
 elif st.session_state.pagina == "Agenda":
-    # Botão Voltar Instantâneo
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_age_dept")
+    # Navegação imediata
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_age_duplo")
     
-    st.markdown("<h2>🗓️ Agenda por Departamentos</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>🗓️ Agenda ISOSED 2026</h2>", unsafe_allow_html=True)
     
     df_agenda = carregar_dados("Agenda")
     
+    # Lista de meses e departamentos conforme solicitado
+    nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    deptos_lista = ["GERAL", "JOVENS", "MULHERES", "VARÕES", "MISSÕES", "CRIANÇAS"]
+    
+    # 1. Criação das Abas de Meses no Topo
+    abas_mes = st.tabs(nomes_meses)
+    
     if not df_agenda.empty:
-        # 1. Busca inteligente de colunas
         c_data = next((c for c in df_agenda.columns if 'data' in c), None)
         c_evento = next((c for c in df_agenda.columns if 'evento' in c), None)
         c_depto = next((c for c in df_agenda.columns if 'dep' in c or 'setor' in c), None)
 
         if c_data and c_evento:
-            # 2. Identifica os departamentos únicos na planilha (Ex: Geral, Jovens, Infantil...)
-            if c_depto:
-                # Pega os nomes, remove vazios e ordena
-                lista_deptos = sorted([str(x).strip().upper() for x in df_agenda[c_depto].unique() if pd.notna(x) and str(x).strip() != ""])
-                # Adiciona "GERAL" no início se não existir
-                if "GERAL" not in lista_deptos:
-                    lista_deptos.insert(0, "GERAL")
-            else:
-                lista_deptos = ["GERAL"]
-
-            # 3. Cria as abas dinamicamente
-            abas = st.tabs(lista_deptos)
-
-            for i, aba in enumerate(abas):
+            for i, aba in enumerate(abas_mes):
                 with aba:
-                    depto_atual = lista_deptos[i]
-                    eventos_filtrados = []
+                    num_mes_alvo = i + 1
+                    
+                    # 2. Seletor de Departamento dentro de cada mês
+                    depto_sel = st.selectbox(
+                        f"Filtrar por Departamento ({nomes_meses[i]}):", 
+                        options=deptos_lista, 
+                        key=f"sel_depto_{i}"
+                    )
 
-                    # 4. Filtra e processa os eventos do departamento da aba
+                    eventos_finais = []
+
+                    # 3. Processamento das linhas
                     for _, r in df_agenda.iterrows():
                         try:
-                            # Verifica se o evento pertence a este departamento
-                            valor_depto = str(r[c_depto]).strip().upper() if c_depto else "GERAL"
+                            # Converte data
+                            d_str = str(r[c_data]).strip()
+                            dt = pd.to_datetime(d_str, dayfirst=True, errors='coerce')
                             
-                            if valor_depto == depto_atual or (depto_atual == "GERAL" and valor_depto == ""):
-                                data_str = str(r[c_data]).strip()
-                                data_dt = pd.to_datetime(data_str, dayfirst=True, errors='coerce')
+                            if pd.notna(dt) and dt.month == num_mes_alvo:
+                                # Normaliza o departamento da planilha para comparar
+                                d_planilha = str(r[c_depto]).strip().upper() if c_depto else "GERAL"
                                 
-                                # Mostra apenas eventos de hoje em diante (Agenda Futura)
-                                if pd.notna(data_dt) and data_dt.date() >= hoje_br:
-                                    eventos_filtrados.append({
-                                        "data_f": data_str,
-                                        "data_obj": data_dt,
-                                        "evento": str(r[c_evento]).upper()
+                                # Se for 'GERAL', mostra tudo do mês ou apenas o depto selecionado
+                                if depto_sel == "GERAL" or d_planilha == depto_sel:
+                                    eventos_finais.append({
+                                        "data_f": d_str,
+                                        "data_obj": dt,
+                                        "evento": str(r[c_evento]).upper(),
+                                        "setor": d_planilha
                                     })
                         except:
                             continue
 
-                    # 5. Exibe os eventos do departamento ordenados por data
-                    if eventos_filtrados:
-                        eventos_filtrados = sorted(eventos_filtrados, key=lambda x: x['data_obj'])
-                        for item in eventos_filtrados:
+                    # 4. Exibição dos Cartões
+                    if eventos_finais:
+                        # Ordena por dia
+                        eventos_finais = sorted(eventos_finais, key=lambda x: x['data_obj'])
+                        for item in eventos_finais:
+                            # Cor da borda muda se for de um departamento específico
+                            cor_borda = "#ffd700" if item['setor'] == "GERAL" else "#00d4ff"
+                            
                             st.markdown(f"""
-                                <div class="card-isosed" style="border-left: 5px solid #00d4ff; margin-bottom: 10px;">
-                                    <b style="color:#00d4ff;">📅 {item['data_f']}</b><br>
+                                <div class="card-isosed" style="border-left: 5px solid {cor_borda}; margin-bottom: 10px;">
+                                    <b style="color:{cor_borda};">📅 {item['data_f']}</b> | <small>{item['setor']}</small><br>
                                     <span style="font-size: 1.1em;">{item['evento']}</span>
                                 </div>
                             """, unsafe_allow_html=True)
                     else:
-                        st.info(f"Nenhum evento futuro agendado para: {depto_atual}")
+                        st.info(f"Sem eventos de '{depto_sel}' em {nomes_meses[i]}.")
         else:
-            st.error("Certifique-se de que a planilha tem as colunas 'data' e 'evento'.")
+            st.error("Planilha precisa das colunas 'data' e 'evento'.")
     else:
-        st.warning("A aba 'Agenda' está vazia.")
+        st.warning("Aba Agenda está vazia.")
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
