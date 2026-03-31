@@ -382,24 +382,22 @@ elif st.session_state.pagina == "Gestao":
                                 st.success("✅ Escala gerada! O Júnior foi filtrado corretamente.")
 
                            # =========================================================
-# 4. PÁGINA: AGENDA (VERSÃO COM BUSCA INTELIGENTE)
+# 4. PÁGINA: AGENDA (DEPARTAMENTOS + LOUVOR)
 # =========================================================
 elif st.session_state.pagina == "Agenda":
-    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_age_v10")
+    st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="voltar_age_louvor")
     
     st.markdown("<h2>🗓️ Agenda por Ministério</h2>", unsafe_allow_html=True)
     
     df_agenda = carregar_dados("Agenda")
     
-    # Listas oficiais de abas
-    deptos_lista = ["GERAL", "JOVENS", "MULHERES", "VARÕES", "MISSÕES", "CRIANÇAS"]
+    # Lista atualizada com LOUVOR
+    deptos_lista = ["GERAL", "LOUVOR", "JOVENS", "MULHERES", "VARÕES", "MISSÕES", "CRIANÇAS"]
     nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
     
     if not df_agenda.empty:
-        # 1. Busca ultra-flexível de colunas
         c_data = next((c for c in df_agenda.columns if 'dat' in c), None)
         c_evento = next((c for c in df_agenda.columns if 'even' in c or 'desc' in c), None)
-        # Procura por depto, setor, minis, alvo ou grupo
         c_depto = next((c for c in df_agenda.columns if any(t in c for t in ['dep', 'set', 'minis', 'alvo', 'grupo'])), None)
 
         if c_data and c_evento:
@@ -420,11 +418,9 @@ elif st.session_state.pagina == "Agenda":
 
                             for _, r in df_agenda.iterrows():
                                 try:
-                                    # Lógica de filtro de departamento
                                     valor_planilha = str(r[c_depto]).strip().upper() if c_depto else "GERAL"
                                     
-                                    # CONDIÇÃO: Se estiver na aba GERAL, passa tudo. 
-                                    # Se estiver em outra aba, o texto precisa bater (ex: 'JOVENS' contém 'JOVENS')
+                                    # Filtro inteligente: GERAL mostra tudo; Abas específicas filtram por nome
                                     pertence_ao_depto = (depto_alvo == "GERAL") or (depto_alvo in valor_planilha)
                                     
                                     if pertence_ao_depto:
@@ -440,7 +436,6 @@ elif st.session_state.pagina == "Agenda":
                                             })
                                 except: continue
 
-                            # Exibição
                             if eventos_finais:
                                 eventos_finais = sorted(eventos_finais, key=lambda x: x['data_obj'])
                                 for item in eventos_finais:
@@ -452,12 +447,11 @@ elif st.session_state.pagina == "Agenda":
                                         </div>
                                     """, unsafe_allow_html=True)
                             else:
-                                st.write(f"<p style='color: gray; font-size: 0.9em;'>Nenhum evento para {depto_alvo} em {nomes_meses[m_idx]}.</p>", unsafe_allow_html=True)
+                                st.write(f"<p style='color: gray; font-size: 0.9em;'>Sem eventos para {depto_alvo} em {nomes_meses[m_idx]}.</p>", unsafe_allow_html=True)
         else:
-            st.error("ERRO: Não encontrei colunas de 'Data' ou 'Evento' na aba Agenda.")
-            st.info(f"Colunas lidas: {list(df_agenda.columns)}")
+            st.error("Colunas 'data' ou 'evento' não encontradas.")
     else:
-        st.warning("A aba 'Agenda' parece estar vazia.")
+        st.warning("Aba 'Agenda' está vazia.")
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
