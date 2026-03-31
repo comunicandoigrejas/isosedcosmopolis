@@ -162,7 +162,7 @@ elif st.session_state.pagina == "Início":
                 prox = df_so_ceia[df_so_ceia['dt_temp'].dt.date >= hoje_br].sort_values('dt_temp')
                 if not prox.empty:
                     p = prox.iloc[0]
-                    st.info(f"📅 **Data:** {p['data']}\n\n⏰ **Horário:** 19:00")
+                    st.info(f"📅 **Data:** {p['data']}\n\n⏰ **Horário:** 18:00")
                 else: st.write("A definir.")
             else: st.write("Santa Ceia não agendada.")
 
@@ -380,6 +380,67 @@ elif st.session_state.pagina == "Gestao":
                                     aba_e.append_row([d['data'], d['dia_pt'], horario, "Culto", setor_sel, responsavel])
                                 
                                 st.success("✅ Escala gerada! O Júnior foi filtrado corretamente.")
+
+                                # =========================================================
+# 4. PÁGINA: AGENDA (VERSÃO BLINDADA CONTRA ERROS DE DATA)
+# =========================================================
+elif st.session_state.pagina == "Agenda":
+    # Botão Voltar com 1 clique real
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_age_v2")
+    
+    st.markdown("<h2>🗓️ Agenda de Eventos 2026</h2>", unsafe_allow_html=True)
+    
+    df_agenda = carregar_dados("Agenda")
+    
+    # Criamos as abas para cada mês
+    nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    abas_mes = st.tabs(nomes_meses)
+    
+    if not df_agenda.empty:
+        # Busca inteligente de colunas
+        c_data = next((c for c in df_agenda.columns if 'data' in c), None)
+        c_evento = next((c for c in df_agenda.columns if 'evento' in c), None)
+
+        if c_data and c_evento:
+            for i, aba in enumerate(abas_mes):
+                with aba:
+                    num_mes_alvo = i + 1
+                    lista_eventos_mes = []
+
+                    # Processa cada linha da planilha individualmente
+                    for _, r in df_agenda.iterrows():
+                        try:
+                            # Tenta converter a data da planilha (DD/MM/AAAA)
+                            data_str = str(r[c_data]).strip()
+                            data_dt = pd.to_datetime(data_str, dayfirst=True, errors='coerce')
+                            
+                            # Se a data for válida e do mês da aba atual
+                            if pd.notna(data_dt) and data_dt.month == num_mes_alvo:
+                                lista_eventos_mes.append({
+                                    "data_formatada": data_str,
+                                    "data_obj": data_dt,
+                                    "evento": str(r[c_evento]).upper()
+                                })
+                        except:
+                            continue
+
+                    # Exibe os eventos ordenados por dia
+                    if lista_eventos_mes:
+                        # Ordena a lista pela data
+                        lista_eventos_mes = sorted(lista_eventos_mes, key=lambda x: x['data_obj'])
+                        for item in lista_eventos_mes:
+                            st.markdown(f"""
+                                <div class="card-isosed" style="border-left: 5px solid #00d4ff; margin-bottom: 10px;">
+                                    <b style="color:#00d4ff;">📅 {item['data_formatada']}</b><br>
+                                    <span style="font-size: 1.1em;">{item['evento']}</span>
+                                </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info(f"Nenhum evento agendado para {nomes_meses[i]}.")
+        else:
+            st.error("Erro: Colunas 'DATA' ou 'EVENTO' não encontradas na aba Agenda.")
+    else:
+        st.warning("A aba 'Agenda' está vazia no Google Sheets.")
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
