@@ -382,65 +382,78 @@ elif st.session_state.pagina == "Gestao":
                                 st.success("✅ Escala gerada! O Júnior foi filtrado corretamente.")
 
                                 # =========================================================
-# 4. PÁGINA: AGENDA (VERSÃO BLINDADA CONTRA ERROS DE DATA)
+# =========================================================
+# 4. PÁGINA: AGENDA (ORGANIZADA POR DEPARTAMENTOS)
 # =========================================================
 elif st.session_state.pagina == "Agenda":
-    # Botão Voltar com 1 clique real
-    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_age_v2")
+    # Botão Voltar Instantâneo
+    st.button("⬅️ VOLTAR PARA O INÍCIO", on_click=navegar, args=("Início",), key="voltar_age_dept")
     
-    st.markdown("<h2>🗓️ Agenda de Eventos 2026</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>🗓️ Agenda por Departamentos</h2>", unsafe_allow_html=True)
     
     df_agenda = carregar_dados("Agenda")
     
-    # Criamos as abas para cada mês
-    nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-    abas_mes = st.tabs(nomes_meses)
-    
     if not df_agenda.empty:
-        # Busca inteligente de colunas
+        # 1. Busca inteligente de colunas
         c_data = next((c for c in df_agenda.columns if 'data' in c), None)
         c_evento = next((c for c in df_agenda.columns if 'evento' in c), None)
+        c_depto = next((c for c in df_agenda.columns if 'dep' in c or 'setor' in c), None)
 
         if c_data and c_evento:
-            for i, aba in enumerate(abas_mes):
-                with aba:
-                    num_mes_alvo = i + 1
-                    lista_eventos_mes = []
+            # 2. Identifica os departamentos únicos na planilha (Ex: Geral, Jovens, Infantil...)
+            if c_depto:
+                # Pega os nomes, remove vazios e ordena
+                lista_deptos = sorted([str(x).strip().upper() for x in df_agenda[c_depto].unique() if pd.notna(x) and str(x).strip() != ""])
+                # Adiciona "GERAL" no início se não existir
+                if "GERAL" not in lista_deptos:
+                    lista_deptos.insert(0, "GERAL")
+            else:
+                lista_deptos = ["GERAL"]
 
-                    # Processa cada linha da planilha individualmente
+            # 3. Cria as abas dinamicamente
+            abas = st.tabs(lista_deptos)
+
+            for i, aba in enumerate(abas):
+                with aba:
+                    depto_atual = lista_deptos[i]
+                    eventos_filtrados = []
+
+                    # 4. Filtra e processa os eventos do departamento da aba
                     for _, r in df_agenda.iterrows():
                         try:
-                            # Tenta converter a data da planilha (DD/MM/AAAA)
-                            data_str = str(r[c_data]).strip()
-                            data_dt = pd.to_datetime(data_str, dayfirst=True, errors='coerce')
+                            # Verifica se o evento pertence a este departamento
+                            valor_depto = str(r[c_depto]).strip().upper() if c_depto else "GERAL"
                             
-                            # Se a data for válida e do mês da aba atual
-                            if pd.notna(data_dt) and data_dt.month == num_mes_alvo:
-                                lista_eventos_mes.append({
-                                    "data_formatada": data_str,
-                                    "data_obj": data_dt,
-                                    "evento": str(r[c_evento]).upper()
-                                })
+                            if valor_depto == depto_atual or (depto_atual == "GERAL" and valor_depto == ""):
+                                data_str = str(r[c_data]).strip()
+                                data_dt = pd.to_datetime(data_str, dayfirst=True, errors='coerce')
+                                
+                                # Mostra apenas eventos de hoje em diante (Agenda Futura)
+                                if pd.notna(data_dt) and data_dt.date() >= hoje_br:
+                                    eventos_filtrados.append({
+                                        "data_f": data_str,
+                                        "data_obj": data_dt,
+                                        "evento": str(r[c_evento]).upper()
+                                    })
                         except:
                             continue
 
-                    # Exibe os eventos ordenados por dia
-                    if lista_eventos_mes:
-                        # Ordena a lista pela data
-                        lista_eventos_mes = sorted(lista_eventos_mes, key=lambda x: x['data_obj'])
-                        for item in lista_eventos_mes:
+                    # 5. Exibe os eventos do departamento ordenados por data
+                    if eventos_filtrados:
+                        eventos_filtrados = sorted(eventos_filtrados, key=lambda x: x['data_obj'])
+                        for item in eventos_filtrados:
                             st.markdown(f"""
                                 <div class="card-isosed" style="border-left: 5px solid #00d4ff; margin-bottom: 10px;">
-                                    <b style="color:#00d4ff;">📅 {item['data_formatada']}</b><br>
+                                    <b style="color:#00d4ff;">📅 {item['data_f']}</b><br>
                                     <span style="font-size: 1.1em;">{item['evento']}</span>
                                 </div>
                             """, unsafe_allow_html=True)
                     else:
-                        st.info(f"Nenhum evento agendado para {nomes_meses[i]}.")
+                        st.info(f"Nenhum evento futuro agendado para: {depto_atual}")
         else:
-            st.error("Erro: Colunas 'DATA' ou 'EVENTO' não encontradas na aba Agenda.")
+            st.error("Certifique-se de que a planilha tem as colunas 'data' e 'evento'.")
     else:
-        st.warning("A aba 'Agenda' está vazia no Google Sheets.")
+        st.warning("A aba 'Agenda' está vazia.")
 # --- 5. DEVOCIONAL ---
 elif st.session_state.pagina == "Devocional":
     st.button("⬅️ VOLTAR", on_click=navegar, args=("Início",), key="v_dev")
